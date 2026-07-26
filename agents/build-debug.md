@@ -469,3 +469,54 @@ quit-client
 Sticky completion events (safe after fast ops):  
 `assemble-complete`, `assemble-error`, `step-complete`, `run-complete`,
 `reset-complete`, `load-state-complete`, `save-state-complete`, `paused`, `running`.
+
+---
+
+## 13. c64m friction log (dogfood feedback)
+
+RailGunner's second purpose is to **dogfood c64m**: agents are developers using
+the tool they built (see [`README.md`](README.md) → Project goal). When using
+c64m is awkward, misleading, or forces a repeated workaround, **record it here**
+so the c64m team can improve developer-friendliness. This is feedback, not a
+patch queue — **never edit `../c64m/`** (repo boundary rule).
+
+**How to add an entry:** date it, describe what you *did*, what c64m *did*, why
+it was friction, and a concrete suggested improvement. Keep symptoms
+reproducible (exact command + response). Mark severity (papercut / slows-work /
+blocks-work). Cross off (`~~struck~~ fixed in c64m <ref>`) when resolved
+upstream — do not delete history.
+
+### 2026-07-26 — `assemble` success echoes the *default* origin, not where code landed
+
+- **Severity:** papercut (actively misleading during debugging).
+- **Did:** `assemble reset=1 auto-run=0 /ABS/src/main.asm` with **no** `address=`
+  (source sets segments: `BASIC $0801`, `CODE $080d`).
+- **c64m said:** `ok address=$8000`.
+- **Reality:** code assembled to `$080D` and ran from there —
+  `find-symbol start` → `$080D`; the game booted and rendered correctly. `$8000`
+  is just the ignored host default being echoed back.
+- **Friction:** the success line implies code is at `$8000`. An agent trusting
+  it would set breakpoints / read memory at the wrong place. The one field in the
+  response is the one you'd most want to trust, and it's wrong whenever the
+  source overrides the default (which, for any real program, is always).
+- **Suggested improvement:** report the **actual emitted origin / entry** (e.g.
+  first `.segment`/`* =` origin, or the exported `start`/run-address), or list
+  per-segment origins — not the requested `address=` when the source overrode it.
+
+### 2026-07-26 — `assemble` ≠ LOAD boot ceremony is unassisted
+
+- **Severity:** slows-work (every agent rediscovers it; wrapped by
+  `agent_session.py`, but manual over the raw port).
+- **Did:** live `assemble` of a BASIC-stub program, then wanted to `RUN` it like
+  a loaded PRG.
+- **c64m behaviour:** assemble writes bytes to RAM but does **not** update BASIC
+  pointers, so `RUN` sees no program. You must poke `$2B` (TXTTAB=`$0801`) and
+  `VARTAB/ARYTAB/STREND=$080D`, `run`, then `paste-text-data "RUN\r"`.
+- **Friction:** four ceremonial steps between "assembled" and "running like the
+  human sees it," with a dedicated pitfalls-table entry (§9) and a hard-won-lesson
+  war story (§10) devoted to getting it wrong. That's a lot of doc for a step the
+  tool could own.
+- **Suggested improvement:** an `assemble` option or one-shot command that stages
+  the image *as a LOAD would* (fix BASIC pointers) and optionally `RUN`s it via
+  the BASIC path — without the forbidden auto-run-PC poke. Removes a whole class
+  of "why won't it start" mistakes.

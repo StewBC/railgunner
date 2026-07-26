@@ -62,13 +62,28 @@ Build/run/debug: **`build-debug.md`**. Tool path notes: **`tools/README.md`**.
 
 ## Project goal (how to work)
 
-This repo is an experiment: **can an agent build a C64 assembly game from prompts
-only?** The human should **not** need to read assembly. Workflow:
+This repo is an experiment with **two purposes**:
+
+1. **Can an agent build a C64 assembly game from prompts only?** The human should
+   **not** need to read assembly.
+2. **Dogfood c64m.** c64m itself was written by agents (human as producer); here
+   agents are *developers using the tool they built*. So the day-to-day
+   experience of building against c64m — assembler, control port, debugger — is
+   under test as much as the game is.
+
+Workflow:
 
 1. Human describes features / files **bug reports** (what they saw vs expected).
 2. Agent implements and, when needed, **debugs via the remote control API** while
    the human watches the window.
 3. Human re-tests with the simple **play** path.
+
+**Because of purpose 2, surface friction.** When using c64m feels awkward,
+misleading, or forces a workaround (a repeated ritual, a confusing message, a
+missing convenience), note it — do **not** patch c64m from here (see the repo
+boundary rule). Log it in **`build-debug.md` → "c64m friction log"** so the
+c64m team can make the tool more developer-friendly. That log is a first-class
+deliverable of this project, not a side note.
 
 ## Two launch paths
 
