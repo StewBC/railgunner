@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Assembler / build outputs (keep directory via .gitkeep)
+build/*
+!build/.gitkeep
+
+# Editor / tooling noise
+*.swp
+*~
+.idea/
+.vscode/
