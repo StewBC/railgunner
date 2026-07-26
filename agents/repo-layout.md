@@ -11,7 +11,7 @@
 | Depth | Two levels under `src/` max: `src/<area>/<file>.asm` |
 | Entry file | `src/main.asm` — only file that sets origin / BASIC stub and `.include`s the rest |
 | Binary / generated assets | `assets/` (inputs for `.incbin` or generators) |
-| Host tools | `tools/` (Python, etc.) |
+| Host tools | `tools/` (c64m symlinks, launch script, generators) |
 | Assemble output | `build/` (not source; may be gitignored later) |
 | Agent docs | `agents/` (already present) |
 
@@ -140,9 +140,11 @@ railgunner/
 │   ├── charset/
 │   ├── sprites/
 │   └── screens/            # Title / attract screen art if not pure code
-├── tools/                  # Generators and build helpers (host)
-└── build/                  # c64masm outputs (PRG/bin); not hand-edited
+├── tools/                  # c64m symlinks, run-emulator.sh, generators
+└── build/                  # c64masm / snapshot outputs; not hand-edited
 ```
+
+Toolchain paths and remote assemble/debug: **`build-debug.md`**, **`tools/README.md`**.
 
 ### Naming conventions
 
