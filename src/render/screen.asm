@@ -35,11 +35,11 @@ col_tail:
     rts
 .endproc
 
-; Put screen code in A at column X, row Y.
-; Uses ptr_lo/hi, tmp0-tmp2. Does not preserve A,X,Y.
-.proc screen_put_xy
-    sta tmp0
-    ; addr = SCREEN + Y*40 + X
+; Compute screen address for column X, row Y → ptr_lo/hi.
+;   ptr = SCREEN_RAM + Y*40 + X
+; Clobbers A, tmp1, tmp2, ptr_lo/hi. X and Y are read, not modified.
+; Shared by screen_put_xy (single glyph) and screen_print (compute base once).
+.proc screen_addr_xy
     tya
     sta ptr_lo
     lda #0
@@ -67,11 +67,11 @@ col_tail:
     sta ptr_hi
     txa
     clc
-    adc ptr_lo
+    adc ptr_lo                      ; + X
     sta ptr_lo
-    bcc put_add_base
+    bcc addr_add_base
     inc ptr_hi
-put_add_base:
+addr_add_base:
     lda ptr_lo
     clc
     adc #<SCREEN_RAM
@@ -79,6 +79,14 @@ put_add_base:
     lda ptr_hi
     adc #>SCREEN_RAM
     sta ptr_hi
+    rts
+.endproc
+
+; Put screen code in A at column X, row Y.
+; Uses ptr_lo/hi, tmp0-tmp2. Does not preserve A,Y (X survives).
+.proc screen_put_xy
+    sta tmp0
+    jsr screen_addr_xy              ; ptr = SCREEN + Y*40 + X
     lda tmp0
     ldy #0
     sta (ptr_lo), y
@@ -109,29 +117,22 @@ a2s_done:
 .endproc
 
 ; Print 0-terminated string at ptr_lo/hi to column X, row Y.
-; screen_put_xy clobbers ptr_* and tmp* — keep base pos / string in print_*.
+; The destination base address is computed ONCE; source and destination then
+; advance together under Y, so cost is linear in string length (no per-character
+; row*40 multiply). Non-wrapping: intended for short HUD/menu labels on one row.
 .proc screen_print
-    stx print_col
-    sty print_row
+    ; Save the source pointer before screen_addr_xy overwrites ptr_lo/hi.
     lda ptr_lo
     sta print_ptr_lo
     lda ptr_hi
     sta print_ptr_hi
+    jsr screen_addr_xy              ; ptr_lo/hi = destination base (col X, row Y)
     ldy #0
 print_loop:
-    lda (print_ptr_lo), y
-    beq print_done
-    sty mode_timer                  ; index
+    lda (print_ptr_lo), y           ; next source char
+    beq print_done                  ; 0 terminator
     jsr ascii_to_screen
-    sta tmp0
-    lda mode_timer
-    clc
-    adc print_col
-    tax
-    ldy print_row
-    lda tmp0
-    jsr screen_put_xy
-    ldy mode_timer
+    sta (ptr_lo), y                 ; same Y offset into destination row
     iny
     bne print_loop
 print_done:
@@ -164,11 +165,11 @@ vloop:
 vdraw:
     ldx #19
     ldy draw_i
-    lda #$5D                        ; ] stand-in for vertical rail
+    lda #SC_VBAR                     ; stand-in for vertical rail
     jsr screen_put_xy
     ldx #20
     ldy draw_i
-    lda #$5D
+    lda #SC_VBAR
     jsr screen_put_xy
 vnext:
     lda draw_i
@@ -204,7 +205,7 @@ hnext:
     ; Player stand-in at cross
     ldx #19
     ldy #11
-    lda #$2A                        ; *
+    lda #SC_STAR                    ; placeholder until player sprite exists
     jsr screen_put_xy
     rts
 .endproc

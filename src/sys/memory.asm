@@ -7,7 +7,8 @@
 ;   CODE      $080d   executable (start = SYS target)
 ;   DATA      $2000   strings / tables (grows; relocate if code expands)
 ;
-; Launch: tools/launch_railgunner.py assembles, fixes VARTAB=$080D, pastes RUN.
+; Launch: tools/agent_session.py assembles, fixes BASIC pointers, pastes RUN
+; (agent path); tools/play.sh builds a PRG and autoruns it (user path).
 
 ; Default VIC text bank (stock):
 ;   Screen RAM    $0400

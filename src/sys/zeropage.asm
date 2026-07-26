@@ -35,10 +35,8 @@ tmp1:           .res 1
 tmp2:           .res 1
 ptr_lo:         .res 1
 ptr_hi:         .res 1
-; screen_print (screen_put_xy reuses ptr_* and tmp*)
+; screen_print source pointer (dest base is computed into ptr_* once per string)
 print_ptr_lo:   .res 1
 print_ptr_hi:   .res 1
-print_col:      .res 1              ; base column (must survive put_xy)
-print_row:      .res 1              ; base row
 draw_i:         .res 1              ; playfield draw loops (put_xy clobbers tmp*)
 draw_j:         .res 1

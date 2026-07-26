@@ -94,8 +94,8 @@ PLAY_FIRE_DELAY = 50
 
 ; Screen codes for placeholder art
 SC_SPACE        = $20
-SC_VBAR         = $5D               ; "|" vertical bar (screen code)
-SC_HBAR         = $40               ; horizontal line (screen code @-ish; use $2D '-')
-SC_DASH         = $2D               ; "-"
+SC_STAR         = $2A               ; "*" player stand-in
 SC_PLUS         = $2B               ; "+"
+SC_DASH         = $2D               ; "-" horizontal rail stand-in
 SC_ZERO         = $30
+SC_VBAR         = $5D               ; "|" vertical bar (vertical rail stand-in)
