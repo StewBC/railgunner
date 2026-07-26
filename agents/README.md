@@ -90,15 +90,15 @@ deliverable of this project, not a side note.
 | Path | Who | What | Command |
 |------|-----|------|---------|
 | **Play (user)** | Human testing the game | Offline `c64masm` → `build/railgunner.prg` → windowed c64m `--prg --autorun`. No remote script stays attached. You just play. | `tools/play.sh` (also `tools/run-emulator.sh`) |
-| **Agent session** | Agent chasing a bug | Windowed c64m **with control port**, live `assemble`, pointer fix, paste `RUN`, then breakpoints / memory / CPU / frames. | `tools/agent_session.py` |
+| **Agent session** | Agent chasing a bug | Windowed c64m **with control port**, live `assemble basic-run=1` (assemble → fix BASIC pointers → paste `RUN`), then breakpoints / memory / CPU / frames. | `tools/agent_session.py` |
 
 ```bash
 # You (human): build PRG and start the game — no OPT+SHIFT+A, no typing RUN
 tools/play.sh
 
 # Agent: instrumentable session (port 6510), window still visible
-tools/agent_session.py              # start + assemble with reset + RUN
-tools/agent_session.py --attach     # emu already up; re-assemble needs reset (default)
+tools/agent_session.py              # start + assemble basic-run=1 (one-command boot)
+tools/agent_session.py --attach     # emu already up; re-assemble + basic-run (reset default)
 tools/agent_session.py --verify     # smoke title screen, then exit
 ```
 

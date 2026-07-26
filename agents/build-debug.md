@@ -46,18 +46,19 @@ cmake --build ../c64m/build -j
 ### Agent boot sequence (`agent_session.py`)
 
 1. Start windowed c64m with `c64m.ini` + `--control-port 6510`
-2. `assemble reset=1 auto-run=0` absolute path to `src/main.asm`  
-   (**Always reset when re-assembling without relaunching** — default in
-   `agent_session.py`. Without reset, leftover PC/IRQ/game state fights the new image.)
-3. `set-memory` BASIC pointers (`TXTTAB=$0801`, end=`$080D`) — assemble ≠ LOAD
-4. `run` + paste `RUN\r` so BASIC does `SYS 2061` → `start`
-5. Debug: breakpoints, `get-memory`, `get-cpu`, `get-frame`, …
+2. `assemble basic-run=1 reset=1 <abs>/src/main.asm` — assembles, then fixes the
+   BASIC pointers (from the emitted origin+end) and pastes `RUN` so BASIC does
+   `SYS 2061` → `start`. **One command**; no manual `set-memory`/paste ceremony.
+   (**Keep `reset=1`** when re-assembling into a running emulator — c64m skips
+   the reset only when already at a fresh READY, e.g. right after launch.)
+3. Debug: breakpoints, `get-memory`, `get-cpu`, `get-frame`, …
 
-Do **not** poke PC to `$080D` via assembler auto-run. Never `--headless`.
+Do **not** poke PC to `$080D` via assembler auto-run (use `basic-run` instead).
+Never `--headless`.
 
 ```bash
-tools/agent_session.py              # start + boot (assemble reset=1)
-tools/agent_session.py --attach     # already running; re-assemble with reset
+tools/agent_session.py              # start + boot (assemble basic-run=1)
+tools/agent_session.py --attach     # already running; re-assemble + basic-run
 tools/agent_session.py --verify     # smoke title, exit
 tools/play.sh                       # human only — offline PRG, no control port
 ```
@@ -125,14 +126,15 @@ N set-turbo 2
 The **same** two-pass assembler as the GUI Assembler tab is exposed as:
 
 ```text
-N assemble [address=<hex>] [run-address=<hex>] [auto-run=0|1] [reset=0|1] <source-path>
+N assemble [address=<hex>] [run-address=<hex>] [auto-run=0|1] [basic-run=0|1] [reset=0|1] <source-path>
 ```
 
 | Option | Default | RailGunner guidance |
 |--------|---------|---------------------|
-| `address` | `$8000` | Host default only. Our `src/main.asm` sets segments (`BASIC` `$0801`, `CODE` `$080d`); source origin wins once it emits / sets `* =` / `.org`. Safe to pass `address=$0801` or omit and rely on source. |
+| `address` | `$8000` | Host default only. Our `src/main.asm` sets segments (`BASIC` `$0801`, `CODE` `$080d`); source origin wins once it emits / sets `* =` / `.org`. Safe to pass `address=$0801` or omit and rely on source. The success line reports the **actual emitted origin** (`ok address=$0801`), not this default. |
 | `run-address` | same as `address` | Entry for auto-run — use code start (`$080d` / `start` once symbols work) when `auto-run=1` |
-| `auto-run` | `0` | Use `0` for inspect-then-run; `1` only when you want an immediate jump |
+| `auto-run` | `0` | Pokes PC into ML (skips BASIC). We **avoid** this — leaves KERNAL state wrong. Prefer `basic-run`. |
+| `basic-run` | `0` | **The boot button for this project.** `1` = fix BASIC pointers (from emitted origin+end) + paste `RUN`, i.e. assemble-as-LOAD for our `10 SYS 2061` stub. Mutually exclusive with `auto-run` (both `=1` → `bad-args`). Skips a redundant reset when already at a fresh READY. |
 | `reset` | `1` | Prefer **`reset=1`** for clean BASIC-ready RAM before a full game build |
 
 **Always pause is automatic:** the control port pauses before assemble.
@@ -357,13 +359,13 @@ bullet cells, `$D01F` disambiguation, then mux — instrument those labels first
 
 | Goal | Command shape |
 |------|----------------|
-| Clean rebuild into live machine | `assemble reset=1 auto-run=0 /ABS/.../src/main.asm` |
-| Then start game like a human | Fix BASIC pointers + `run` + paste `RUN\r` (see `agent_session.py`) |
+| Rebuild + start like a human (BASIC-run) | `assemble basic-run=1 reset=1 /ABS/.../src/main.asm` (fixes pointers + pastes `RUN`) |
+| Assemble only, inspect before running | `assemble reset=1 /ABS/.../src/main.asm` then breakpoints / `run` |
 | Hot-patch without reset | **Avoid** unless you know state; prefer `reset=1` when re-assembling |
 | Offline PRG for human play | `tools/build-prg.sh` / `tools/play.sh` |
 
 **Do not** use `auto-run=1 run-address=$080d` — that pokes PC into ML, skips BASIC
-`RUN`/`SYS`, and leaves KERNAL state wrong (e.g. cursor). Prefer paste `RUN` or
+`RUN`/`SYS`, and leaves KERNAL state wrong (e.g. cursor). Prefer `basic-run=1` or
 offline `--prg --autorun`.
 
 ---
@@ -377,9 +379,9 @@ offline `--prg --autorun`.
 | `quit-client` ends session forever | Only closes socket; **kill emulator process** to tear down |
 | `--headless` | **Forbidden** on RailGunner — always windowed |
 | Re-assemble without reset | Use **`reset=1`** when the emu is already running |
-| Assembler auto-run to `$080D` | Paste `RUN` instead (or offline PRG + `--autorun`) |
-| Assemble without fixing BASIC end pointers | After live assemble, set `TXTTAB=$0801`, `VARTAB/ARYTAB/STREND=$080D` (assemble ≠ LOAD) |
-| `screen_put_xy` + loop counters in `tmp1`/`tmp2` | **Never** — put_xy clobbers `tmp*`; use dedicated ZP (`draw_i`, `print_col`, …) |
+| Assembler auto-run to `$080D` | Use `basic-run=1` instead (or offline PRG + `--autorun`) |
+| Assemble then plain `RUN` won't start (assemble ≠ LOAD) | `assemble basic-run=1 …` fixes `TXTTAB`/`VARTAB`/`ARYTAB`/`STREND` + pastes RUN for you |
+| `screen_put_xy` + loop counters in `tmp1`/`tmp2` | **Never** — put_xy clobbers `tmp*`; use dedicated ZP (`draw_i`, `draw_j`, …) |
 | Keyboard Space matrix wrong | Space: PRA=`$7F` (row 7), PRB bit 4 (`$10`) — see `sys/const.asm` |
 | Second wait while one active | `error busy` — serialize waits |
 | `get-frame` at turbo 3 | Debug-only geometry; use turbo 1 or 2 |
@@ -486,7 +488,11 @@ reproducible (exact command + response). Mark severity (papercut / slows-work /
 blocks-work). Cross off (`~~struck~~ fixed in c64m <ref>`) when resolved
 upstream — do not delete history.
 
-### 2026-07-26 — `assemble` success echoes the *default* origin, not where code landed
+### ~~2026-07-26 — `assemble` success echoes the *default* origin, not where code landed~~
+
+**Fixed in c64m 241cea1.** `assemble-complete` now reports the actual emitted
+origin (lowest emitted byte), e.g. `ok address=$0801`, not the requested
+`address=` default the source overrides.
 
 - **Severity:** papercut (actively misleading during debugging).
 - **Did:** `assemble reset=1 auto-run=0 /ABS/src/main.asm` with **no** `address=`
@@ -503,7 +509,14 @@ upstream — do not delete history.
   first `.segment`/`* =` origin, or the exported `start`/run-address), or list
   per-segment origins — not the requested `address=` when the source overrode it.
 
-### 2026-07-26 — `assemble` ≠ LOAD boot ceremony is unassisted
+### ~~2026-07-26 — `assemble` ≠ LOAD boot ceremony is unassisted~~
+
+**Fixed in c64m 241cea1.** New `basic-run=1` assemble option (GUI "Run BASIC
+(paste RUN)", INI `[assembler] basic_run`) fixes the BASIC pointers as a LOAD
+would and RUNs the program through the BASIC editor via paste — no PC poke, no
+manual `$2B`/`VARTAB` poking. Mutually exclusive with `auto-run`; it also skips a
+redundant reset when the machine is already at a fresh READY prompt. The four
+ceremonial steps collapse to `assemble basic-run=1 reset=1 <src>`.
 
 - **Severity:** slows-work (every agent rediscovers it; wrapped by
   `agent_session.py`, but manual over the raw port).

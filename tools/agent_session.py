@@ -39,8 +39,9 @@ C64M_INI = Path(os.environ.get("C64M_INI", RG_ROOT / "c64m.ini"))
 C64M_ROOT = Path(os.environ.get("C64M_ROOT", (RG_ROOT / ".." / "c64m").resolve()))
 C64M_BIN = TOOLS_DIR / "c64m"
 
-BASIC_TXTTAB = 0x0801
-BASIC_END = 0x080D
+# Game code lives in $080D..<$0C00 (BASIC stub at $0801, CODE segment at $080D).
+GAME_PC_LO = 0x080D
+GAME_PC_HI = 0x0C00
 
 
 def port_open(host: str, port: int) -> bool:
@@ -61,43 +62,23 @@ def wait_port(host: str, port: int, timeout: float = 15.0) -> None:
     raise RuntimeError(f"control port {host}:{port} not open within {timeout}s")
 
 
-def set_memory(ctl: Ctl, addr: int, data: bytes, mode: str = "ram") -> None:
-    ctl.id += 1
-    rid = ctl.id
-    header = f"{rid} set-memory ${addr:04X} {len(data):d} {mode}\n".encode("latin1")
-    ctl.s.sendall(header + data + b"\n")
-    line = ctl._readline()
-    _, result = ctl._parse_response_header(line, expect_id=rid)
-    if result[0] != "ok":
-        raise RuntimeError(f"set-memory ${addr:04X} -> {result}")
+def parse_pc(cpu_payload: str) -> int | None:
+    """Pull the program counter out of a get-cpu payload (e.g. 'pc=0860 a=1B ...')."""
+    for tok in cpu_payload.split():
+        if tok.startswith("pc="):
+            return int(tok[3:].lstrip("$"), 16)
+    return None
 
 
-def fix_basic_program_pointers(ctl: Ctl) -> None:
-    blob = bytes(
-        [
-            BASIC_TXTTAB & 0xFF,
-            BASIC_TXTTAB >> 8,
-            BASIC_END & 0xFF,
-            BASIC_END >> 8,
-            BASIC_END & 0xFF,
-            BASIC_END >> 8,
-            BASIC_END & 0xFF,
-            BASIC_END >> 8,
-        ]
-    )
-    set_memory(ctl, 0x002B, blob, "ram")
-
-
-def paste_run(ctl: Ctl) -> None:
-    payload = b"RUN\r"
-    ctl.id += 1
-    rid = ctl.id
-    header = f"{rid} paste-text-data {len(payload):d}\n".encode("latin1")
-    ctl.s.sendall(header + payload + b"\n")
-    line = ctl._readline()
-    _, result = ctl._parse_response_header(line, expect_id=rid)
-    if result[0] != "ok":
-        raise RuntimeError(f"paste-text-data -> {result}")
+def wait_for_game_pc(ctl: Ctl, timeout: float = 6.0) -> bool:
+    """Poll until the CPU is executing inside the game's code range."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        pc = parse_pc(ctl.cmd("get-cpu")[1])
+        if pc is not None and GAME_PC_LO <= pc < GAME_PC_HI:
+            return True
+        time.sleep(0.1)
+    return False
 
 
 def screen_text(ctl: Ctl) -> str:
@@ -135,41 +116,29 @@ def start_emulator(port: int, extra: list[str]) -> subprocess.Popen:
 
 
 def boot_game(ctl: Ctl, *, reset: bool = True) -> None:
-    """Live assemble + paste RUN (instrumentable; mirrors Shift+Opt+A then RUN).
+    """Live assemble + BASIC-run in one command (instrumentable).
 
-    reset=True (default) is required when re-assembling into an already-running
-    emulator — otherwise PC/IRQ/game state fight the new image. Fresh power-on
-    can use reset=False, but reset=True is always safe.
+    Uses c64m's ``basic-run`` mode: after assembling it stages the image as a
+    LOAD would (fixes TXTTAB/VARTAB/ARYTAB/STREND from the emitted origin+end)
+    and RUNs it through the BASIC editor via paste — no manual $2B poke, no
+    manual paste-RUN. reset=True (default) guarantees a READY prompt for the
+    paste; c64m skips the reset when the machine is already at a fresh READY
+    (e.g. right after launch), so a just-launched emulator does not pay for it.
     """
     src = SRC.resolve()
     reset_flag = 1 if reset else 0
-    cmd = f"assemble reset={reset_flag} auto-run=0 {src}"
+    cmd = f"assemble basic-run=1 reset={reset_flag} {src}"
     print(f"assemble: {cmd}", flush=True)
     r = ctl.cmd(cmd)
     if r[0] != "ok":
-        raise RuntimeError(f"assemble failed: {r}")
-    print(f"assemble ok: {r[1]}", flush=True)
+        raise RuntimeError(f"assemble/basic-run failed: {r}")
+    print(f"assemble ok: {r[1]}", flush=True)  # actual emitted origin, e.g. address=$0801
 
-    # After reset=1 the runtime boots to BASIC then applies the image; wait for READY.
-    if reset:
-        time.sleep(0.8)
-
-    print("fix BASIC program pointers (assemble ≠ LOAD)", flush=True)
-    fix_basic_program_pointers(ctl)
-
-    # Must be running so KERNAL drains the keyboard buffer
-    ctl.cmd("run")
-    time.sleep(0.3)
-    print("paste RUN", flush=True)
-    paste_run(ctl)
-    # Wait until PC enters game code ($080D+) or timeout
-    deadline = time.time() + 3.0
-    while time.time() < deadline:
-        cpu = ctl.cmd("get-cpu")[1]
-        if "pc=08" in cpu and "pc=0801" not in cpu:
-            break
-        time.sleep(0.1)
-    time.sleep(0.5)  # title draw
+    # basic-run has fixed the BASIC pointers and pasted RUN; wait until BASIC has
+    # SYS'd into game code before we inspect.
+    if not wait_for_game_pc(ctl):
+        print("warning: PC did not reach game code range in time", flush=True)
+    time.sleep(0.5)  # let the title draw
     print(f"state: {ctl.cmd('get-state')}", flush=True)
     print(f"cpu: {ctl.cmd('get-cpu')}", flush=True)
     print(f"start: {ctl.cmd('find-symbol start')}", flush=True)
