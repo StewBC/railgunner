@@ -11,17 +11,20 @@ the tool (and fix the handoff).
 ## Read in this order
 
 1. **`railgunner.md`** — top-level design brief (what the game is, layout,
-   mechanics, technical approach, suggested build order).
-2. **`repo-layout.md`** — where source lives, component → folder map, expected
+   mechanics, technical approach).
+2. **`roadmap.md`** — development stages, game flow (modes), and what to build
+   when. Living guide; detail docs hang off it later.
+3. **`repo-layout.md`** — where source lives, component → folder map, expected
    file count, include rules. Create new files only under this plan.
-3. **`assembler-syntax.md`** — **required before writing any `.asm`**. c64m
+4. **`assembler-syntax.md`** — **required before writing any `.asm`**. c64m
    assembler language only (not ACME / ca65 / KickAsm / 64tass unless listed
    there). Syntax, directives, macros, scopes, segments, pitfalls.
-4. **`build-debug.md`** — **required before driving the emulator**. Launch
-   c64m, assemble via remote API, breakpoints, waits, memory/CPU/frame
-   inspection, agent recipes. Uses `tools/` symlinks and `run-emulator.sh`.
-5. Component handoffs relevant to the task (added as they appear).
-6. Source under `src/` (root unit: `src/main.asm`) and samples under
+5. **`build-debug.md`** — **required before driving the emulator**. Play vs
+   agent launch, remote API recipes, **pitfalls / hard-won lessons** (reset,
+   BASIC pointers, ZP clobber, keyboard matrix). Read the pitfalls before
+   debugging input or screen code.
+6. Component handoffs relevant to the task (added as they appear).
+7. Source under `src/` (root unit: `src/main.asm`) and samples under
    `../c64m/samples/` when learning idioms.
 
 Do not invent assembler syntax. If something is missing from
@@ -32,7 +35,8 @@ update the handoff so the next agent does not rediscover it.
 
 | Doc | Role |
 |-----|------|
-| [`railgunner.md`](railgunner.md) | Top-level design brief: screen, controls, combat, bonuses, wave data, HOW, build order |
+| [`railgunner.md`](railgunner.md) | Top-level design brief: screen, controls, combat, bonuses, wave data, HOW |
+| [`roadmap.md`](roadmap.md) | Dev stages, game flow/modes, stage×element matrix, open questions |
 | [`repo-layout.md`](repo-layout.md) | Repo tree, components, file-count rationale, vertical-slice file set |
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
 | [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, debug/control recipes for agents |
@@ -56,23 +60,73 @@ update the handoff so the next agent does not rediscover it.
 Full rationale and vertical-slice file list: **`repo-layout.md`**.  
 Build/run/debug: **`build-debug.md`**. Tool path notes: **`tools/README.md`**.
 
+## Project goal (how to work)
+
+This repo is an experiment: **can an agent build a C64 assembly game from prompts
+only?** The human should **not** need to read assembly. Workflow:
+
+1. Human describes features / files **bug reports** (what they saw vs expected).
+2. Agent implements and, when needed, **debugs via the remote control API** while
+   the human watches the window.
+3. Human re-tests with the simple **play** path.
+
+## Two launch paths
+
+| Path | Who | What | Command |
+|------|-----|------|---------|
+| **Play (user)** | Human testing the game | Offline `c64masm` → `build/railgunner.prg` → windowed c64m `--prg --autorun`. No remote script stays attached. You just play. | `tools/play.sh` (also `tools/run-emulator.sh`) |
+| **Agent session** | Agent chasing a bug | Windowed c64m **with control port**, live `assemble`, pointer fix, paste `RUN`, then breakpoints / memory / CPU / frames. | `tools/agent_session.py` |
+
+```bash
+# You (human): build PRG and start the game — no OPT+SHIFT+A, no typing RUN
+tools/play.sh
+
+# Agent: instrumentable session (port 6510), window still visible
+tools/agent_session.py              # start + assemble with reset + RUN
+tools/agent_session.py --attach     # emu already up; re-assemble needs reset (default)
+tools/agent_session.py --verify     # smoke title screen, then exit
+```
+
+When the agent **re-assembles without restarting the emulator**, use **`assemble reset=1`**
+(default in `agent_session.py`). Hot-patching with `reset=0` leaves old PC/IRQ/game
+state running against the new image.
+
+**Never use `--headless`.** The window is how the human experiences the game.
+Do not pass `--headless` in scripts, agent recipes, or docs for this repo.
+
+Default control port (agent path only): **6510**.
+
 ## Toolchain
 
 | Piece | Where |
 |-------|--------|
-| Emulator (stable link) | `tools/c64m` → `../c64m/build/c64m` |
-| Launch (ROMs ok) | `tools/run-emulator.sh` |
+| Emulator | `tools/c64m` → `../c64m/build/c64m` |
+| **Play (user)** | `tools/play.sh` |
+| Build PRG only | `tools/build-prg.sh` → `build/railgunner.prg` |
+| **Agent session** | `tools/agent_session.py` |
 | CLI assembler | `tools/c64masm` |
-| Control-port Python client | `tools/c64_control_client.py` |
-| Full user manual | `../c64m/manual/manual.md` |
-| Control protocol (deep) | `../c64m/agents/control-port.md` |
-| Sample `.asm` | `../c64m/samples/` |
+| Control client | `tools/c64_control_client.py` |
+| Project INI | `c64m.ini` (ROMs, Assembler tab defaults; auto_run=no) |
+| c64m manual (read-only) | `../c64m/manual/manual.md` |
+| Control protocol (read-only) | `../c64m/agents/control-port.md` |
 
-Default control port for this project: **6510**.
+## Repo boundary (hard rule)
+
+**Only edit files inside this RailGunner repo** (and ephemeral paths like `/tmp` if
+needed for scratch). **Do not change anything under `../c64m/`** — not source, not
+docs, not tests, not configs, not build trees. Under **no circumstances**.
+
+- Read `../c64m/` as a **reference** (manual, samples, control-port docs, tool
+  behavior). Prefer project handoffs under `agents/` when they cover the same ground.
+- If a c64m tool bug or missing feature is discovered, **report it**; do not patch
+  c64m from a RailGunner session.
+- Handoffs that agents may update: **`agents/*.md` in this repo only** (e.g.
+  `agents/build-debug.md`, `agents/README.md`). Those are not
+  `../c64m/agents/*`.
 
 ## Doc hygiene
 
 - Prefer updating these docs in the same change that invalidates them.
 - Stale handoffs are worse than missing ones.
-- Keep design, layout, assembler syntax, and build/debug handoffs separate;
-  do not mix long design prose into the syntax doc.
+- Keep design, roadmap, layout, assembler syntax, and build/debug handoffs
+  separate; do not mix long design prose into the syntax doc.

@@ -2,17 +2,24 @@
 
 Stable entry points into the **c64m** toolchain (sibling repo `../c64m/`).
 
-| Path | Kind | Target / role |
-|------|------|----------------|
-| `c64m` | symlink | `../../c64m/build/c64m` — emulator, integrated assembler, debugger |
-| `c64masm` | symlink | `../../c64m/build/c64masm` — offline CLI assembler |
-| `c64_control_client.py` | symlink | `../../c64m/tools/c64_control_client.py` — Python control-port client |
-| `run-emulator.sh` | script | Launch c64m with cwd = `../c64m` so `roms/` resolve |
+| Path | Role |
+|------|------|
+| `c64m` | symlink → emulator |
+| `c64masm` | symlink → offline assembler |
+| `c64_control_client.py` | symlink → control-port Python client |
+| **`play.sh`** | **User path:** offline PRG + windowed `--prg --autorun` |
+| **`build-prg.sh`** | Assemble `src/main.asm` → `build/railgunner.prg` |
+| **`agent_session.py`** | **Agent path:** windowed + control port + assemble + RUN |
+| `run-emulator.sh` | Alias → `play.sh` (user path) |
 
-**Agent build/debug workflow:** [`agents/build-debug.md`](../agents/build-debug.md).
+Project config: **`../c64m.ini`**.
 
-If a symlink is broken, rebuild c64m:
+See **`agents/README.md`** for user vs agent launch and the no-`--headless` / no-edit-`../c64m` rules.
 
-```sh
-cmake --build ../c64m/build -j
+```bash
+# Human play/test
+tools/play.sh
+
+# Agent debug session
+tools/agent_session.py
 ```

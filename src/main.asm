@@ -1,10 +1,11 @@
 ; RailGunner — root assembly unit
 ; Only this file is passed to c64masm / the c64m Assembler tab.
-; Layout: agents/repo-layout.md
+; Layout:  agents/repo-layout.md
+; Roadmap: agents/roadmap.md
 ; Syntax:  agents/assembler-syntax.md
 
 ; ---------------------------------------------------------------------------
-; Segments (addresses may be adjusted in sys/memory once that module lands)
+; Segments
 ; ---------------------------------------------------------------------------
 .segdef "ZEROPAGE", $02, noemit
 .segdef "BASIC", $0801
@@ -13,6 +14,8 @@
 
 ; ---------------------------------------------------------------------------
 ; BASIC stub: 10 SYS 2061  ($080d)
+; User: tools/play.sh (offline PRG + --autorun). Agent: tools/agent_session.py
+; (live assemble + paste RUN). Never assembler auto-run PC poke into start.
 ; ---------------------------------------------------------------------------
 .segment "BASIC"
 
@@ -25,21 +28,45 @@ basic_next:
     .word 0
 
 ; ---------------------------------------------------------------------------
-; Code — include modules here as they are added (order matters for readability;
-; the assembler is two-pass so forward refs to labels are fine).
+; Zero page
+; ---------------------------------------------------------------------------
+.segment "ZEROPAGE"
+.include "sys/zeropage.asm"
+
+; ---------------------------------------------------------------------------
+; Constants / memory notes (no emit)
+; ---------------------------------------------------------------------------
+.include "sys/const.asm"
+.include "sys/memory.asm"
+
+; ---------------------------------------------------------------------------
+; Code
 ; ---------------------------------------------------------------------------
 .segment "CODE"
 
 start:
-    ; TODO: .include "boot/init.asm"
-    ; TODO: .include "sys/irq.asm"
-    ; TODO: .include "sys/input.asm"
-    ; TODO: frontend, render, sprite, game modules
-    jmp *
+    jsr cold_init
+main_loop:
+    jsr wait_frame                   ; ~1 tick per video frame (timers usable)
+    jsr input_poll
+    jsr mode_run
+    jmp main_loop
+
+.include "boot/init.asm"
+.include "sys/irq.asm"
+.include "sys/input.asm"
+.include "render/screen.asm"
+.include "frontend/mode.asm"
+.include "frontend/title.asm"
+.include "frontend/gameover.asm"
+.include "frontend/hiscore.asm"
+.include "game/game_init.asm"
+.include "game/stage.asm"
+.include "game/play.asm"
+.include "game/life.asm"
 
 ; ---------------------------------------------------------------------------
 ; Data
 ; ---------------------------------------------------------------------------
 .segment "DATA"
-
-    ; TODO: .include "data/..."
+.include "data/strings.asm"

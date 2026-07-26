@@ -1,0 +1,210 @@
+; Screen helpers and placeholder playfield draw.
+; Real rail/HUD character art comes later.
+
+; ---------------------------------------------------------------------------
+; Clear screen RAM to spaces and colour RAM to white.
+; ---------------------------------------------------------------------------
+.proc screen_clear
+    lda #SC_SPACE
+    ldx #0
+scr_loop:
+    sta SCREEN_RAM + $000, x
+    sta SCREEN_RAM + $100, x
+    sta SCREEN_RAM + $200, x
+    inx
+    bne scr_loop
+    ldx #(SCREEN_SIZE - 768)        ; 232 bytes
+scr_tail:
+    sta SCREEN_RAM + $300 - 1, x
+    dex
+    bne scr_tail
+
+    lda #COL_WHITE
+    ldx #0
+col_loop:
+    sta COLOR_RAM + $000, x
+    sta COLOR_RAM + $100, x
+    sta COLOR_RAM + $200, x
+    inx
+    bne col_loop
+    ldx #(SCREEN_SIZE - 768)
+col_tail:
+    sta COLOR_RAM + $300 - 1, x
+    dex
+    bne col_tail
+    rts
+.endproc
+
+; Put screen code in A at column X, row Y.
+; Uses ptr_lo/hi, tmp0-tmp2. Does not preserve A,X,Y.
+.proc screen_put_xy
+    sta tmp0
+    ; addr = SCREEN + Y*40 + X
+    tya
+    sta ptr_lo
+    lda #0
+    sta ptr_hi
+    asl ptr_lo
+    rol ptr_hi                      ; *2
+    asl ptr_lo
+    rol ptr_hi                      ; *4
+    asl ptr_lo
+    rol ptr_hi                      ; *8
+    lda ptr_lo
+    sta tmp1                        ; save *8
+    lda ptr_hi
+    sta tmp2
+    asl ptr_lo
+    rol ptr_hi                      ; *16
+    asl ptr_lo
+    rol ptr_hi                      ; *32
+    lda ptr_lo
+    clc
+    adc tmp1                        ; *40
+    sta ptr_lo
+    lda ptr_hi
+    adc tmp2
+    sta ptr_hi
+    txa
+    clc
+    adc ptr_lo
+    sta ptr_lo
+    bcc put_add_base
+    inc ptr_hi
+put_add_base:
+    lda ptr_lo
+    clc
+    adc #<SCREEN_RAM
+    sta ptr_lo
+    lda ptr_hi
+    adc #>SCREEN_RAM
+    sta ptr_hi
+    lda tmp0
+    ldy #0
+    sta (ptr_lo), y
+    rts
+.endproc
+
+; Map accumulator ASCII letter form → screen code (uppercase set).
+.proc ascii_to_screen
+    cmp #' '
+    bne not_space
+    lda #SC_SPACE
+    rts
+not_space:
+    cmp #'0'
+    bcc a2s_done
+    cmp #'9' + 1
+    bcs try_alpha
+    rts                             ; digits already screen codes
+try_alpha:
+    cmp #'A'
+    bcc a2s_done
+    cmp #'Z' + 1
+    bcs a2s_done
+    sec
+    sbc #('A' - 1)                  ; 'A' → 1
+a2s_done:
+    rts
+.endproc
+
+; Print 0-terminated string at ptr_lo/hi to column X, row Y.
+; screen_put_xy clobbers ptr_* and tmp* — keep base pos / string in print_*.
+.proc screen_print
+    stx print_col
+    sty print_row
+    lda ptr_lo
+    sta print_ptr_lo
+    lda ptr_hi
+    sta print_ptr_hi
+    ldy #0
+print_loop:
+    lda (print_ptr_lo), y
+    beq print_done
+    sty mode_timer                  ; index
+    jsr ascii_to_screen
+    sta tmp0
+    lda mode_timer
+    clc
+    adc print_col
+    tax
+    ldy print_row
+    lda tmp0
+    jsr screen_put_xy
+    ldy mode_timer
+    iny
+    bne print_loop
+print_done:
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Placeholder HUD + cross rails (plain screen codes).
+; ---------------------------------------------------------------------------
+.proc screen_draw_playfield
+    jsr screen_clear
+
+    lda #<str_hud_placeholder
+    sta ptr_lo
+    lda #>str_hud_placeholder
+    sta ptr_hi
+    ldx #0
+    ldy #0
+    jsr screen_print
+
+    ; Vertical arms: cols 19–20, rows 1..11 and 14..24
+    ; (use draw_i — screen_put_xy clobbers tmp1/tmp2)
+    lda #1
+vloop:
+    sta draw_i
+    cmp #12
+    bcc vdraw
+    cmp #14
+    bcc vnext
+vdraw:
+    ldx #19
+    ldy draw_i
+    lda #$5D                        ; ] stand-in for vertical rail
+    jsr screen_put_xy
+    ldx #20
+    ldy draw_i
+    lda #$5D
+    jsr screen_put_xy
+vnext:
+    lda draw_i
+    clc
+    adc #1
+    cmp #25
+    bcc vloop
+
+    ; Horizontal arms: rows 12–13, cols 0..18 and 21..39
+    lda #0
+hloop:
+    sta draw_j
+    cmp #19
+    bcc hdraw
+    cmp #21
+    bcc hnext
+hdraw:
+    ldx draw_j
+    ldy #12
+    lda #SC_DASH
+    jsr screen_put_xy
+    ldx draw_j
+    ldy #13
+    lda #SC_DASH
+    jsr screen_put_xy
+hnext:
+    lda draw_j
+    clc
+    adc #1
+    cmp #40
+    bcc hloop
+
+    ; Player stand-in at cross
+    ldx #19
+    ldy #11
+    lda #$2A                        ; *
+    jsr screen_put_xy
+    rts
+.endproc

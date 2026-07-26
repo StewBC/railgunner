@@ -147,3 +147,7 @@ The following should be table-driven per wave, to be filled in during tuning:
 ## Suggested build order
 
 Given the sprite multiplexer and the bullet/rail/collision-disambiguation pipeline are the parts with the most technical unknowns, a first vertical slice should target: one rail arm, one drone type, no bonuses — just enough to prove out sprite multiplexing and the collision-resolution logic (bullet vs. rail vs. drone-layer priority) before layering in damage tiers, bonuses, and the full wave table.
+
+**Full stage plan, game-mode flow, and what to build when:** see
+[`roadmap.md`](roadmap.md). This brief remains the source of truth for
+mechanics; the roadmap owns maturity stages and control flow.

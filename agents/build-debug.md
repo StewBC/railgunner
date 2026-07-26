@@ -1,9 +1,10 @@
 # Build, run, and debug — agent handoff
 
-**Role:** How an agent **builds** RailGunner with c64m’s integrated assembler and
-**drives** the emulator/debugger over the remote control port. The human owns
-gameplay feel and product feedback; the agent owns assemble → instrument → run
-→ observe → fix loops.
+**Role:** How an agent **debugs** RailGunner over the remote control port after
+a user bug report. Humans **play** with `tools/play.sh` (no agent attached).
+Agents use `tools/agent_session.py` to assemble, instrument, observe, and fix.
+
+See [`README.md`](README.md) for the two-path model and project goal.
 
 | Related docs | |
 |--------------|--|
@@ -27,21 +28,39 @@ Do **not** hard-code absolute build paths elsewhere. Use these:
 | Path | Points at | Use |
 |------|-----------|-----|
 | `tools/c64m` | `../../c64m/build/c64m` | Emulator + in-process assembler + debugger |
-| `tools/c64masm` | `../../c64m/build/c64masm` | Offline assemble to a host binary (optional) |
-| `tools/c64_control_client.py` | `../../c64m/tools/c64_control_client.py` | Python control-port helper (`Ctl`) |
-| `tools/run-emulator.sh` | wrapper | **Preferred launch** — sets cwd so ROMs resolve |
+| `tools/c64masm` | `../../c64m/build/c64masm` | Offline assemble |
+| `tools/c64_control_client.py` | `../../c64m/tools/c64_control_client.py` | Control-port helper (`Ctl`) |
+| `tools/play.sh` | user | Offline PRG + `--prg --autorun` (human play) |
+| `tools/build-prg.sh` | build | `src/main.asm` → `build/railgunner.prg` |
+| `tools/agent_session.py` | agent | Windowed + port 6510 + assemble + paste RUN |
+| `tools/run-emulator.sh` | alias | → `play.sh` |
+| `c64m.ini` | config | ROMs, Assembler tab; `auto_run=no` |
 
-Rebuild c64m in its own repo if the symlink target is missing:
+Rebuild c64m **in its own repo** if the symlink target is missing (do not edit c64m
+from RailGunner sessions):
 
 ```sh
 cmake --build ../c64m/build -j
 ```
 
-### Why `run-emulator.sh`?
+### Agent boot sequence (`agent_session.py`)
 
-c64m loads `roms/` relative to the **process current directory**. Starting
-`tools/c64m` from the RailGunner tree will fail ROM lookup. The wrapper `cd`s to
-`../c64m` then `exec`s the binary. It also exports `RAILGUNNER_ROOT` for scripts.
+1. Start windowed c64m with `c64m.ini` + `--control-port 6510`
+2. `assemble reset=1 auto-run=0` absolute path to `src/main.asm`  
+   (**Always reset when re-assembling without relaunching** — default in
+   `agent_session.py`. Without reset, leftover PC/IRQ/game state fights the new image.)
+3. `set-memory` BASIC pointers (`TXTTAB=$0801`, end=`$080D`) — assemble ≠ LOAD
+4. `run` + paste `RUN\r` so BASIC does `SYS 2061` → `start`
+5. Debug: breakpoints, `get-memory`, `get-cpu`, `get-frame`, …
+
+Do **not** poke PC to `$080D` via assembler auto-run. Never `--headless`.
+
+```bash
+tools/agent_session.py              # start + boot (assemble reset=1)
+tools/agent_session.py --attach     # already running; re-assemble with reset
+tools/agent_session.py --verify     # smoke title, exit
+tools/play.sh                       # human only — offline PRG, no control port
+```
 
 ---
 
@@ -49,10 +68,10 @@ c64m loads `roms/` relative to the **process current directory**. Starting
 
 | Concern | Rule |
 |---------|------|
-| Emulator process cwd | `../c64m` (via `tools/run-emulator.sh`) |
-| Assemble root source | **Absolute path** to `src/main.asm` (cwd is c64m, not RailGunner) |
-| Optional offline PRG | `tools/c64masm -i src/main.asm -o build/main.bin` from **RailGunner** root |
-| Default control port | **6510** (convention for this project) |
+| Emulator process cwd | `../c64m` (so ROMs resolve; scripts set this) |
+| Live assemble path | **Absolute** `src/main.asm` (emu cwd is c64m) |
+| Offline PRG | `tools/build-prg.sh` → `build/railgunner.prg` |
+| Default control port | **6510** (agent sessions) |
 
 Resolve the game root once per session:
 
@@ -66,36 +85,26 @@ RG="/absolute/path/to/railgunner"
 
 ## 3. Launch modes
 
-### A. Headless + control port (agent default)
-
-No window, no host audio device; full runtime + frames for `get-frame`. Best
-latency for automation.
+### A. Agent session (control port)
 
 ```sh
-# From RailGunner repo root:
-tools/run-emulator.sh --headless --control-port 6510
+tools/agent_session.py
 ```
 
-Keep this process running for the session. **Kill the process** when done —
-`quit-client` only closes the TCP client, **not** the emulator.
+Windowed + port 6510. Kill the **emulator process** when the session ends —
+`quit-client` only drops the TCP client.
 
-### B. Windowed + control port (human watches, agent drives)
+### B. Human play (no agent)
 
 ```sh
-tools/run-emulator.sh --control-port 6510
+tools/play.sh
 ```
 
-Same remote API; SDL window open for the human. Prefer headless when only the
-agent is observing memory/CPU/frames.
-
-### C. Human-only GUI (no remote)
+### C. Attach
 
 ```sh
-tools/run-emulator.sh
+tools/agent_session.py --attach
 ```
-
-Use Assembler tab / Shift+Opt+A as a human would. Agents should still prefer the
-control port so builds are reproducible in scripts.
 
 ### Turbo modes (agents)
 
@@ -200,7 +209,7 @@ print(c.cmd("get-cpu"))
 print(c.cmd("get-state"))
 
 c.cmd("quit-client")
-# then: kill the emulator process if headless session is finished
+# then: kill the emulator process when the session is finished
 ```
 
 Wire rules agents must not violate:
@@ -324,23 +333,20 @@ Restore later with `load-state` + `wait-event load-state-complete`.
 ## 7. Recommended agent workflow (game work)
 
 ```text
-1. Ensure tools/c64m exists (rebuild c64m if needed).
-2. Start: tools/run-emulator.sh --headless --control-port 6510
-3. Connect Ctl(port=6510); hello / ping.
+1. Ensure tools/c64m exists (rebuild c64m in its own repo if needed).
+2. Start agent session: tools/agent_session.py  (or --attach if already up).
+3. Human reports bug (what they saw vs expected); do not require them to read asm.
 4. Edit src/** (syntax per assembler-syntax.md).
-5. assemble reset=1 <abs>/src/main.asm
-   - on assemble-error: fix and repeat (do not run).
-6. find-symbol for the routine under test; break-exec that address.
-7. run → wait-paused (or step-frame / run-to-raster).
-8. Observe: get-cpu, get-memory, get-vic, get-frame, history-*.
-9. Form one kill criterion; change one thing; re-assemble; re-measure.
+5. Re-boot: assemble reset=1 + pointer fix + paste RUN (agent_session --attach).
+6. find-symbol / break-exec / joystick N mask / get-memory as needed.
+7. Observe: get-cpu, get-memory, get-vic, get-frame, history-*.
+8. One kill criterion; one change; re-assemble with reset; re-measure.
+9. Ask human to re-test with tools/play.sh.
 10. quit-client; kill emulator process when the session ends.
 ```
 
-**Human playtest:** launch windowed (`tools/run-emulator.sh --control-port 6510`
-or without control port), assemble with `auto-run=1` or let the human `RUN` /
-SYS. Do not claim “feels good” from memory dumps alone — that feedback is the
-human’s job.
+**Human playtest:** `tools/play.sh` only. Do not claim “feels good” from memory
+dumps alone — that feedback is the human’s job.
 
 **Vertical slice focus** (from design/layout): prove rail draw, one drone type,
 bullet cells, `$D01F` disambiguation, then mux — instrument those labels first.
@@ -351,14 +357,14 @@ bullet cells, `$D01F` disambiguation, then mux — instrument those labels first
 
 | Goal | Command shape |
 |------|----------------|
-| Clean full rebuild into RAM | `assemble reset=1 /ABS/.../src/main.asm` |
-| Hot-patch without reboot (advanced) | `assemble reset=0 ...` — only if you know machine state |
-| Build and jump to code | `assemble reset=1 auto-run=1 run-address=$080d /ABS/.../src/main.asm` |
-| Iterative BP on one-shots | GUI “Rearm one-shots” or control `rearm-oneshots` before re-run |
+| Clean rebuild into live machine | `assemble reset=1 auto-run=0 /ABS/.../src/main.asm` |
+| Then start game like a human | Fix BASIC pointers + `run` + paste `RUN\r` (see `agent_session.py`) |
+| Hot-patch without reset | **Avoid** unless you know state; prefer `reset=1` when re-assembling |
+| Offline PRG for human play | `tools/build-prg.sh` / `tools/play.sh` |
 
-After `reset=1` assemble, machine has been through BASIC warm path; code bytes
-are in RAM at segment addresses. If the game is SYS-started, either auto-run at
-`start` or `break-exec` + set PC via running through stub / `run-to`.
+**Do not** use `auto-run=1 run-address=$080d` — that pokes PC into ML, skips BASIC
+`RUN`/`SYS`, and leaves KERNAL state wrong (e.g. cursor). Prefer paste `RUN` or
+offline `--prg --autorun`.
 
 ---
 
@@ -366,37 +372,80 @@ are in RAM at segment addresses. If the game is SYS-started, either auto-run at
 
 | Pitfall | Correct behavior |
 |---------|------------------|
-| Launch c64m from RailGunner cwd | Use `tools/run-emulator.sh` |
-| Relative `assemble src/main.asm` with cwd=c64m | Pass **absolute** path to RailGunner `src/main.asm` |
-| `quit-client` ends session forever | Only closes socket; **kill process** for headless teardown |
+| Launch c64m from RailGunner cwd without scripts | Use `tools/play.sh` or `tools/agent_session.py` (they set cwd / INI) |
+| Relative `assemble src/main.asm` (cwd=c64m) | Pass **absolute** path to RailGunner `src/main.asm` |
+| `quit-client` ends session forever | Only closes socket; **kill emulator process** to tear down |
+| `--headless` | **Forbidden** on RailGunner — always windowed |
+| Re-assemble without reset | Use **`reset=1`** when the emu is already running |
+| Assembler auto-run to `$080D` | Paste `RUN` instead (or offline PRG + `--autorun`) |
+| Assemble without fixing BASIC end pointers | After live assemble, set `TXTTAB=$0801`, `VARTAB/ARYTAB/STREND=$080D` (assemble ≠ LOAD) |
+| `screen_put_xy` + loop counters in `tmp1`/`tmp2` | **Never** — put_xy clobbers `tmp*`; use dedicated ZP (`draw_i`, `print_col`, …) |
+| Keyboard Space matrix wrong | Space: PRA=`$7F` (row 7), PRB bit 4 (`$10`) — see `sys/const.asm` |
 | Second wait while one active | `error busy` — serialize waits |
 | `get-frame` at turbo 3 | Debug-only geometry; use turbo 1 or 2 |
-| Free-run `wait-frame` for consecutive frames | Prefer `step-frame` |
-| Mid-frame `get-frame` | Partial buffer; finish frame first |
-| Assume VICE breakpoint access masks | c64m: exec=1, read=2, write=4 |
-| Offline `c64masm` only | Fine for syntax check; **live test needs** `assemble` into emulator |
-| Client default port 17652 | Always construct `Ctl(port=6510)` for this project |
+| Client default port 17652 | Always `Ctl(port=6510)` for this project |
+| Edit `../c64m/` | **Never** — read-only reference only |
 
 ---
 
-## 10. What not to do
+## 10. Hard-won lessons (scaffold era)
+
+### Bug: title fire seemed dead / freeze after fire
+
+**Symptom:** Title shows “PRESS FIRE”; joystick/space appear to do nothing (or UI freezes).
+
+**Causes found:**
+1. **`screen_draw_playfield` hung** after fire → stage init. Loop counters lived in
+   `tmp1`/`tmp2`, which `screen_put_xy` overwrites → infinite loop. Main loop never
+   ran again. Fix: `draw_i` / `draw_j` in ZP.
+2. **Keyboard Space scan used wrong matrix bits** (row/col swapped vs CIA). Fix:
+   PRA select row 7 (`$7F`), PRB test bit 4 (`$10`). Joy port 2 fire is PRA bit 4;
+   also accept port 1 fire as fallback.
+
+**How we proved fire:** control-port `joystick 2 16` (fire down), then `0` (release);
+watch ZP `game_mode` (`0` title → `3` play) and border colour (blue → green).
+
+### Game mode IDs (scaffold)
+
+| Value | Mode |
+|------:|------|
+| 0 | TITLE |
+| 1 | GAME_INIT |
+| 2 | STAGE_INIT |
+| 3 | PLAY |
+| 7 | GAME_OVER |
+
+Symbols: `game_mode`, `input_fire`, `input_fire_edge` (see `sys/zeropage.asm`).
+
+### BASIC stub
+
+`10 SYS 2061` → `$080D` = `start`. Offline PRG load updates BASIC pointers; live
+`assemble` does **not**.
+
+---
+
+## 11. What not to do
 
 - Do not invent a second assembler or non-c64m syntax.
 - Do not bind control servers to non-localhost or multi-client fanout.
-- Do not treat this doc as a full protocol dump — for rare commands (drive CPU,
-  paste-events, full HST1 layout) open `../c64m/agents/control-port.md`.
-- Do not commit `build/*.bin` / snapshots unless explicitly wanted (see `.gitignore`).
+- Do not treat this doc as a full protocol dump — for rare commands open
+  `../c64m/agents/control-port.md` (**read-only**).
+- Do not commit `build/*` outputs (see `.gitignore`).
+- Do not use assembler auto-run as a substitute for `RUN`.
 
 ---
 
-## 11. Quick reference card
+## 12. Quick reference card
 
 ```bash
-# Start (agent)
-tools/run-emulator.sh --headless --control-port 6510
+# Human play
+tools/play.sh
 
-# Offline syntax/link check
-tools/c64masm -i src/main.asm -o build/main.bin -s build/symbols.txt
+# Agent session
+tools/agent_session.py
+
+# Offline PRG / symbols
+tools/build-prg.sh
 ```
 
 ```text

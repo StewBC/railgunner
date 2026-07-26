@@ -1,7 +1,7 @@
 # Repo layout — decision
 
-**Status:** chosen. Folders exist; source is not implemented yet.  
-**Companion docs:** [`railgunner.md`](railgunner.md) (design), [`assembler-syntax.md`](assembler-syntax.md) (syntax).
+**Status:** chosen. Stage 1 scaffold source + play/agent launch tools present.  
+**Companion docs:** [`railgunner.md`](railgunner.md) (design), [`roadmap.md`](roadmap.md) (stages/flow), [`build-debug.md`](build-debug.md) (run/debug), [`assembler-syntax.md`](assembler-syntax.md) (syntax).
 
 ## Decision summary
 

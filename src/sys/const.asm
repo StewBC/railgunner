@@ -1,0 +1,101 @@
+; Hardware and game constants (shared).
+; Included early from main.asm — assignments only, no code emit.
+
+; ---------------------------------------------------------------------------
+; VIC / CIA / memory map
+; ---------------------------------------------------------------------------
+SCREEN_RAM      = $0400
+COLOR_RAM       = $D800
+VIC_BORDER      = $D020
+VIC_BG0         = $D021
+VIC_CTRL1       = $D011
+VIC_CTRL2       = $D016
+VIC_MEM         = $D018
+CIA1_PRA        = $DC00             ; joy port 2 / keyboard columns
+CIA1_PRB        = $DC01             ; joy port 1 / keyboard rows
+CIA1_DDRA       = $DC02
+CIA1_DDRB       = $DC03
+
+; Joystick port 2 bits (active low on PRA)
+JOY_UP          = %00000001
+JOY_DOWN        = %00000010
+JOY_LEFT        = %00000100
+JOY_RIGHT       = %00001000
+JOY_FIRE        = %00010000
+
+; Keyboard matrix (CIA1): write select on PRA ($DC00), read on PRB ($DC01).
+; On the C64 / c64m, PRA selects the matrix "row" index and PRB returns
+; "column" bits (active-low). Key positions match c64m keyboard.c {row,col}:
+;   key   row  col   → PRA clear bit   PRB test bit
+;   W      1    1
+;   A      1    2
+;   S      1    5
+;   D      2    2
+;   Space  7    4      ($7F / $10 — classic "space bar" test)
+KEY_SEL_W       = %11111101         ; ~(1<<1)
+KEY_BIT_W       = %00000010         ;  (1<<1)
+KEY_SEL_A       = %11111101         ; ~(1<<1)
+KEY_BIT_A       = %00000100         ;  (1<<2)
+KEY_SEL_S       = %11111101         ; ~(1<<1)
+KEY_BIT_S       = %00100000         ;  (1<<5)
+KEY_SEL_D       = %11111011         ; ~(1<<2)
+KEY_BIT_D       = %00000100         ;  (1<<2)
+KEY_SEL_SPACE   = %01111111         ; ~(1<<7)
+KEY_BIT_SPACE   = %00010000         ;  (1<<4)
+
+; Screen geometry
+SCREEN_W        = 40
+SCREEN_H        = 25
+SCREEN_SIZE     = 1000              ; 40 * 25
+
+; Default text colours (VIC colour nybbles)
+COL_BLACK       = $00
+COL_WHITE       = $01
+COL_RED         = $02
+COL_CYAN        = $03
+COL_PURPLE      = $04
+COL_GREEN       = $05
+COL_BLUE        = $06
+COL_YELLOW      = $07
+COL_ORANGE      = $08
+COL_BROWN       = $09
+COL_LT_RED      = $0A
+COL_DK_GRAY     = $0B
+COL_GRAY        = $0C
+COL_LT_GREEN    = $0D
+COL_LT_BLUE     = $0E
+COL_LT_GRAY     = $0F
+
+; ---------------------------------------------------------------------------
+; Game mode IDs (game_mode ZP)
+; ---------------------------------------------------------------------------
+MODE_TITLE      = 0
+MODE_GAME_INIT  = 1
+MODE_STAGE_INIT = 2
+MODE_PLAY       = 3
+MODE_NEXT_WAVE  = 4
+MODE_NEXT_LEVEL = 5
+MODE_NEXT_LIFE  = 6
+MODE_GAME_OVER  = 7
+MODE_HISCORE    = 8
+MODE_COUNT      = 9
+
+; ---------------------------------------------------------------------------
+; Session defaults (roadmap placeholders)
+; ---------------------------------------------------------------------------
+START_LIVES     = 3
+START_HEALTH    = 8                 ; bar-driven later; stub full pool
+START_AMMO      = 8
+START_LEVEL     = 1
+WAVES_PER_LEVEL = 20
+
+; Play stub: frames to wait before FIRE ends the session (PAL ~1s)
+PLAY_FIRE_DELAY = 50
+
+; Screen codes for placeholder art
+SC_SPACE        = $20
+SC_VBAR         = $5D               ; "|" vertical bar (screen code)
+SC_HBAR         = $40               ; horizontal line (screen code @-ish; use $2D '-')
+SC_DASH         = $2D               ; "-"
+SC_PLUS         = $2B               ; "+"
+SC_ZERO         = $30
