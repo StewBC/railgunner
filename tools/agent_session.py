@@ -39,9 +39,10 @@ C64M_INI = Path(os.environ.get("C64M_INI", RG_ROOT / "c64m.ini"))
 C64M_ROOT = Path(os.environ.get("C64M_ROOT", (RG_ROOT / ".." / "c64m").resolve()))
 C64M_BIN = TOOLS_DIR / "c64m"
 
-# Game code lives in $080D..<$0C00 (BASIC stub at $0801, CODE segment at $080D).
+# Game code lives in CODE segment $080D.. (BASIC stub at $0801).
+# Upper bound is soft — only used to detect "we're in game code after RUN".
 GAME_PC_LO = 0x080D
-GAME_PC_HI = 0x0C00
+GAME_PC_HI = 0x2000
 
 
 def port_open(host: str, port: int) -> bool:
@@ -203,11 +204,20 @@ def main() -> int:
             boot_game(ctl, reset=not opts.no_reset)
 
         if opts.verify:
-            text = screen_text(ctl)
-            ok = "RAILGUNNER" in text and "PRESS FIRE" in text
+            # Title is a hires bitmap: $D011 BMM set, colour matrix + pixels loaded.
+            # Art is letterboxed — top bitmap rows may be zero; sample mid-screen.
+            d011 = ctl.mem(0xD011, 1, mode="map")[0]
+            d018 = ctl.mem(0xD018, 1, mode="map")[0]
+            bmp = ctl.mem(0x2000 + 40 * 8 * 8, 128, mode="ram")  # ~row 8 of cells
+            cols = ctl.mem(0x0400, 200, mode="ram")
+            bmm = bool(d011 & 0x20)
+            mem_ok = d018 == 0x18
+            bmp_ok = any(b != 0 for b in bmp)
+            col_ok = any(b != 0 for b in cols)
+            ok = bmm and mem_ok and bmp_ok and col_ok
             print(
-                f"verify: RAILGUNNER={('RAILGUNNER' in text)} "
-                f"PRESS FIRE={('PRESS FIRE' in text)}",
+                f"verify: BMM={bmm} d011=${d011:02x} d018=${d018:02x} "
+                f"bitmap_nonzero={bmp_ok} colors_nonzero={col_ok}",
                 flush=True,
             )
             if proc is not None:

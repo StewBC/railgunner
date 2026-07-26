@@ -6,6 +6,7 @@
 ; ---------------------------------------------------------------------------
 SCREEN_RAM      = $0400
 COLOR_RAM       = $D800
+BITMAP_RAM      = $2000             ; 8KB VIC bitmap buffer (bank 0)
 VIC_BORDER      = $D020
 VIC_BG0         = $D021
 VIC_CTRL1       = $D011
@@ -15,6 +16,16 @@ CIA1_PRA        = $DC00             ; joy port 2 / keyboard columns
 CIA1_PRB        = $DC01             ; joy port 1 / keyboard rows
 CIA1_DDRA       = $DC02
 CIA1_DDRB       = $DC03
+CIA2_PRA        = $DD00             ; VIC bank select (bits 0–1 inverted)
+
+; VIC defaults / modes
+VIC_CTRL1_TEXT  = $1b               ; text, DEN, 25 rows, yscroll 3
+VIC_CTRL1_BITMAP = $3b              ; bitmap (BMM), DEN, 25 rows, yscroll 3
+VIC_CTRL2_HIRES = $08               ; 40 cols, multicolour off
+VIC_MEM_TEXT    = $14               ; screen $0400, charset ROM $1000
+VIC_MEM_BITMAP  = $18               ; screen $0400, bitmap $2000
+BITMAP_SIZE     = 8000              ; 320×200 / 8
+BITMAP_COLOR_SIZE = 1000            ; 40×25 colour matrix
 
 ; Joystick port 2 bits (active low on PRA)
 JOY_UP          = %00000001

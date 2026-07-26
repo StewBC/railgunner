@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# USER path: build PRG offline, start windowed c64m with --prg --autorun.
+# USER path: ensure PRG is up to date, start windowed c64m with --prg --autorun.
+#
+# Prefer the root Makefile for the full graph:
+#   make play
+#
+# Direct use still rebuilds via `make prg` (assets + assemble) unless
+# RAILGUNNER_SKIP_BUILD=1 (set by `make play` so the PRG is not assembled twice).
 #
 # No remote API required. The emulator window is yours to play/test.
 # Quit the emulator window when done.
-#
-#   tools/play.sh
 #
 # Never --headless (see agents/README.md).
 
@@ -22,7 +26,15 @@ if [[ ! -x "${C64M_BIN}" && ! -L "${C64M_BIN}" ]]; then
   exit 1
 fi
 
-"${TOOLS_DIR}/build-prg.sh"
+if [[ "${RAILGUNNER_SKIP_BUILD:-0}" != "1" ]]; then
+  # Rebuild assets + PRG when sources changed (same graph as `make prg`).
+  make -C "${RG_ROOT}" prg
+fi
+
+if [[ ! -f "${PRG}" ]]; then
+  echo "error: missing ${PRG} (run: make prg)" >&2
+  exit 1
+fi
 
 CMD=("${C64M_BIN}")
 if [[ -f "${C64M_INI}" ]]; then

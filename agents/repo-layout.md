@@ -139,11 +139,13 @@ railgunner/
 ├── assets/                 # Authoring inputs & binary blobs for .incbin
 │   ├── charset/
 │   ├── sprites/
-│   └── screens/            # Title / attract screen art if not pure code
-├── tools/                  # c64m symlinks, run-emulator.sh, generators
+│   └── screens/            # Title / attract PNG + converted .bin
+├── tools/                  # c64m symlinks, play.sh, generators
+├── Makefile                # assets → PRG → play (timestamp graph)
 └── build/                  # c64masm / snapshot outputs; not hand-edited
 ```
 
+Host build: root **`Makefile`** (`make`, `make play`, `make screens` / `assets`).  
 Toolchain paths and remote assemble/debug: **`build-debug.md`**, **`tools/README.md`**.
 
 ### Naming conventions

@@ -2,6 +2,24 @@
 ; Real rail/HUD character art comes later.
 
 ; ---------------------------------------------------------------------------
+; Restore stock VIC text mode (screen $0400, charset ROM) and clear.
+; Call when leaving bitmap title (or any non-text mode) before printing.
+; ---------------------------------------------------------------------------
+.proc vic_text_mode
+    lda #VIC_CTRL1_TEXT
+    sta VIC_CTRL1
+    lda #VIC_CTRL2_HIRES            ; multicolour off, 40 cols
+    sta VIC_CTRL2
+    lda #VIC_MEM_TEXT
+    sta VIC_MEM
+    lda #COL_BLUE
+    sta VIC_BORDER
+    lda #COL_BLACK
+    sta VIC_BG0
+    jmp screen_clear                ; tail-call
+.endproc
+
+; ---------------------------------------------------------------------------
 ; Clear screen RAM to spaces and colour RAM to white.
 ; ---------------------------------------------------------------------------
 .proc screen_clear

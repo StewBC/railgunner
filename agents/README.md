@@ -89,12 +89,20 @@ deliverable of this project, not a side note.
 
 | Path | Who | What | Command |
 |------|-----|------|---------|
-| **Play (user)** | Human testing the game | Offline `c64masm` → `build/railgunner.prg` → windowed c64m `--prg --autorun`. No remote script stays attached. You just play. | `tools/play.sh` (also `tools/run-emulator.sh`) |
+| **Play (user)** | Human testing the game | Make rebuilds assets if needed, offline `c64masm` → `build/railgunner.prg` → windowed c64m `--prg --autorun`. No remote script stays attached. You just play. | **`make play`** (or `tools/play.sh` / `tools/run-emulator.sh`) |
 | **Agent session** | Agent chasing a bug | Windowed c64m **with control port**, live `assemble basic-run=1` (assemble → fix BASIC pointers → paste `RUN`), then breakpoints / memory / CPU / frames. | `tools/agent_session.py` |
 
 ```bash
-# You (human): build PRG and start the game — no OPT+SHIFT+A, no typing RUN
-tools/play.sh
+# You (human): assets + PRG + start the game — no OPT+SHIFT+A, no typing RUN
+make play
+# (or: tools/play.sh)
+
+# Rebuild PRG only (still refreshes title bins if PNGs changed)
+make
+
+# Asset converters (screens / charset / sprites groups)
+make assets
+make screens
 
 # Agent: instrumentable session (port 6510), window still visible
 tools/agent_session.py              # start + assemble basic-run=1 (one-command boot)

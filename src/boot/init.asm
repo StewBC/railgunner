@@ -11,12 +11,12 @@ BLNSW           = $CC
     lda #1
     sta BLNSW
 
-    ; Stock VIC text mode (safe defaults)
-    lda #$1b
+    ; Stock VIC text mode (safe defaults) before any mode enter
+    lda #VIC_CTRL1_TEXT
     sta VIC_CTRL1
-    lda #$08
+    lda #VIC_CTRL2_HIRES
     sta VIC_CTRL2
-    lda #$14                        ; screen $0400, charset ROM $1000
+    lda #VIC_MEM_TEXT
     sta VIC_MEM
 
     lda #COL_BLUE
@@ -37,7 +37,7 @@ BLNSW           = $CC
 
     lda #MODE_TITLE
     sta game_mode
-    jsr title_enter
+    jsr title_enter                 ; switches VIC to hires bitmap
 
     cli
     rts

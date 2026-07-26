@@ -10,7 +10,8 @@
 .segdef "ZEROPAGE", $02, noemit
 .segdef "BASIC", $0801
 .segdef "CODE", $080d
-.segdef "DATA", $2000
+.segdef "TITLE", $4000              ; hires source (bitmap + colours)
+.segdef "DATA", $6328               ; strings/tables after TITLE ($4000+9000)
 
 ; ---------------------------------------------------------------------------
 ; BASIC stub: 10 SYS 2061  ($080d)
@@ -64,6 +65,12 @@ main_loop:
 .include "game/stage.asm"
 .include "game/play.asm"
 .include "game/life.asm"
+
+; ---------------------------------------------------------------------------
+; Title graphics (source arrays; copied to $2000 / $0400 at runtime)
+; ---------------------------------------------------------------------------
+.segment "TITLE"
+.include "data/title_gfx.asm"
 
 ; ---------------------------------------------------------------------------
 ; Data
