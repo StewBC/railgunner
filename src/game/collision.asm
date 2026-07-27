@@ -1,16 +1,15 @@
 ; Gameplay collision consumer (Stage 2) — hybrid mux dogfood path.
 ;
-; Filter: only run software tests when OBJE_BG is set (from $D01F via mux
-; attribution + drain_irq_events). That proves the latch/owner path under play.
+; Every play tick, for each active drone:
+;   soft  = software authority (bullet AABB / rail peek)
+;   latch = OBJE_BG from $D01F via mux attribution
 ;
-; Authority: still software after the latch:
-;   Bullet — pixel AABB (bullet col/half/phase → px) vs tight drone box
-;   Rail   — dash/vbar char-peek under the same tight box
+; Kill only when both agree (latch + soft hit), unless COLLISION_SOFT_ALWAYS.
+; If they disagree → INC VIC_BORDER so playtesting can see latch quality:
+;   latch && !soft  = false positive HW
+;   !latch && soft  = missed HW (pass-through until Y-arrival on rail)
 ;
-; If a real contact never sets OBJE_BG, the drone will pass through (Y-arrival
-; still retires at the rail line). That miss is useful feedback on the mux path.
-;
-; Set COLLISION_SOFT_ALWAYS = 1 in const to force software every tick (debug).
+; Y-arrival in drones.asm still retires at the rail line without latch.
 
 .scope collision
 
@@ -23,6 +22,13 @@ HIT_X0          = 6                 ; inset from sprite left
 HIT_X1          = 17                ; inclusive-ish right (12px wide)
 HIT_Y0          = 5
 HIT_Y1          = 14                ; 10px tall
+
+; Scratch: soft result and bullet slot for apply
+;   coll_soft   — HIT_*
+;   coll_bslot  — bullet index if HIT_BULLET
+; (use mux_key / mux_key_prio only if free — use ZP mode fields carefully)
+; Stored in draw_i/draw_j temporarily is risky; use dedicated via tmp after tests.
+; We keep soft result in mux_forbidden (play-time free) and bullet X on stack.
 
 ; ---------------------------------------------------------------------------
 .proc update
@@ -38,20 +44,42 @@ upd_loop:
     cmp #OBJ_BONUS
     bcs upd_next
 
-    ; --- Hybrid filter: need OBJE_BG latch (unless soft-always debug) ---
-    .if COLLISION_SOFT_ALWAYS
-    jmp do_resolve
-    .endif
+    stx mode_state
+
+    ; Latch present?
     lda objects::obj_pending_events, x
     and #OBJE_BG
-    beq upd_next                    ; no HW candidate this tick
+    sta mux_key                     ; 0 or OBJE_BG
 
-do_resolve:
-    stx mode_state
-    jsr resolve_drone
+    ; Always evaluate software authority
+    jsr eval_soft                   ; A = HIT_*; if bullet, mux_key_prio = slot
+    sta mux_forbidden               ; soft result
+
+    ; --- Compare filter vs authority ---
+    lda mux_key
+    beq no_latch
+    ; latch set
+    lda mux_forbidden
+    bne agree_or_fp                 ; soft hit → agree; soft none → false +
+    ; latch && !soft → false positive
+    inc VIC_BORDER
+    jmp consume_latch
+agree_or_fp:
+    ; latch && soft → apply kill (hybrid)
+    jsr apply_soft_hit
+    jmp consume_latch
+
+no_latch:
+    lda mux_forbidden
+    beq consume_latch               ; both none — quiet
+    ; !latch && soft → missed HW
+    inc VIC_BORDER
+    .if COLLISION_SOFT_ALWAYS
+    jsr apply_soft_hit              ; still kill if forced soft mode
+    .endif
+
+consume_latch:
     ldx mode_state
-
-    ; Consume latch bit after handling
     lda objects::obj_pending_events, x
     and #($FF ^ OBJE_BG)
     sta objects::obj_pending_events, x
@@ -65,25 +93,44 @@ upd_next:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; mode_state = drone slot
+; Soft tests → A = HIT_*. On HIT_BULLET, mux_key_prio = bullet slot.
 ; ---------------------------------------------------------------------------
-.proc resolve_drone
+.proc eval_soft
     ldx mode_state
-    jsr test_bullets                ; C clear if hit; bullet slot in X
-    bcs try_rail
-    ; Hit bullet in X
+    jsr test_bullets
+    bcs es_rail
+    stx mux_key_prio                ; bullet slot
+    lda #HIT_BULLET
+    rts
+es_rail:
+    ldx mode_state
+    jsr test_rail
+    bcs es_none
+    lda #HIT_RAIL
+    rts
+es_none:
+    lda #HIT_NONE
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Apply mux_forbidden hit (bullet slot in mux_key_prio if HIT_BULLET).
+; ---------------------------------------------------------------------------
+.proc apply_soft_hit
+    lda mux_forbidden
+    cmp #HIT_BULLET
+    beq as_bullet
+    cmp #HIT_RAIL
+    beq as_rail
+    rts
+as_bullet:
+    ldx mux_key_prio
     jsr bullets::destroy
     jsr score_add_kill
     ldx mode_state
     jsr objects::retire_and_try_free
     rts
-
-try_rail:
-    ldx mode_state
-    jsr test_rail
-    bcc rail_hit
-    rts
-rail_hit:
+as_rail:
     ldx mode_state
     jsr objects::retire_and_try_free
     rts
