@@ -488,7 +488,10 @@ reproducible (exact command + response). Mark severity (papercut / slows-work /
 blocks-work). Cross off (`~~struck~~ fixed in c64m <ref>`) when resolved
 upstream — do not delete history.
 
-### 2026-07-26 — ARGB framebuffer read closes the control connection
+### ~~2026-07-26 — ARGB framebuffer read closes the control connection~~
+
+**Triage/fix submitted upstream (c64m).** Leave struck until a RailGunner
+session re-verifies `get-frame format=argb8888` end-to-end; do not delete.
 
 - **Severity:** slows-work.
 - **Did:** paused a visible c64m session, successfully read
@@ -502,6 +505,34 @@ upstream — do not delete history.
 - **Suggested improvement:** keep the connection open and return the complete
   ARGB payload, or return a protocol error before the data header if the
   requested payload cannot be delivered.
+
+### 2026-07-26 — `message_queue_push` NULL SIGSEGV on runtime thread (control stress)
+
+- **Severity:** blocks-work (process dies; session must be relaunched).
+- **Did:** RailGunner sprite-mux review over the control port (windowed c64m,
+  turbo 2): many `pause` / `run` / `step-frame` cycles, `run-to-raster`, bulk
+  `get-memory` / `set-memory`, joystick edge fires into PLAY. **No**
+  `get-frame` (indexed or ARGB).
+- **c64m did:** native crash — macOS IPS `c64m-2026-07-26-233608.ips` (also
+  same stack earlier: `c64m-2026-07-26-212813.ips`).
+  - `EXC_BAD_ACCESS` / `SIGSEGV`, `KERN_INVALID_ADDRESS at 0x0`
+  - Faulting thread: `c64m-runtime`
+  - Stack: `_platform_memmove` → `message_queue_push` → `runtime_thread_main`
+    → SDL thread wrapper
+- **Not the ARGB issue:** that bug closed the control socket mid large
+  `get-frame` payload; here the process segfaults with no frame request.
+- **Related session friction (may be separate):** `run-to-raster` responses
+  interleaved with unsolicited `0 ok`, so the vendored client hit
+  `AssertionError: id mismatch` and left the TCP connection in `CLOSE_WAIT`
+  until kill/restart — looks like a hang even when the binary has not yet
+  crashed.
+- **Friction:** agent remote debugging cannot rely on long instrumented
+  sessions; a queue push on the runtime thread should never NULL-deref.
+- **Suggested improvement:** null-safe / lifetime-safe event publish
+  (`rt->event_queue` vs destroy order); ASan/TSan run under pause–step–raster
+  control stress; refuse or order-correct teardown while `c64m-runtime` still
+  publishes. Separately: stable request-id matching for `run-to-raster` /
+  async `ok` events so one desync does not wedge the sole control client.
 
 ### 2026-07-26 — `agent_session.py` retains the control server's sole client
 
