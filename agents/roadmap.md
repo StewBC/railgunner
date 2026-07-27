@@ -50,7 +50,7 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
 | Player sprite / move | **Done (H-arm)** | Slot 0 sprite; 4px steps; U/D barrel via mid frame; V-rail later |
 | Bullets / charset UDGs | **Done (V stream)** | RAM font + 8 UDGs; H-rail fire up/down with 4-phase cells |
-| Collision consumer | **Slice done** | Char-peek bullet vs rail under drone; score+100; respawn mover |
+| Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch kill; soft AABB kept for later; mux-load unproven |
 | Waves / lives / rail damage | Stubs only | Mode hooks exist; nothing drives them from play |
 | High score entry / disk | Stub | Always skip hiscore from game over |
 
@@ -91,12 +91,11 @@ installed; do not require multi-type AI for the slice.
    - Rail arrival currently **retires** the slot (stub until collision consumer).  
    - Spawn API ready to grow to 3-per-quadrant waves later.
 
-5. ~~**Collision consumer**~~ **done (slice path)**  
-   - `game/collision.asm`: software hitbox char-peek (authoritative).  
-   - Bullet glyph → destroy bullet, retire drone, +100 score, respawn mover.  
-   - Rail glyph / Y-arrival → retire + respawn.  
-   - `OBJF_BG_INTEREST` on; mux latch still secondary to peek.  
-   - Latch-before-reuse stress still open for later mux hardening.
+5. ~~**Collision consumer**~~ **slice working, not locked under mux load**  
+   - `COLLISION_MODE`: 0=HW only (current), 1=hybrid+borders, 2=soft always.  
+   - Soft bullet AABB / rail peek code retained for when latch needs help.  
+   - HW kill + best-effort char-near bullet consume; Y-arrival still rail backup.  
+   - Re-test latch under multi-drone mux pressure before calling design locked.
 
 6. **Score + thin HUD**  
    - Tick score on kill; show digits (placeholder string → live values).  

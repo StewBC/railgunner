@@ -1,15 +1,9 @@
-; Gameplay collision consumer (Stage 2) — hybrid mux dogfood path.
+; Gameplay collision — COLLISION_MODE in const.asm:
+;   0 = HW only  ($D01F / OBJE_BG kills; no software authority)
+;   1 = hybrid   (latch + soft; yellow/brown vs green/blue mismatch)
+;   2 = soft only
 ;
-; Every play tick, for each active drone:
-;   soft  = software authority (bullet AABB / rail peek)
-;   latch = OBJE_BG from $D01F via mux attribution
-;
-; Kill only when both agree (latch + soft hit), unless COLLISION_SOFT_ALWAYS.
-; If they disagree → INC VIC_BORDER so playtesting can see latch quality:
-;   latch && !soft  = false positive HW
-;   !latch && soft  = missed HW (pass-through until Y-arrival on rail)
-;
-; Y-arrival in drones.asm still retires at the rail line without latch.
+; Y-arrival in drones.asm still retires at the rail without latch.
 
 .scope collision
 
@@ -17,18 +11,10 @@ HIT_NONE        = 0
 HIT_BULLET      = 1
 HIT_RAIL        = 2
 
-; Drone C art ~12×12 in a 24×21 sprite (content ~y+4..15). Use a tight box.
-HIT_X0          = 6                 ; inset from sprite left
-HIT_X1          = 17                ; inclusive-ish right (12px wide)
-HIT_Y0          = 5
-HIT_Y1          = 14                ; 10px tall
-
-; Scratch: soft result and bullet slot for apply
-;   coll_soft   — HIT_*
-;   coll_bslot  — bullet index if HIT_BULLET
-; (use mux_key / mux_key_prio only if free — use ZP mode fields carefully)
-; Stored in draw_i/draw_j temporarily is risky; use dedicated via tmp after tests.
-; We keep soft result in mux_forbidden (play-time free) and bullet X on stack.
+HIT_X0          = 0
+HIT_X1          = 23
+HIT_Y0          = 3
+HIT_Y1          = 16
 
 ; ---------------------------------------------------------------------------
 .proc update
@@ -46,39 +32,16 @@ upd_loop:
 
     stx mode_state
 
-    ; Latch present?
-    lda objects::obj_pending_events, x
-    and #OBJE_BG
-    sta mux_key                     ; 0 or OBJE_BG
-
-    ; Always evaluate software authority
-    jsr eval_soft                   ; A = HIT_*; if bullet, mux_key_prio = slot
-    sta mux_forbidden               ; soft result
-
-    ; --- Compare filter vs authority ---
-    lda mux_key
-    beq no_latch
-    ; latch set
-    lda mux_forbidden
-    bne agree_or_fp                 ; soft hit → agree; soft none → false +
-    ; latch && !soft → false positive
-    inc VIC_BORDER
-    jmp consume_latch
-agree_or_fp:
-    ; latch && soft → apply kill (hybrid)
-    jsr apply_soft_hit
-    jmp consume_latch
-
-no_latch:
-    lda mux_forbidden
-    beq consume_latch               ; both none — quiet
-    ; !latch && soft → missed HW
-    inc VIC_BORDER
-    .if COLLISION_SOFT_ALWAYS
-    jsr apply_soft_hit              ; still kill if forced soft mode
+    .if COLLISION_MODE = 0
+    jsr mode_hw_only
+    .endif
+    .if COLLISION_MODE = 1
+    jsr mode_hybrid
+    .endif
+    .if COLLISION_MODE = 2
+    jsr mode_soft_only
     .endif
 
-consume_latch:
     ldx mode_state
     lda objects::obj_pending_events, x
     and #($FF ^ OBJE_BG)
@@ -92,14 +55,105 @@ upd_next:
     rts
 .endproc
 
-; ---------------------------------------------------------------------------
-; Soft tests → A = HIT_*. On HIT_BULLET, mux_key_prio = bullet slot.
-; ---------------------------------------------------------------------------
+; Mode 0: trust hardware latch only
+.proc mode_hw_only
+    ldx mode_state
+    lda objects::obj_pending_events, x
+    and #OBJE_BG
+    beq hw_done
+    jsr score_add_kill
+    ldx mode_state
+    jsr objects::retire_and_try_free
+    jsr hw_try_consume_bullet
+hw_done:
+    rts
+.endproc
+
+; Best-effort remove a nearby bullet so the shot does not keep re-latching.
+.proc hw_try_consume_bullet
+    ldx mode_state
+    lda objects::obj_x_lo, x
+    clc
+    adc #12
+    sta tmp0
+    lda objects::obj_x_hi, x
+    adc #0
+    sta tmp1
+    jsr px_to_col
+    sta draw_i
+    lda objects::obj_y_int, x
+    clc
+    adc #10
+    sec
+    sbc #50
+    bcc hw_y0
+    lsr a
+    lsr a
+    lsr a
+    jmp hw_ys
+hw_y0:
+    lda #0
+hw_ys:
+    sta draw_j
+    ldx #0
+hw_bloop:
+    lda bullets::bullet_active, x
+    beq hw_bn
+    lda bullets::bullet_col, x
+    cmp draw_i
+    bne hw_bn
+    lda bullets::bullet_row, x
+    sec
+    sbc draw_j
+    clc
+    adc #1
+    cmp #3
+    bcs hw_bn
+    jsr bullets::destroy
+    rts
+hw_bn:
+    inx
+    cpx #BULLET_MAX
+    bne hw_bloop
+    rts
+.endproc
+
+.proc mode_hybrid
+    ldx mode_state
+    lda objects::obj_pending_events, x
+    and #OBJE_BG
+    sta mux_key
+    jsr eval_soft
+    sta mux_forbidden
+    lda mux_key
+    beq hy_nolatch
+    lda mux_forbidden
+    bne hy_agree
+    jsr diag_fp_border
+    rts
+hy_agree:
+    jsr apply_soft_hit
+    rts
+hy_nolatch:
+    lda mux_forbidden
+    beq hy_done
+    jsr diag_fn_border
+hy_done:
+    rts
+.endproc
+
+.proc mode_soft_only
+    jsr eval_soft
+    sta mux_forbidden
+    jsr apply_soft_hit
+    rts
+.endproc
+
 .proc eval_soft
     ldx mode_state
     jsr test_bullets
     bcs es_rail
-    stx mux_key_prio                ; bullet slot
+    stx mux_key_prio
     lda #HIT_BULLET
     rts
 es_rail:
@@ -113,9 +167,6 @@ es_none:
     rts
 .endproc
 
-; ---------------------------------------------------------------------------
-; Apply mux_forbidden hit (bullet slot in mux_key_prio if HIT_BULLET).
-; ---------------------------------------------------------------------------
 .proc apply_soft_hit
     lda mux_forbidden
     cmp #HIT_BULLET
@@ -133,6 +184,34 @@ as_bullet:
 as_rail:
     ldx mode_state
     jsr objects::retire_and_try_free
+    rts
+.endproc
+
+.proc diag_fp_border
+    lda coll_fp_phase
+    eor #1
+    sta coll_fp_phase
+    beq fp_brown
+    lda #COL_YELLOW
+    sta VIC_BORDER
+    rts
+fp_brown:
+    lda #COL_BROWN
+    sta VIC_BORDER
+    rts
+.endproc
+
+.proc diag_fn_border
+    lda coll_fn_phase
+    eor #1
+    sta coll_fn_phase
+    beq fn_blue
+    lda #COL_GREEN
+    sta VIC_BORDER
+    rts
+fn_blue:
+    lda #COL_LT_BLUE
+    sta VIC_BORDER
     rts
 .endproc
 
@@ -189,7 +268,7 @@ tb_loop:
     jmp tb_next
 
 tb_vert:
-    ; bullet pixel X = 24 + col*8 + half*4 + 1  (16-bit; col 39 → ~$155)
+    ; Bullet 2×2 top-left: X = 24 + col*8 + half*4, Y = 50 + row*8 + phase*2
     lda bullets::bullet_col, x
     sta tmp0
     lda #0
@@ -202,7 +281,7 @@ tb_vert:
     rol tmp1                        ; col*8
     lda tmp0
     clc
-    adc #25                         ; 24+1
+    adc #24
     sta tmp0
     lda tmp1
     adc #0
@@ -217,45 +296,60 @@ tb_vert:
     adc #0
     sta tmp1
 tb_half0:
+    ; tmp0/1 = bullet x0; bullet x1 = x0+1 (2px wide)
 
-    ; bullet pixel Y = 50 + row*8 + phase*2 + 1
     lda bullets::bullet_row, x
     asl a
     asl a
     asl a
     clc
-    adc #51                         ; 50+1
+    adc #50
     sta tmp2
     lda bullets::bullet_phase, x
     asl a
     clc
     adc tmp2
-    sta tmp2
+    sta tmp2                        ; bullet y0; y1 = y0+1
 
-    ; hit_x0 <= bx:  (mux_j:mux_i) <= (tmp1:tmp0)
-    lda tmp1
-    cmp mux_j
-    bcc tb_next_j                   ; bx < hit_x0
-    bne tb_x1
-    lda tmp0
-    cmp mux_i
-    bcc tb_next_j
-tb_x1:
-    ; bx <= hit_x1: (tmp1:tmp0) <= (mux_cursor:mux_k)
+    ; Rect overlap: bx0<=hit_x1 && bx1>=hit_x0 && by0<=hit_y1 && by1>=hit_y0
+    ; bx0 <= hit_x1
     lda mux_cursor
     cmp tmp1
     bcc tb_next_j
-    bne tb_y
+    bne tb_bx1
     lda mux_k
     cmp tmp0
     bcc tb_next_j
-tb_y:
+tb_bx1:
+    ; bx1 = bx0+1 >= hit_x0  =>  bx0+1 >= hit_x0  => bx0 >= hit_x0-1
+    ; simpler: bx0+1 >= hit_x0
+    lda tmp0
+    clc
+    adc #1
+    sta print_ptr_lo
+    lda tmp1
+    adc #0
+    sta print_ptr_hi
+    lda print_ptr_hi
+    cmp mux_j
+    bcc tb_next_j
+    bne tb_by
+    lda print_ptr_lo
+    cmp mux_i
+    bcc tb_next_j
+tb_by:
+    ; by0 <= hit_y1
     lda tmp2
+    cmp draw_j
+    beq tb_by1
+    bcs tb_next_j
+tb_by1:
+    ; by1 = by0+1 >= hit_y0
+    lda tmp2
+    clc
+    adc #1
     cmp draw_i
     bcc tb_next_j
-    cmp draw_j
-    beq tb_hit
-    bcs tb_next_j
 tb_hit:
     clc
     rts

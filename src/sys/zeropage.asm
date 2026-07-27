@@ -54,6 +54,10 @@ input_runstop:      .res 1
 input_runstop_edge: .res 1
 input_runstop_prev: .res 1
 
+; Collision dogfood border toggles (hybrid latch vs software)
+coll_fp_phase:  .res 1              ; 0/1 — HW latch, no soft hit
+coll_fn_phase:  .res 1              ; 0/1 — soft hit, no HW latch
+
 ; Typewriter (story screen): source cursor + screen pen + previous cell
 type_src_lo:    .res 1
 type_src_hi:    .res 1
