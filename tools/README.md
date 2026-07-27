@@ -15,6 +15,7 @@ Make wires timestamps so a changed `title.png` regenerates `.bin`s before assemb
 | **`build-prg.sh`** | Assemble `src/main.asm` → `build/railgunner.prg` (no asset graph) |
 | **`agent_session.py`** | **Agent path:** windowed + control port + assemble + RUN |
 | **`png_to_c64_hires.py`** | PNG → C64 hires bitmap + colour-matrix `.bin` (title art) |
+| **`png_to_c64_sprite.py`** | PNG → C64 multicolour sprite `.bin` (64 bytes, 12×21) |
 | `run-emulator.sh` | Alias → `play.sh` (user path) |
 
 Project config: **`../c64m.ini`**.
@@ -33,5 +34,18 @@ tools/agent_session.py
 
 # Asset converters only
 make screens          # railgunner.png → title_hires*.bin
-make assets           # screens + charset + sprites (placeholders ok)
+make sprites          # assets/sprites/*.png → *.bin (64-byte MC frames)
+make assets           # screens + charset + sprites
+
+# One-off sprite convert (Make uses --fit for oversize art)
+tools/png_to_c64_sprite.py assets/sprites/drone1_tiny_native.png
+tools/png_to_c64_sprite.py assets/sprites/*.png --fit
 ```
+
+### Sprite bins
+
+- Input: multicolour-oriented PNGs under `assets/sprites/` (≤3 opaque colours + transparency).
+- Output: same-stem `.bin`, 64 bytes (VIC sprite block: 3×21 data + pad).
+- Canvas: 12×21 logical pixels. Art larger than that needs `--fit` (Make passes it) until remastered.
+- Bit pairs: `00` transparent, `01` MC1 (`$D025`), `10` sprite colour, `11` MC2 (`$D026`).
+- Assembler: `src/data/sprites.asm` `.incbin`s each frame into the SPRITES segment (`$3000+`).

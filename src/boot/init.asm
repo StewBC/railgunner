@@ -29,6 +29,7 @@ BLNSW           = $CC
     jsr hiscore_reset               ; zeros in RAM (disk load later)
     jsr objects::init
     jsr video::detect_standard
+    jsr video::init_sprite_palette
     jsr sprite_mux_irq::init
     jsr irq_install
 

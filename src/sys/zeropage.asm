@@ -29,6 +29,10 @@ player_row:     .res 1
 mode_timer:     .res 1
 mode_state:     .res 1
 
+; PLAY art harness: cycle drone facings (left/right/up/down)
+demo_anim_timer: .res 1             ; frames until next facing
+demo_anim_dir:   .res 1             ; SPR_DIR_* 0..3
+
 ; Attract loop countdown (16-bit frames remaining on current attract page)
 attract_lo:     .res 1
 attract_hi:     .res 1

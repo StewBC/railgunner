@@ -523,8 +523,11 @@ Reserve two sprite blocks in VIC bank 0, preferably `$3E00` and `$3E40`
 3. After composition, change `obj_sprite_ptr[0]` to the inactive pointer.
 4. The next back plan captures that pointer.
 
-Static sprite frames may occupy `$3000–$3DFF`. Keep all sprite blocks aligned to
-64 bytes and document the final region in `src/sys/memory.asm`.
+Sprite **source** frames live in the DATA segment (`src/data/sprites.asm`).
+`video::install_sprite_frames` copies them to `$3000` on stage enter (title
+bitmap dest `$2000–$3F3F` would otherwise wipe a resident bank-0 image).
+After install: drones `$3000–$32FF` (ptr `$C0–$CB`), player bufs `$3E00/$3E40`
+(ptr `$F8/$F9`). Shared MC colours: `$D025`/`$D026` via `video::init_sprite_palette`.
 
 ---
 
@@ -956,9 +959,9 @@ sprite frames. That is a test harness, not a public accessor API.
 | `src/sprite/mux_build.asm` | gather, sort, lane coloring, job schedule, plan emit |
 | `src/sprite/mux_irq.asm` | front-plan execution, owner maps, collision capture |
 | `src/game/collision.asm` | later event interpretation, not mux attribution |
-| `src/data/sprites.asm` | placeholder/final sprite frames and metadata |
+| `src/data/sprites.asm` | static MC drone frames (`.incbin` from `assets/sprites/*.bin`) + player buffers |
 | `src/sys/irq.asm` | vector install and dispatch shell |
-| `src/sys/memory.asm` | `$C000–$C8FF`, `$3000–$3E7F`, pointer map |
+| `src/sys/memory.asm` | `$C000–$C8FF`, sprite install `$3000` (ptr `$C0–$CB`), bitmap `$2000–$3F3F` |
 | `src/sys/const.asm` | VIC sprite registers, flags, capacities, error IDs |
 | `src/sys/zeropage.asm` | IRQ pointers/masks/cursors only |
 

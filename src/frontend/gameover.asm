@@ -4,6 +4,7 @@
 .proc gameover_enter
     lda #COL_RED
     sta VIC_BORDER
+    jsr objects::hide_all
     jsr screen_clear
 
     lda #<str_game_over

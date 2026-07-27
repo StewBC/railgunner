@@ -1,4 +1,4 @@
-; Play loop stub — no combat yet.
+; Play loop stub — art harness + FIRE ends session after a short guard.
 ; After PLAY_FIRE_DELAY frames, FIRE edge → game over (scaffold demo path).
 
 .proc play_enter
@@ -6,10 +6,17 @@
     sta VIC_BORDER
     lda #PLAY_FIRE_DELAY
     sta mode_timer
+    lda #0
+    sta demo_anim_dir
+    lda #DEMO_ANIM_PERIOD
+    sta demo_anim_timer
+    jsr demo_apply_facings          ; left-facing on enter
     rts
 .endproc
 
 .proc play_update
+    jsr demo_anim_tick
+
     lda mode_timer
     beq play_accept_fire
     dec mode_timer

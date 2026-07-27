@@ -20,6 +20,10 @@
     lda #0
     sta wave
 
+    ; Fresh object pool each session (clears leftover demo drones, etc.)
+    jsr objects::init
+    jsr video::init_sprite_palette
+
     ; Fall through immediately to stage init (no multi-frame work yet)
     lda #MODE_STAGE_INIT
     jsr mode_set

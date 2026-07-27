@@ -96,7 +96,7 @@ clear_page:
     sta obj_flags
     lda #OBJ_PLAYER
     sta obj_kind
-    lda #$F8
+    lda #SPR_PTR_PLAYER_0
     sta obj_sprite_ptr
 
     ; stack[22]=1 ... stack[0]=23; pop returns the lowest fresh slot.
@@ -236,6 +236,26 @@ not_referenced:
     rts
 referenced:
     sec
+    rts
+.endproc
+
+; Clear OBJF_RENDER on every allocated slot and force a mux rebuild so VIC
+; sprites disable on frontend screens (game over, title, etc.).
+.proc hide_all
+    ldx #0
+hide_loop:
+    lda obj_flags, x
+    and #OBJF_ALLOCATED
+    beq hide_next
+    lda obj_flags, x
+    and #%11111101                  ; clear OBJF_RENDER
+    sta obj_flags, x
+hide_next:
+    inx
+    cpx #OBJECT_CAPACITY
+    bne hide_loop
+    lda #1
+    sta mux_objects_dirty
     rts
 .endproc
 

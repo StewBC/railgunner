@@ -6,7 +6,7 @@
 ;   BASIC     $0801   SYS stub (10 SYS 2061)
 ;   CODE      $080d   executable (start = SYS target)
 ;   TITLE     $4000   title hires source (bitmap + colour matrix)
-;   DATA      $6328   strings / tables (after TITLE)
+;   DATA      $6328   strings / tables / sprite frame source
 ;   OBJECTS   $C000   noemit graphical-object/mux runtime state
 ;
 ; VIC bank 0 runtime buffers (not PRG-resident source):
@@ -23,12 +23,21 @@
 ;   Color RAM     $D800
 ;   Sprite ptrs   $07F8–$07FF (when sprites used)
 
-; Game sprite/runtime regions:
-;   CHARSET_RAM   = $2000   ; collides with bitmap buffer — bank-switch later
-;   SPRITE_BLOCK  = $3000   ; static frames through $3DFF
-;   PLAYER_BUF_0  = $3E00   ; sprite pointer $F8
+; Game sprite/runtime regions (VIC bank 0 = $0000–$3FFF):
+;   BITMAP_RAM    = $2000   ; title hires dest, 8000 bytes → $2000–$3F3F
+;   SPRITE_BLOCK  = $3000   ; installed drone frames (runtime copy)
+;   PLAYER_BUF_0  = $3E00   ; sprite pointer $F8 (runtime; zeroed on install)
 ;   PLAYER_BUF_1  = $3E40   ; sprite pointer $F9
 ;   OBJECT_STATE  = $C000   ; pool/plans/scratch through $C8FF
+;
+; Title blit overwrites $2000–$3F3F. sprite_frames_install (stage enter) copies
+; spr_frames_src from DATA into $3000 and clears player buffers.
+;
+; After install (64-byte blocks, multicolour):
+;   $3000–$30FF  drone C (small)  left/right/up/down   ptr $C0–$C3
+;   $3100–$31FF  drone B (medium) left/right/up/down   ptr $C4–$C7
+;   $3200–$32FF  drone A (large)  left/right/up/down   ptr $C8–$CB
+;   $3E00–$3E7F  player dynamic buffers                 ptr $F8–$F9
 ;
 ; OBJECTS exact pages (all 24-byte arrays stay inside one page):
 ;   $C000-$C0EF   core object SoA (flags through sprite attributes)
@@ -52,3 +61,5 @@ SPRITE_BLOCK    = $3000
 PLAYER_BUF_0    = $3E00
 PLAYER_BUF_1    = $3E40
 OBJECT_STATE    = $C000
+SPRITE_FRAMES_BYTES = 12 * 64       ; drone bank only (player bufs zeroed)
+BITMAP_END      = $3F40             ; first free after 8000-byte bitmap

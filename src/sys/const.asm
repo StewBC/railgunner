@@ -138,6 +138,25 @@ WAVES_PER_LEVEL = 20
 ; Play stub: frames to wait before FIRE ends the session (PAL ~1s)
 PLAY_FIRE_DELAY = 50
 
+; PLAY art harness: facing cycle period (~0.25s at 50 Hz logic)
+DEMO_ANIM_PERIOD = 15
+
+; VIC sprite top-left for quarter centres (visible ~320×200 at origin 24,50;
+; adjust by half multicolour sprite ~12×10 so the blob sits mid-quarter).
+; Quarters: UL / UR / LL / LR of the visible field.
+;
+; Mux note: non-overlapping objects often share a hardware lane; same-lane
+; release needs next_y >= prev_y+31. Also each mux job costs MUX_JOB_LINES (9)
+; raster lines — two sprites on the *same* Y late in the frame will miss the
+; deadline. Keep bottom-band Ys staggered (LR ≠ stack mid).
+DEMO_X_LEFT     = 92                ; centre of left half
+DEMO_X_RIGHT    = 252               ; centre of right half
+DEMO_Y_TOP      = 80                ; UL / UR
+DEMO_Y_STACK0   = 140               ; LL stack top (small)
+DEMO_Y_STACK1   = 172               ; LL stack mid (medium)
+DEMO_Y_STACK2   = 204               ; LL stack bot (large)
+DEMO_Y_LR       = 188               ; LR large (between stack mid/bot)
+
 ; Attract loop: text ↔ graphics (PAL 50Hz × 15s)
 ATTRACT_SECONDS = 15
 ATTRACT_HZ      = 50
@@ -186,6 +205,42 @@ OBJE_SS         = %00000010
 
 OBJ_ERR_POOL_FULL   = 1
 OBJ_ERR_PLAYER_FIXED = 2
+
+; ---------------------------------------------------------------------------
+; Sprite frames after sprite_frames_install → $3000 (64-byte stride)
+; Source: DATA segment (src/data/sprites.asm). Pointer = address / 64.
+; ---------------------------------------------------------------------------
+; Shared multicolour pair (all MC sprites; set once per stage / cold init)
+SPR_MC0_COLOR   = COL_DK_GRAY       ; $D025 — bit-pair 01
+SPR_MC1_COLOR   = COL_CYAN          ; $D026 — bit-pair 11
+
+; Per-kind individual colour (bit-pair 10 → $D027+n)
+SPR_COLOR_DRONE_C = COL_RED         ; small / tiny
+SPR_COLOR_DRONE_B = COL_GREEN       ; medium
+SPR_COLOR_DRONE_A = COL_PURPLE      ; large
+
+; VIC sprite pointers for drone frames (order: left, right, up, down)
+SPR_PTR_DRONE_C_LEFT  = $C0         ; $3000
+SPR_PTR_DRONE_C_RIGHT = $C1         ; $3040
+SPR_PTR_DRONE_C_UP    = $C2         ; $3080
+SPR_PTR_DRONE_C_DOWN  = $C3         ; $30C0
+SPR_PTR_DRONE_B_LEFT  = $C4         ; $3100
+SPR_PTR_DRONE_B_RIGHT = $C5         ; $3140
+SPR_PTR_DRONE_B_UP    = $C6         ; $3180
+SPR_PTR_DRONE_B_DOWN  = $C7         ; $31C0
+SPR_PTR_DRONE_A_LEFT  = $C8         ; $3200
+SPR_PTR_DRONE_A_RIGHT = $C9         ; $3240
+SPR_PTR_DRONE_A_UP    = $CA         ; $3280
+SPR_PTR_DRONE_A_DOWN  = $CB         ; $32C0
+
+SPR_PTR_PLAYER_0      = $F8         ; $3E00 player buffer 0
+SPR_PTR_PLAYER_1      = $F9         ; $3E40 player buffer 1
+
+; Direction index for future table lookups (matches left/right/up/down order)
+SPR_DIR_LEFT    = 0
+SPR_DIR_RIGHT   = 1
+SPR_DIR_UP      = 2
+SPR_DIR_DOWN    = 3
 
 ; ---------------------------------------------------------------------------
 ; Sprite mux

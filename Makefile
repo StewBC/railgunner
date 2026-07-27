@@ -6,7 +6,7 @@
 #   make screens    title (and future) screen bins only
 #   make charset    charset bins (placeholder until converters exist)
 #   make sprites    sprite bins (placeholder until converters exist)
-#   make clean      remove build/ outputs (not source PNGs or committed bins)
+#   make clean      remove build/ outputs (not assets/ PNGs or generated bins)
 #
 # Generators live under tools/; this file only wires timestamps and targets.
 # Agent path stays tools/agent_session.py (live assemble; no Makefile required).
@@ -28,11 +28,16 @@ TITLE_HIRES_COL := $(ROOT)/assets/screens/title_hires_col.bin
 TITLE_BINS := $(TITLE_HIRES_BIN) $(TITLE_HIRES_COL)
 TITLE_OUT_PREFIX := $(ROOT)/assets/screens/title
 PNG_TO_HIRES := $(TOOLS)/png_to_c64_hires.py
+PNG_TO_SPRITE := $(TOOLS)/png_to_c64_sprite.py
 
-# Future: list more screen / charset / sprite products here.
+# Future: list more screen / charset products here.
 SCREEN_BINS := $(TITLE_BINS)
 CHARSET_BINS :=
-SPRITE_BINS :=
+
+# Multicolour sprite frames: each assets/sprites/*.png → same-stem .bin (64 bytes).
+# --fit: medium/large source art currently exceeds 12×21; scale until remastered.
+SPRITE_PNGS := $(wildcard $(ROOT)/assets/sprites/*.png)
+SPRITE_BINS := $(SPRITE_PNGS:.png=.bin)
 
 ASSET_BINS := $(SCREEN_BINS) $(CHARSET_BINS) $(SPRITE_BINS)
 
@@ -58,8 +63,8 @@ help:
 	@echo "  make assets       screens + charset + sprites converters"
 	@echo "  make screens      railgunner.png → title_hires*.bin"
 	@echo "  make charset      (no converters yet)"
-	@echo "  make sprites      (no converters yet)"
-	@echo "  make clean        wipe build/ (keeps assets/ source + bins)"
+	@echo "  make sprites      assets/sprites/*.png → *.bin (64-byte MC)"
+	@echo "  make clean        wipe build/ (keeps assets/ PNGs; bins via make assets)"
 
 prg: $(PRG)
 
@@ -77,9 +82,12 @@ charset:
 	@# No charset converters yet — directory reserved under assets/charset/
 	@true
 
-sprites:
-	@# No sprite converters yet — directory reserved under assets/sprites/
-	@true
+sprites: $(SPRITE_BINS)
+
+# Multicolour VIC sprite: 12×21 logical pixels → 64-byte block.
+# --fit until medium/large PNGs are remastered to native 12×21.
+$(ROOT)/assets/sprites/%.bin: $(ROOT)/assets/sprites/%.png $(PNG_TO_SPRITE)
+	$(PYTHON) $(PNG_TO_SPRITE) $< --fit -o $@
 
 # One converter writes both hires products; col bin tracks the bitmap bin.
 $(TITLE_HIRES_BIN): $(TITLE_PNG) $(PNG_TO_HIRES)

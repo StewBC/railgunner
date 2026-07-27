@@ -10,9 +10,8 @@
 .segdef "ZEROPAGE", $02, noemit
 .segdef "BASIC", $0801
 .segdef "CODE", $080d
-.segdef "SPRITES", $3000
 .segdef "TITLE", $4000              ; hires source (bitmap + colours)
-.segdef "DATA", $6328               ; strings/tables after TITLE ($4000+9000)
+.segdef "DATA", $6328               ; strings/tables + sprite frame source
 .segdef "OBJECTS", $C000, noemit
 
 ; ---------------------------------------------------------------------------
@@ -89,19 +88,14 @@ main_loop:
 .include "sprite/mux_irq.asm"
 
 ; ---------------------------------------------------------------------------
-; Sprite frames (VIC bank 0)
-; ---------------------------------------------------------------------------
-.segment "SPRITES"
-.include "data/sprites.asm"
-
-; ---------------------------------------------------------------------------
 ; Title graphics (source arrays; copied to $2000 / $0400 at runtime)
 ; ---------------------------------------------------------------------------
 .segment "TITLE"
 .include "data/title_gfx.asm"
 
 ; ---------------------------------------------------------------------------
-; Data
+; Data (strings + sprite frame SOURCE — installed into $3000 for VIC)
 ; ---------------------------------------------------------------------------
 .segment "DATA"
 .include "data/strings.asm"
+.include "data/sprites.asm"
