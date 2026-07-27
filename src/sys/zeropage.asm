@@ -21,17 +21,17 @@ ammo:           .res 1
 level:          .res 1
 wave:           .res 1
 
-; Player placeholder (char coords for later)
-player_col:     .res 1
+; Player (logical slot 0; position also in objects:: SoA)
+player_col:     .res 1              ; char approx (future bullets / HUD)
 player_row:     .res 1
+player_rest_dir:.res 1              ; SPR_DIR_UP or SPR_DIR_DOWN (H-rail rest aim)
+player_swing_t: .res 1              ; 0 = at rest; else mid-swing frames remaining
+player_swing_to:.res 1              ; rest facing after mid frame expires
+player_move_dir:.res 1              ; PLAYER_DIR_*; last H travel (coast through centre)
 
 ; Mode-local timers / scratch
 mode_timer:     .res 1
 mode_state:     .res 1
-
-; PLAY art harness: cycle drone facings (left/right/up/down)
-demo_anim_timer: .res 1             ; frames until next facing
-demo_anim_dir:   .res 1             ; SPR_DIR_* 0..3
 
 ; Attract loop countdown (16-bit frames remaining on current attract page)
 attract_lo:     .res 1
@@ -48,6 +48,11 @@ input_key_s_edge: .res 1
 input_key_i_edge: .res 1
 input_key_s_prev: .res 1
 input_key_i_prev: .res 1
+
+; RUN/STOP kill switch (play → game over)
+input_runstop:      .res 1
+input_runstop_edge: .res 1
+input_runstop_prev: .res 1
 
 ; Typewriter (story screen): source cursor + screen pen + previous cell
 type_src_lo:    .res 1

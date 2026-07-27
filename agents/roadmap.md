@@ -11,9 +11,10 @@ docs; this file only keeps the map coherent.
 
 **Current phase:** Stage 1 (Scaffold) **done**. Object-pool / sprite-mux
 foundation **done** early (Stage 4 tech). Frontend shell richer than scaffold
-expected. **Stage 2 (Vertical slice) is the active work** — see **Next steps**
-below. Do not expand Features (bonuses, ammo unlock, disk HS, music) until the
-slice can kill a drone and die cleanly.
+expected. **Stage 2 (Vertical slice) is the active work** — steps **1–2 done**
+(player sprite + H-rail move / barrel); see **Next steps**. Do not expand
+Features (bonuses, ammo unlock, disk HS, music) until the slice can kill a
+drone and die cleanly.
 
 ---
 
@@ -44,20 +45,17 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Cold init / IRQ / input | Done | `boot/init`, `sys/*`, main loop with logic ticks |
 | Mode dispatcher | Done | Jump table; modes include story/instructions extras |
 | Frontend attract | Ahead of plan | Hires title ↔ text menu; typewriter; S/I stubs |
-| Game / stage init | Minimal | Session vars reset; playfield draw; **demo drones** |
-| Play | **Art harness only** | Facing cycle on static A/B/C; FIRE → game over |
+| Game / stage init | Minimal | Session vars reset; playfield draw; player on H-rail |
+| Play | **Player slice** | H-rail move + barrel swing; RUN/STOP → game over; no drones/bullets yet |
 | Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
-| Player sprite / move / shoot | Not started | `*` char stand-in; empty player sprite buffers |
-| Bullets / charset UDGs | Not started | `charset_install_stub` is a no-op |
+| Player sprite / move | **Done (H-arm)** | Slot 0 sprite; 4px steps; U/D barrel via mid frame; V-rail later |
+| Bullets / charset UDGs | Not started | `charset_install_stub` is a no-op; fire path next |
 | Collision consumer | Not started | Mux latches events; play does not interpret them |
 | Waves / lives / rail damage | Stubs only | Mode hooks exist; nothing drives them from play |
 | High score entry / disk | Stub | Always skip hiscore from game over |
 
 **Intentional early work (keep):** mux foundation, title art, drone art (all
 sizes/facings), mode skeleton, full-cross placeholder playfield.
-
-**Temporary (replace during Stage 2):** `stage_spawn_demo_drones` / facing
-animation in `game/stage.asm` + `game/play.asm` — not gameplay.
 
 ---
 
@@ -72,15 +70,16 @@ Prefer **one rail arm** and **one drone type** for combat logic even though all
 three drone arts and the full cross are already drawn. Extra art can stay
 installed; do not require multi-type AI for the slice.
 
-1. **Player as graphical object (slot 0)**  
-   - Install/use real player sprite frames (compositing buffers already reserved).  
-   - Remove `*` screen-code stand-in once the sprite shows.  
-   - Place at cross centre; rail-lock later in this list if needed for shooting proof.
+1. ~~**Player as graphical object (slot 0)**~~ **done**  
+   - Frames in `assets/sprites/player_{up,right,down,left}.*`; copied to `$3E00`.  
+   - `*` stand-in removed; demo drone harness removed.  
+   - Starts left of V-rail, barrel up (not parked in centre).
 
-2. **Player movement on rails**  
-   - Vertical arm first (or horizontal — pick one and stick to it for the slice).  
-   - Barrel switch + intersection mount per [`railgunner.md`](railgunner.md).  
-   - Input already normalized in `sys/input.asm`.
+2. ~~**Player movement on rails (H-arm)**~~ **done**  
+   - Horizontal arm, **4px** steps; centre gap crossed to far legal rest.  
+   - Barrel rest up/down only; opposite stick → mid swing (R or L, ~5 frames).  
+   - RUN/STOP → game over (FIRE reserved for shooting).  
+   - Vertical rail mount / full intersection rules still later.
 
 3. **Character bullets**  
    - New `render/bullets.asm` + fire path from play (throttle: one bullet per cell).  

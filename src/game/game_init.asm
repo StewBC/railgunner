@@ -20,7 +20,7 @@
     lda #0
     sta wave
 
-    ; Fresh object pool each session (clears leftover demo drones, etc.)
+    ; Fresh object pool each session (slot 0 = player; rest free)
     jsr objects::init
     jsr video::init_sprite_palette
 

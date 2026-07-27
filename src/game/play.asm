@@ -1,32 +1,22 @@
-; Play loop stub — art harness + FIRE ends session after a short guard.
-; After PLAY_FIRE_DELAY frames, FIRE edge → game over (scaffold demo path).
+; Play loop — player move / barrel; RUN/STOP → game over (kill switch).
+; FIRE is reserved for shooting (bullets later). Demo drone harness removed.
 
 .proc play_enter
     lda #COL_GREEN
     sta VIC_BORDER
-    lda #PLAY_FIRE_DELAY
-    sta mode_timer
-    lda #0
-    sta demo_anim_dir
-    lda #DEMO_ANIM_PERIOD
-    sta demo_anim_timer
-    jsr demo_apply_facings          ; left-facing on enter
     rts
 .endproc
 
 .proc play_update
-    jsr demo_anim_tick
-
-    lda mode_timer
-    beq play_accept_fire
-    dec mode_timer
-    rts
-play_accept_fire:
-    lda input_fire_edge
-    beq play_done
+    ; Kill switch: RUN/STOP edge → game over
+    lda input_runstop_edge
+    beq play_logic
     lda #MODE_GAME_OVER
     jsr mode_set
-play_done:
+    rts
+
+play_logic:
+    jsr player::update
     rts
 .endproc
 

@@ -38,6 +38,7 @@ BLNSW           = $CC
     sta input_fire_prev
     sta input_key_s_prev
     sta input_key_i_prev
+    sta input_runstop_prev
     sta mode_timer
     sta mode_state
     sta attract_lo

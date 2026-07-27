@@ -82,6 +82,9 @@ KEY_BIT_SPACE   = %00010000         ;  (1<<4)
 KEY_SEL_I       = %11101111         ; ~(1<<4)
 KEY_BIT_I       = %00000010         ;  (1<<1)
 ; S is KEY_SEL_S / KEY_BIT_S above (also used as joy-down)
+; RUN/STOP (c64m keyboard.c {row,col} = {7,7}) — same matrix row as Space
+KEY_SEL_RUNSTOP = %01111111         ; ~(1<<7)
+KEY_BIT_RUNSTOP = %10000000         ;  (1<<7)
 
 ; Screen geometry
 SCREEN_W        = 40
@@ -135,27 +138,26 @@ START_AMMO      = 8
 START_LEVEL     = 1
 WAVES_PER_LEVEL = 20
 
-; Play stub: frames to wait before FIRE ends the session (PAL ~1s)
-PLAY_FIRE_DELAY = 50
-
-; PLAY art harness: facing cycle period (~0.25s at 50 Hz logic)
-DEMO_ANIM_PERIOD = 15
-
-; VIC sprite top-left for quarter centres (visible ~320×200 at origin 24,50;
-; adjust by half multicolour sprite ~12×10 so the blob sits mid-quarter).
-; Quarters: UL / UR / LL / LR of the visible field.
-;
-; Mux note: non-overlapping objects often share a hardware lane; same-lane
-; release needs next_y >= prev_y+31. Also each mux job costs MUX_JOB_LINES (9)
-; raster lines — two sprites on the *same* Y late in the frame will miss the
-; deadline. Keep bottom-band Ys staggered (LR ≠ stack mid).
-DEMO_X_LEFT     = 92                ; centre of left half
-DEMO_X_RIGHT    = 252               ; centre of right half
-DEMO_Y_TOP      = 80                ; UL / UR
-DEMO_Y_STACK0   = 140               ; LL stack top (small)
-DEMO_Y_STACK1   = 172               ; LL stack mid (medium)
-DEMO_Y_STACK2   = 204               ; LL stack bot (large)
-DEMO_Y_LR       = 188               ; LR large (between stack mid/bot)
+; ---------------------------------------------------------------------------
+; Player (Stage 2 horizontal-arm slice)
+; VIC sprite top-left. Char col C left edge ≈ 24+C*8; row R top ≈ 50+R*8.
+; H-rail stand-in rows 12–13 (will be top/mid/bottom UDG later); mid path ~
+; row boundary 154. Y nudged so platform covers the middle of that band.
+; Centre (V-rail cross): walk through, never rest (coast on last dir).
+; ---------------------------------------------------------------------------
+PLAYER_MOVE_STEP        = 4
+PLAYER_SWING_MID_FRAMES = 5         ; mid facing (R or L) hold during barrel flip
+PLAYER_Y_HRAIL          = 144       ; was 140; +4 for H-rail middle (+8 overshot)
+PLAYER_X_MIN            = 28        ; left arm end (near col 0)
+PLAYER_X_MAX            = 320       ; right arm end (near col 39)
+PLAYER_ARM_LEFT_MAX     = 160       ; last legal *rest* X left of centre
+PLAYER_ARM_RIGHT_MIN    = 180       ; first legal *rest* X right of centre
+PLAYER_X_START          = 160       ; left of V-rail; barrel up (aim free)
+; player_move_dir values
+PLAYER_DIR_NONE         = 0
+PLAYER_DIR_RIGHT        = 1
+PLAYER_DIR_LEFT         = 2
+SPR_COLOR_PLAYER        = COL_GREEN
 
 ; Attract loop: text ↔ graphics (PAL 50Hz × 15s)
 ATTRACT_SECONDS = 15

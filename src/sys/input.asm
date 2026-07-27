@@ -16,6 +16,8 @@
     sta input_key_i
     sta input_key_s_edge
     sta input_key_i_edge
+    sta input_runstop
+    sta input_runstop_edge
 
     ; CIA direction: PA out (matrix select + joy2 sense), PB in (matrix + joy1)
     lda #$ff
@@ -86,11 +88,22 @@ save_i_prev:
     lda input_key_i
     sta input_key_i_prev
 
+    ; Rising edge on RUN/STOP
+    lda input_runstop
+    beq save_runstop_prev
+    lda input_runstop_prev
+    bne save_runstop_prev
+    lda #1
+    sta input_runstop_edge
+save_runstop_prev:
+    lda input_runstop
+    sta input_runstop_prev
+
     inc frame_count
     rts
 .endproc
 
-; Scan WASD + Space + I; OR into input_dirs / input_fire; set input_key_s/i.
+; Scan WASD + Space + I + RUN/STOP; OR into dirs/fire; set menu keys.
 ; PRA = select (0-bit), PRB = data (0 = down). Clobbers A.
 .proc input_scan_keyboard
     ; W → up
@@ -144,14 +157,21 @@ not_d:
     lda #1
     sta input_key_i
 not_i:
-    ; Space → fire
+    ; Space → fire  and  RUN/STOP → kill switch (same matrix row 7)
     lda #KEY_SEL_SPACE
     sta CIA1_PRA
     lda CIA1_PRB
+    tax
     and #KEY_BIT_SPACE
     bne not_space
     lda #1
     sta input_fire
 not_space:
+    txa
+    and #KEY_BIT_RUNSTOP
+    bne not_runstop
+    lda #1
+    sta input_runstop
+not_runstop:
     rts
 .endproc

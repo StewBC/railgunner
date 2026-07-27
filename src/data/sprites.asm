@@ -45,4 +45,17 @@ spr_drone_a_up:
 spr_drone_a_down:
     .incbin "../../assets/sprites/drone3_large_down.bin"
 
-SPR_FRAMES_SRC_SIZE = 12 * 64       ; 768 bytes
+SPR_FRAMES_SRC_SIZE = 12 * 64       ; 768 bytes (drone bank → $3000)
+
+; --- Player facings (copied into PLAYER_BUF_0 / $3E00 on demand) ---
+; Not installed into $3000; slot 0 uses SPR_PTR_PLAYER_0 ($F8).
+.align 64
+spr_player_left:
+    .incbin "../../assets/sprites/player_left.bin"
+spr_player_right:
+    .incbin "../../assets/sprites/player_right.bin"
+spr_player_up:
+    .incbin "../../assets/sprites/player_up.bin"
+spr_player_down:
+    .incbin "../../assets/sprites/player_down.bin"
+

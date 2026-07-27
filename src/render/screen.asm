@@ -304,11 +304,6 @@ hnext:
     adc #1
     cmp #40
     bcc hloop
-
-    ; Player stand-in at cross
-    ldx #19
-    ldy #11
-    lda #SC_STAR                    ; placeholder until player sprite exists
-    jsr screen_put_xy
+    ; Player is a hardware sprite (slot 0); no character stand-in.
     rts
 .endproc
