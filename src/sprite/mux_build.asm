@@ -100,6 +100,11 @@ gather_loop:
     cmp #2
     bcs gather_next
 
+    ; Y too high for mux job deadline (would force RASTER_DEADLINE on whole plan)
+    lda objects::obj_y_int, x
+    cmp #MUX_MIN_SPRITE_Y
+    bcc gather_next
+
     lda #21
     sta mux_j
     lda objects::obj_sprite_attr, x
@@ -245,20 +250,37 @@ assign_scan_previous:
     lda sprite_mux_data::build_slots, y
     tax
 
-    ; previous bottom < current top -> no overlap
-    lda sprite_mux_data::build_bottom_hi, x
-    bne check_current_end
-    lda sprite_mux_data::build_bottom_lo, x
+    ; Mux-safe lane conflict (not just pixel overlap). Same-lane reuse needs
+    ; upper_bottom + MUX_LANE_SEP <= lower_top (release vs deadline). Pixel-
+    ; separated sprites in that dead zone used to share a lane then die in
+    ; build_job_windows with RASTER_DEADLINE — freezing the last good plan.
+    lda objects::obj_y_int, x
     cmp mux_current_top
-    bcc assign_prev_next
-
-check_current_end:
-    ; current bottom < previous top -> no overlap
+    bcc prev_is_above                ; prev_top < cur_top → prev higher on screen
+    ; current is above previous (or same top): need cur_bottom+SEP <= prev_top
     lda mux_current_bottom_hi
     bne assign_overlap
     lda mux_current_bottom_lo
+    clc
+    adc #MUX_LANE_SEP
+    bcs assign_overlap
     cmp objects::obj_y_int, x
+    bcc assign_prev_next             ; cur_bottom+SEP < prev_top
+    beq assign_prev_next
+    bne assign_overlap
+
+prev_is_above:
+    ; need prev_bottom+SEP <= cur_top
+    lda sprite_mux_data::build_bottom_hi, x
+    bne assign_overlap
+    lda sprite_mux_data::build_bottom_lo, x
+    clc
+    adc #MUX_LANE_SEP
+    bcs assign_overlap
+    cmp mux_current_top
     bcc assign_prev_next
+    beq assign_prev_next
+    ; fall through to conflict
 
 assign_overlap:
     lda sprite_mux_data::build_lane, x
@@ -717,8 +739,13 @@ finish_common:
 .proc build
     lda objects::mux_plan_ready
     beq build_start
+    ; Ready plan still waiting for line-0 swap — not a hard failure.
+    ; Do NOT clear mux_build_valid_plan (a successful build may be waiting
+    ; to publish once ready drops; stomping it caused permanent PLAN_BUSY).
     lda #MUX_ERR_PLAN_BUSY
-    jmp build_fail
+    sta objects::mux_last_error
+    sec
+    rts
 build_start:
     jsr gather
     bcs build_fail

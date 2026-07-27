@@ -299,7 +299,9 @@ copy_loop:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; C drone rail blast — full hit (slice: no range check). Health 0 → next life.
+; C drone rail blast — full hit (slice: no range check).
+; Health 0 → pending_mode = NEXT_LIFE (applied at end of play tick — never
+; mode_set here; re-entering stage mid-drones/mux corrupts the object pool).
 ; Clobbers A. Preserves X,Y.
 ; ---------------------------------------------------------------------------
 .proc apply_c_blast_full
@@ -316,7 +318,7 @@ blast_store:
     lda health
     bne blast_done
     lda #MODE_NEXT_LIFE
-    jsr mode_set
+    sta pending_mode
 blast_done:
     rts
 .endproc

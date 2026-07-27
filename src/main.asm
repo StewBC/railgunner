@@ -61,11 +61,16 @@ main_loop:
     lda objects::mux_objects_dirty
     beq main_loop
     jsr sprite_mux_build::build
-    bcs main_loop                    ; retain previous immutable plan on failure
+    bcs mux_build_failed             ; keep prior plan; retry while dirty
     jsr sprite_mux_build::publish
-    bcs main_loop
+    bcs mux_build_failed
     lda #0
     sta objects::mux_objects_dirty
+    jmp main_loop
+mux_build_failed:
+    ; PLAN_BUSY is normal while IRQ still holds ready plan — leave dirty set.
+    ; Hard errors (deadline/lane) also leave dirty so we rebuild when geometry
+    ; is legal again; never clear dirty on failure (that freezes sprites).
     jmp main_loop
 
 .include "boot/init.asm"

@@ -16,6 +16,7 @@
     sta level
     lda #0
     sta wave
+    sta pending_mode
     lda #1
     sta hud_status_dirty
 

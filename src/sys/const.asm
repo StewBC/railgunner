@@ -301,6 +301,12 @@ MUX_FRAME_IRQ_LINES = 28
 MUX_FIRST_JOB_LINE  = 28
 MUX_JOB_LINES       = 9
 MUX_POST_GUARD      = 1
+; Same-lane reuse needs prev_bottom+2 <= next_top-JOB_LINES, i.e. gap of
+; JOB_LINES+POST_GUARD+1 beyond display separation. Lane assign must forbid
+; the lane in that dead zone or build dies with RASTER_DEADLINE.
+MUX_LANE_SEP        = MUX_JOB_LINES + MUX_POST_GUARD + 1   ; 11
+; Earliest Y that can meet first-job deadline (line 28): top - JOB_LINES >= 28
+MUX_MIN_SPRITE_Y    = MUX_FIRST_JOB_LINE + MUX_JOB_LINES   ; 37
 
 MUX_OK                  = 0
 MUX_ERR_TOO_MANY_VISIBLE = 1

@@ -37,6 +37,8 @@ player_move_dir:.res 1              ; PLAYER_DIR_*; last H travel (coast through
 ; Mode-local timers / scratch
 mode_timer:     .res 1
 mode_state:     .res 1
+; Deferred mode change from mid-tick combat (never mode_set inside drones/collision)
+pending_mode:   .res 1              ; 0 = none; else MODE_* applied end of play_update
 
 ; Attract loop countdown (16-bit frames remaining on current attract page)
 attract_lo:     .res 1

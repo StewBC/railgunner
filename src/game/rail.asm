@@ -115,12 +115,13 @@ dmg_e_step:
     rts
 
 e_destroy:
-    ; E at '2' → space + rail destroyed
+    ; E at '2' → space + rail destroyed (defer mode_set to end of play tick)
     lda #3
     sta rail_data::dmg_e, x
     jsr draw_e
     lda #MODE_GAME_OVER
-    jmp mode_set
+    sta pending_mode
+    rts
 
 dmg_rts:
     rts
