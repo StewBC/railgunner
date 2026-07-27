@@ -45,6 +45,14 @@ input_key_i_edge: .res 1
 input_key_s_prev: .res 1
 input_key_i_prev: .res 1
 
+; Typewriter (story screen): source cursor + screen pen + previous cell
+type_src_lo:    .res 1
+type_src_hi:    .res 1
+type_col:       .res 1
+type_row:       .res 1
+type_prev_col:  .res 1              ; $FF = no previous glyph yet
+type_prev_row:  .res 1
+
 ; General temps / pointers
 tmp0:           .res 1
 tmp1:           .res 1

@@ -124,6 +124,13 @@ SCORE_COLOR_PERIOD = 10
 ; Ignore fire for a few frames after entering a menu (held-button bleed)
 MENU_FIRE_GUARD = 20
 
+; Story typewriter
+STORY_MARGIN_X  = 1                 ; left-justified inset
+STORY_START_Y   = 0
+STORY_TYPE_DELAY = 2                ; frames between glyphs (~25 cps PAL)
+STORY_STATE_TYPING = 0
+STORY_STATE_DONE   = 1
+
 ; Screen codes for placeholder art
 SC_SPACE        = $20
 SC_STAR         = $2A               ; "*" player stand-in

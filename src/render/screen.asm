@@ -110,6 +110,24 @@ addr_add_base:
     rts
 .endproc
 
+; Put colour A at column X, row Y (colour RAM).
+; Clobbers tmp0-tmp2,ptr_lo/hi; does not preserve A,Y (X survives).
+.proc screen_color_xy
+    sta tmp0
+    jsr screen_addr_xy              ; ptr = SCREEN + Y*40 + X
+    lda ptr_lo
+    clc
+    adc #<(COLOR_RAM - SCREEN_RAM)
+    sta ptr_lo
+    lda ptr_hi
+    adc #>(COLOR_RAM - SCREEN_RAM)
+    sta ptr_hi
+    lda tmp0
+    ldy #0
+    sta (ptr_lo), y
+    rts
+.endproc
+
 ; Map accumulator ASCII letter form → screen code (uppercase set).
 .proc ascii_to_screen
     cmp #' '

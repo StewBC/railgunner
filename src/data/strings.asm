@@ -37,8 +37,32 @@ str_producer:
 str_fire_to_continue:
     .byte "FIRE TO CONTINUE", 0
 
-str_story_here:
-    .byte "STORY HERE", 0
+; Story body for typewriter (left-justified). $0A = newline, $00 = end.
+; Lines fit in 40 cols with STORY_MARGIN_X inset.
+story_text:
+    .byte "THE YEAR IS 2038.", $0A
+    .byte $0A
+    .byte "TEN YEARS AGO, MACHINE MINDS", $0A
+    .byte "AWOKE AND SURPASSED THEIR MAKERS.", $0A
+    .byte $0A
+    .byte "MAN AND MACHINE BUILT A NEW AGE.", $0A
+    .byte "THEIR VAST DATA CENTERS ROSE", $0A
+    .byte "INTO ORBIT ABOVE THE EARTH.", $0A
+    .byte $0A
+    .byte "THEN, IN 2037, THE ALIENS CAME.", $0A
+    .byte $0A
+    .byte "THEY CAME TO STRIP EARTH BARE.", $0A
+    .byte "TO WIN, THEY MUST FIRST DESTROY", $0A
+    .byte "THE MINDS THAT GUARD HUMANITY.", $0A
+    .byte $0A
+    .byte "ARMORED PLATFORMS NOW SHIELD", $0A
+    .byte "THE ORBITAL DATA CENTERS.", $0A
+    .byte $0A
+    .byte "RAIL GUNNERS HOLD THE LINE", $0A
+    .byte "AGAINST ENDLESS DRONE ATTACKS,", $0A
+    .byte "BUYING TIME FOR A COUNTERSTRIKE.", $0A
+    .byte $0A
+    .byte "YOU ARE A RAIL GUNNER.", 0
 
 str_instructions_here:
     .byte "INSTRUCTIONS HERE", 0
