@@ -23,7 +23,8 @@ the tool (and fix the handoff).
    agent launch, remote API recipes, **pitfalls / hard-won lessons** (reset,
    BASIC pointers, ZP clobber, keyboard matrix). Read the pitfalls before
    debugging input or screen code.
-6. Component handoffs relevant to the task (added as they appear).
+6. Component handoffs relevant to the task. For graphical objects, hardware
+   sprites, the mux, or collision attribution, read **`objects-sprites.md`**.
 7. Source under `src/` (root unit: `src/main.asm`) and samples under
    `../c64m/samples/` when learning idioms.
 
@@ -38,6 +39,7 @@ update the handoff so the next agent does not rediscover it.
 | [`railgunner.md`](railgunner.md) | Top-level design brief: screen, controls, combat, bonuses, wave data, HOW |
 | [`roadmap.md`](roadmap.md) | Dev stages, game flow/modes, stage×element matrix, open questions |
 | [`repo-layout.md`](repo-layout.md) | Repo tree, components, file-count rationale, vertical-slice file set |
+| [`objects-sprites.md`](objects-sprites.md) | 24-slot graphical-object pool, fixed-point layout, mux, IRQ/collision contracts, PAL/NTSC timing |
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
 | [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, debug/control recipes for agents |
 

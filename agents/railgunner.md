@@ -82,46 +82,58 @@ Drones fly in from the screen edges (sides for the horizontal rail, top/bottom f
 
 ### Types
 
-- **A (small)**: 1 hit to destroy.
+- **A (large)**: 3 hits to destroy.
 - **B (medium)**: 2 hits to destroy.
-- **C (large)**: 3 hits to destroy.
+- **C (small)**: 1 hit to destroy.
 
-*(Note: type letters denote hit-count tier only — see Draw/Hit Priority below for how size maps to sprite assignment.)*
+**Type convention is fixed:** A = large, B = medium, C = small. Preserve this
+mapping in code, data, art names, and future documentation.
 
 Speed is constant within a given wave; later waves within a level, and later levels overall, increase drone speed as a difficulty lever. All drones in a wave move at that wave's speed.
 
 ### What each type attacks
 
-- **A (small) drones** attack the **player only**. On reaching the rail they explode with a radial blast: player within ~8px of the blast origin takes a **direct hit**, player within ~8-16px takes a **half hit** (exact radii tunable). The blast does not damage the rail and does not chain into other drones.
-- **B (medium) and C (large) drones** attack the **rail only**. On reaching the rail they explode, causing rail damage. They do not harm the player directly.
+- **C (small) drones** attack the **player only**. On reaching the rail they explode with a radial blast: player within ~8px of the blast origin takes a **direct hit**, player within ~8-16px takes a **half hit** (exact radii tunable). The blast does not damage the rail and does not chain into other drones.
+- **A (large) and B (medium) drones** attack the **rail only**. On reaching the rail they explode, causing rail damage. They do not harm the player directly.
 
-Since an A drone's explosion origin is always at the rail edge, the player is in some degree of blast range any time they are occupying the rail arm an A reaches — this is the core risk/reward of choosing which arm to defend, not an oversight.
+Since a C drone's explosion origin is always at the rail edge, the player is in some degree of blast range any time they are occupying the rail arm a C reaches — this is the core risk/reward of choosing which arm to defend, not an oversight.
 
 ### Layering and hit resolution
 
 Drones can overlap on screen (e.g. a small drone flying in front of a large one). Layering ranges from full overlap to partial (~50%) to no overlap at all — overlap frequency is a tunable difficulty knob, likely wired into the per-wave data (see Wave Data, below), with early levels staggered-only and full overlaps introduced later as a distinct skill.
 
-**Draw and hit priority are unified via VIC-II sprite number**: small (A) drones are always assigned the lowest available sprite numbers (highest display priority, drawn frontmost); large (C) drones get the highest sprite numbers (drawn behind). Medium (B) sits between. This is the same priority ordering the sprite multiplexer must preserve when cycling drones through hardware sprite slots.
+**Draw priority uses VIC-II sprite number**: small (C) drones are always assigned the lowest available sprite numbers (highest display priority, drawn frontmost); large (A) drones get the highest sprite numbers (drawn behind). Medium (B) sits between. This is the same priority ordering the sprite multiplexer must preserve when cycling drones through hardware sprite slots.
 
-For a bullet reaching a stack of overlapping drones, the frontmost (lowest sprite number, smallest) drone absorbs the hit first, and once destroyed the next drone behind it becomes the frontmost target, and so on. In the case of a perfect overlap between two same-priority-band drones, both may register a simultaneous hit via hardware collision — this is an acceptable outcome and not specifically resolved further.
+VIC-II sprite/background collision is independent of sprite draw priority. If a
+bullet overlaps opaque pixels from several drones in the same frame, every
+reported drone receives the hit; the bullet is consumed once after all
+collision candidates have been examined. This permissive result is intentional
+and can read visually like one drone's destruction caught the overlapping
+drones. Sprite number controls appearance, not exclusive bullet ownership.
 
-**Collision detection** uses the VIC-II sprite-to-background collision register ($D01F) rather than manual bounding-box math: a drone explodes the instant it registers a collision with any non-blank background pixel. Since both bullets and rail structure are background characters, the register alone can't distinguish "hit a bullet" from "reached the rail" — on collision, a quick software check of the character at the collision point (bullet-char vs. rail-structure-char) determines which outcome applies (score + bullet consumed, vs. rail damage).
+**Collision detection** uses the VIC-II sprite-to-background collision register
+($D01F) as a candidate latch. Since both bullets and rail structure are
+background characters, the register alone cannot distinguish "hit a bullet"
+from "reached the rail"; software checks the character cells under the drone's
+tight hitbox and applies bullet damage or rail arrival. The mux must translate
+the hardware collision bit to the logical object before reusing that hardware
+sprite. See [`objects-sprites.md`](objects-sprites.md).
 
 ## Rail damage
 
-The rail visibly accumulates damage from B/C impacts, represented via redefined characters (roughly 5 tunable damage levels per segment, same technique as static-frame character redefinition elsewhere in the project).
+The rail visibly accumulates damage from A/B impacts, represented via redefined characters (roughly 5 tunable damage levels per segment, same technique as static-frame character redefinition elsewhere in the project).
 
 ## Player health, shield, and damage resolution
 
-The player has a health pool rather than a binary "hit = dead" state. A full (direct-range) **A** blast costs 2 points; a half (outer-range) blast costs 1 point. Starting health is tunable, likely `4 * health-bar-character-count` given a 2px-per-step bar, so that a full hit removes a clearly visible chunk of the bar. Health reaching 0 kills the player, at which point a reserve life (if any) is consumed and the player respawns; running out of lives, or the rail being fully destroyed, both end the game (there is no meaningful distinction between the two loss conditions — either way, it's Game Over).
+The player has a health pool rather than a binary "hit = dead" state. A full (direct-range) **C** blast costs 2 points; a half (outer-range) blast costs 1 point. Starting health is tunable, likely `4 * health-bar-character-count` given a 2px-per-step bar, so that a full hit removes a clearly visible chunk of the bar. Health reaching 0 kills the player, at which point a reserve life (if any) is consumed and the player respawns; running out of lives, or the rail being fully destroyed, both end the game (there is no meaningful distinction between the two loss conditions — either way, it's Game Over).
 
-**Shield** (see Bonuses) uses the same damage-point currency as health: while a shield is active, incoming **A-blast** damage is deducted from the shield pool instead of health, fully absorbing each hit regardless of size until the shield pool is exhausted, at which point damage resumes coming off health directly.
+**Shield** (see Bonuses) uses the same damage-point currency as health: while a shield is active, incoming **C-blast** damage is deducted from the shield pool instead of health, fully absorbing each hit regardless of size until the shield pool is exhausted, at which point damage resumes coming off health directly.
 
 ## Bonuses
 
 Periodically, a bonus "parcel" spawns at the end of a rail arm and travels its full length. It always starts on the rail arm the player is **not** currently occupying, forcing a deliberate choice to move and intercept it. A bonus type never spawns while that same type is already active on the player (no stacking within a type), but different bonus types can be held simultaneously.
 
-- **Shield**: absorbs incoming A-blast damage before it touches health (see above). Comes in three strengths — 6, 4, or 2 damage-points' worth — shown as a colored ring around the player, color indicating strength. Drop rate is weighted so the strongest tier (6) is rare and the weakest (2) is common.
+- **Shield**: absorbs incoming C-blast damage before it touches health (see above). Comes in three strengths — 6, 4, or 2 damage-points' worth — shown as a colored ring around the player, color indicating strength. Drop rate is weighted so the strongest tier (6) is rare and the weakest (2) is common.
 - **Damage multiplier**: player projectiles do 2x or 3x damage for a tunable duration. 3x is short-lived and degrades to 2x rather than expiring outright. Indicated by projectile color, using the same color coding as the shield tiers.
 - **Repair**: shown as a small object orbiting the player. While active, standing stationary over a damaged rail segment repairs it.
 - **Ammo** (once the ammo mechanic is live): replenishes the ammo bar. Missing one while ammo is scarce is a real threat.
@@ -141,12 +153,12 @@ The following should be table-driven per wave, to be filled in during tuning:
 1. **Rail**: user-defined background characters; damage levels are just alternate character definitions.
 2. **Player and drones**: hardware sprites.
 3. **Bullets**: user-defined characters, animated via a fixed 8-frame state machine per rail direction; fire rate is naturally capped by the rule that no two bullets share a cell simultaneously.
-4. **Player sprite states**: barrel orientation (2 base frames, reused across both rail axes via the 90° remap), a shield-ring overlay, and a rotating repair-drone overlay (likely a separate sprite given its animation frame count).
-5. **Sprite budget**: the player occupies up to 2 hardware sprite slots, leaving 6 of the 8 available for drones — roughly 2-3 concurrent waves without multiplexing. A raster-IRQ-driven sprite multiplexer is planned to increase effective concurrent drone count, using table-driven, offset wave launch timing to guarantee no more than 8 sprites ever share a raster line, while preserving the small-drones-get-low-sprite-numbers priority assignment described above even as drones are cycled through slots.
+4. **Player sprite states**: barrel orientation (2 base frames, reused across both rail axes via the 90° remap), shield ring, and repair animation are composited into one dynamically updated sprite frame where the art permits. Use two writable 64-byte buffers and swap the sprite pointer after updating the inactive buffer.
+5. **Graphical-object/mux system**: one common 24-slot pool contains player, drones, parcel, and later sprite effects; logical slot 0 is permanently the player. All eight hardware sprites are transient mux lanes. Wave launch timing targets at most 7 graphical objects per raster line and must also leave enough raster time for lane reuse. Preserve `C < B < A` hardware-sprite numbering for overlapping drones. Full implementation contract: [`objects-sprites.md`](objects-sprites.md).
 
 ## Suggested build order
 
-Given the sprite multiplexer and the bullet/rail/collision-disambiguation pipeline are the parts with the most technical unknowns, a first vertical slice should target: one rail arm, one drone type, no bonuses — just enough to prove out sprite multiplexing and the collision-resolution logic (bullet vs. rail vs. drone-layer priority) before layering in damage tiers, bonuses, and the full wave table.
+Given the sprite multiplexer and the bullet/rail/collision-disambiguation pipeline are the parts with the most technical unknowns, a first vertical slice should target: one rail arm, one drone type, no bonuses — just enough to prove out sprite multiplexing, hardware-slot collision attribution, and bullet-vs-rail resolution before layering in damage tiers, bonuses, and the full wave table.
 
 **Full stage plan, game-mode flow, and what to build when:** see
 [`roadmap.md`](roadmap.md). This brief remains the source of truth for

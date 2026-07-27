@@ -68,10 +68,14 @@ Background characters, not sprite logic.
 
 | Piece | Responsibility |
 |-------|----------------|
-| Player sprite | Position on rail centerline, 2 barrel frames + 90° remap, shield/repair overlays |
-| Drone sprites | A/B/C appearance, size → sprite number priority band |
-| Sprite mux | Raster-driven reuse of 6 drone HW slots; ≤8 sprites/line guarantee |
+| Graphical-object pool | 24 common slots; player fixed at logical slot 0; SoA state |
+| Player sprite | Position on rail centerline, 2 barrel frames + 90° remap, composited shield/repair animation |
+| Drone sprites | A=large, B=medium, C=small; `C < B < A` sprite-number priority |
+| Sprite mux | Raster-driven reuse of all 8 HW slots; content targets ≤7 sprites/line |
 | Sprite data | Pointer tables / `.incbin` frames |
+
+Detailed layout, APIs, scheduling, collision attribution, and PAL/NTSC contract:
+[`objects-sprites.md`](objects-sprites.md).
 
 ### E. Gameplay (~8–12 files)
 
@@ -82,9 +86,9 @@ Logic that mutates game state; may call into render/sprite modules.
 | Player move | Rail lock, barrel switch, center intersection mount rules |
 | Shooting / ammo | Fire stream, cell throttle, ammo consume when unlocked |
 | Drones / motion | Straight-line to rail, speed, spawn from edges/quadrants |
-| Collision | `$D01F` sprite-BG; disambiguate bullet vs rail char; hit priority |
+| Collision | `$D01F` sprite-BG; map HW lane to object; disambiguate bullet vs rail |
 | Rail damage logic | A/B impact → segment damage; full rail destruction → game over |
-| Health / lives | A blast radii (full/half), shield pool, respawn, lives |
+| Health / lives | C blast radii (full/half), shield pool, respawn, lives |
 | Bonuses | Parcel spawn on opposite arm, types, no same-type stack |
 | Waves / levels | Table-driven waves: quadrants, speed, mix, overlap, bonus timing |
 | Score | Points, multipliers |
@@ -200,6 +204,7 @@ Live-in-emulator vs file build may differ via `C64MASM` (see assembler handoff);
 | Shooting / bullet cells | `game/` + `render/` | `data/` (bullet chars) |
 | Ammo | `game/` | `render/` (bar), `frontend/` (radio msg) |
 | Drones A/B/C | `game/` + `sprite/` | `data/` |
+| Graphical-object pool | `game/objects` | `sprite/` (immutable plans) |
 | Collision `$D01F` | `game/collision` | — |
 | Rail damage | `game/` + `render/` | `data/` |
 | Health / shield / lives | `game/` | `render/` HUD, `sprite/` overlays |
@@ -239,8 +244,11 @@ src/sys/input.asm
 src/render/screen.asm        ; draw one arm + structure
 src/render/bullets.asm
 src/sprite/player.asm
-src/sprite/drones.asm        ; type A only at first
+src/sprite/drones.asm        ; one drone type at first
+src/sprite/mux_build.asm
+src/sprite/mux_irq.asm
 src/game/player.asm
+src/game/objects.asm
 src/game/shoot.asm
 src/game/drones.asm
 src/game/collision.asm

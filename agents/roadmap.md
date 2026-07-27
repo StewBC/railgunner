@@ -184,7 +184,9 @@ Exit conditions:
 - Wave speed, composition, quadrants: see wave data in design brief.
 
 Lots of subsystems live under Play (mux, collision, bonuses, ammo). Those get
-their own detail docs; this element only owns the loop and its exits.
+their own detail docs; this element only owns the loop and its exits. The
+graphical-object pool, mux frame contract, and hardware collision attribution
+are specified in [`objects-sprites.md`](objects-sprites.md).
 
 ### Next Wave (3)
 
@@ -256,7 +258,7 @@ On player death:
 3. **Core loop** — wrap the slice in real session flow: waves, lives, re-init,
    game over back to title. Placeholder wave count (20). Second/third rail arms
    can start appearing here if the slice is solid.
-4. **Systems** — A/B/C, health bar and rail damage levels, draw/hit priority,
+4. **Systems** — A/B/C, health bar and rail damage levels, draw priority,
    wave tables, sprite multiplexer when concurrent drones demand it.
 5. **Features** — bonuses, ammo unlock fiction + bar, disk high scores, music
    hooks, fuller title/HS presentation.
@@ -273,7 +275,7 @@ Record decisions here when made; do not block early stages on them.
 |-------|-----------------|--------|
 | Waves per level | 20 | Wave/level tables |
 | Starting lives | 3 | Tuning |
-| Starting health | Full bar (design formula) | Tuning with A-blast costs |
+| Starting health | Full bar (design formula) | Tuning with C-blast costs |
 | Rail/health on next life | Reset full | Confirm vs carry damage |
 | High scores without disk | RAM zeros / no persist | Load/save file format |
 | Wave-clear vs level-clear UI | Short pause + text | Art / SFX |
@@ -282,15 +284,21 @@ Record decisions here when made; do not block early stages on them.
 
 ---
 
-## Future detail docs (spawn as needed)
+## Detail docs
 
 When an area outgrows a sketch, add a focused handoff and link it from
-[`README.md`](README.md) and the relevant element above. Candidates:
+[`README.md`](README.md) and the relevant element above.
+
+Present:
+
+- [`objects-sprites.md`](objects-sprites.md) — graphical-object pool, sprite
+  mux, IRQ/collision attribution, PAL/NTSC cadence.
+
+Future candidates:
 
 - Play loop & frame timing (IRQ vs main, update order)
 - Collision disambiguation (sprite–bg + char peek)
 - Wave / level data format
-- Sprite multiplexer constraints
 - Bonus spawn and parcel motion
 - High-score file format and disk I/O
 - Audio / music triggers per mode
