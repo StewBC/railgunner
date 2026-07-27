@@ -40,6 +40,7 @@ update the handoff so the next agent does not rediscover it.
 | [`roadmap.md`](roadmap.md) | Dev stages, game flow/modes, stage×element matrix, open questions |
 | [`repo-layout.md`](repo-layout.md) | Repo tree, components, file-count rationale, vertical-slice file set |
 | [`objects-sprites.md`](objects-sprites.md) | 24-slot graphical-object pool, fixed-point layout, mux, IRQ/collision contracts, PAL/NTSC timing |
+| [`sprite-mux-status.md`](sprite-mux-status.md) | Implemented mux status, demos, verification, remaining stress tests |
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
 | [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, debug/control recipes for agents |
 

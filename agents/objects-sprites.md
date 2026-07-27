@@ -579,10 +579,13 @@ For each candidate:
 2. OR their hardware-lane bits into a forbidden mask.
 3. For a drone, set `minimum_lane` to one greater than every overlapping
    higher-priority drone lane.
-4. Select the lowest numbered non-forbidden lane at or above
+4. A drone selects the lowest numbered non-forbidden lane at or above
    `minimum_lane`.
-5. Neutral objects select the lowest non-forbidden lane; their relative visual
-   order is unspecified.
+5. Neutral objects have no relative visual-order requirement. They select an
+   available lane by first trying their candidate ordinal modulo eight, then
+   falling back to the lowest legal lane. This compact round-robin bias spreads
+   their reloads instead of needlessly hammering sprite 0, without consuming
+   options needed by drone priority coloring.
 6. If no lane 0–7 is legal, return `MUX_ERR_LANE_CAPACITY`.
 
 Processing higher-priority classes first and assigning them the lowest

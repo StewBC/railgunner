@@ -285,9 +285,25 @@ assign_overlap:
 
 assign_prev_next:
     inc mux_j
-    jmp assign_scan_previous
+    bne assign_scan_previous
 
 assign_choose:
+    ; Drone classes retain lowest-number-first allocation to preserve C<B<A.
+    ; Neutral objects have no relative-priority requirement. Prefer their
+    ; candidate ordinal modulo eight, then fall back to the first legal lane.
+    ldy mux_current
+    lda sprite_mux_data::build_priority, y
+    cmp #3
+    bcc choose_lowest
+
+    lda mux_i
+    and #(MUX_HW_COUNT - 1)
+    tay
+    lda lane_bit_table, y
+    and mux_forbidden
+    beq lane_found
+
+choose_lowest:
     ldy mux_min_lane
 choose_loop:
     cpy #MUX_HW_COUNT
@@ -296,7 +312,7 @@ choose_loop:
     and mux_forbidden
     beq lane_found
     iny
-    jmp choose_loop
+    bne choose_loop
 lane_found:
     ldx mux_current
     tya

@@ -488,6 +488,21 @@ reproducible (exact command + response). Mark severity (papercut / slows-work /
 blocks-work). Cross off (`~~struck~~ fixed in c64m <ref>`) when resolved
 upstream — do not delete history.
 
+### 2026-07-26 — ARGB framebuffer read closes the control connection
+
+- **Severity:** slows-work.
+- **Did:** paused a visible c64m session, successfully read
+  `get-frame format=indexed8` (504×312, 157248 bytes), then opened a new client
+  and requested `get-frame format=argb8888`.
+- **c64m did:** closed the connection while the vendored client was reading the
+  declared payload (`EOFError: connection closed`); no ARGB frame was returned.
+- **Friction:** indexed output proves the framebuffer RPC is otherwise
+  available, but visual QA needs an additional palette conversion when the
+  direct full-colour format disconnects.
+- **Suggested improvement:** keep the connection open and return the complete
+  ARGB payload, or return a protocol error before the data header if the
+  requested payload cannot be delivered.
+
 ### 2026-07-26 — `agent_session.py` retains the control server's sole client
 
 - **Severity:** slows-work.
