@@ -13,9 +13,9 @@ CIRCLE_PHASE_MASK = 63
     sta ptr_lo
     lda #>demo_title
     sta ptr_hi
-    lda #<(SCREEN_RAM + 1 * SCREEN_W + 1)
+    lda #<(SCREEN_RAM + 1 * SCREEN_W + 7)
     sta print_ptr_lo
-    lda #>(SCREEN_RAM + 1 * SCREEN_W + 1)
+    lda #>(SCREEN_RAM + 1 * SCREEN_W + 7)
     sta print_ptr_hi
     jsr demo_print
 
@@ -23,9 +23,9 @@ CIRCLE_PHASE_MASK = 63
     sta ptr_lo
     lda #>demo_subtitle
     sta ptr_hi
-    lda #<(SCREEN_RAM + 2 * SCREEN_W + 2)
+    lda #<(SCREEN_RAM + 2 * SCREEN_W)
     sta print_ptr_lo
-    lda #>(SCREEN_RAM + 2 * SCREEN_W + 2)
+    lda #>(SCREEN_RAM + 2 * SCREEN_W)
     sta print_ptr_hi
     jsr demo_print
     jsr demo_draw_standard
