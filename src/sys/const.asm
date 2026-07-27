@@ -6,7 +6,6 @@
 ; ---------------------------------------------------------------------------
 SCREEN_RAM      = $0400
 COLOR_RAM       = $D800
-BITMAP_RAM      = $2000             ; 8KB VIC bitmap buffer (bank 0)
 VIC_BORDER      = $D020
 VIC_BG0         = $D021
 VIC_CTRL1       = $D011
@@ -47,10 +46,29 @@ VIC_CTRL1_BITMAP = $3b              ; bitmap (BMM), DEN, 25 rows, yscroll 3
 VIC_CTRL1_TEXT_BLANK   = VIC_CTRL1_TEXT & VIC_DEN_MASK
 VIC_CTRL1_BITMAP_BLANK = VIC_CTRL1_BITMAP & VIC_DEN_MASK
 VIC_CTRL2_HIRES = $08               ; 40 cols, multicolour off
-VIC_MEM_TEXT    = $14               ; screen $0400, charset ROM $1000
-VIC_MEM_BITMAP  = $18               ; screen $0400, bitmap $2000
+VIC_MEM_TEXT    = $14               ; screen $0400, charset ROM $1000 (boot only)
+; Text + RAM charset @ $2000 (bank 0). Same $D018 as old bitmap@ $2000; BMM selects.
+VIC_MEM_TEXT_RAM = $18              ; screen $0400, charset RAM $2000
 BITMAP_SIZE     = 8000              ; 320×200 / 8
 BITMAP_COLOR_SIZE = 1000            ; 40×25 colour matrix
+
+; VIC bank select in CIA2_PRA bits 0–1 (inverted: %11=bank0 … %00=bank3)
+VIC_BANK0_BITS  = %00000011         ; $0000–$3FFF
+VIC_BANK3_BITS  = %00000000         ; $C000–$FFFF
+
+; Title hires — parked once under KERNAL (VIC bank 3). Fire-and-forget.
+; Matrix $CC00 (avoids object pool $C000–$C8FF). Bitmap $E000–$FF3F.
+TITLE_MATRIX_RAM = $CC00
+TITLE_BITMAP_RAM = $E000
+; $D018 in bank 3: matrix offset $0C00 → 3, bitmap +$2000 → bit3
+VIC_MEM_TITLE   = $38
+
+; ---------------------------------------------------------------------------
+; Character set (VIC bank 0) — install once at cold init; all text uses this.
+; ---------------------------------------------------------------------------
+CHARSET_RAM     = $2000
+CHARSET_SIZE    = 2048              ; 256 glyphs × 8 bytes
+CHAR_ROM        = $D000             ; uppercase/graphics set (I/O bank out)
 
 ; Joystick port 2 bits (active low on PRA)
 JOY_UP          = %00000001
@@ -280,3 +298,23 @@ SC_PLUS         = $2B               ; "+"
 SC_DASH         = $2D               ; "-" horizontal rail stand-in
 SC_ZERO         = $30
 SC_VBAR         = $5D               ; "|" vertical bar (vertical rail stand-in)
+
+; ---------------------------------------------------------------------------
+; Bullet UDG screen codes (8 glyphs; see data/charset_bullets.asm)
+; Vertical set: phase 0 = blob at top of cell … phase 3 = bottom.
+;   Fire DOWN → play phases 0,1,2,3 ; fire UP → 3,2,1,0
+; Horizontal set: phase 0 = blob at left … phase 3 = right.
+;   Fire RIGHT → 0,1,2,3 ; fire LEFT → 3,2,1,0
+; High codes: not used by PETSCII HUD strings.
+; ---------------------------------------------------------------------------
+SC_BULLET_V0    = $F0               ; vertical phase 0 (top)
+SC_BULLET_V1    = $F1
+SC_BULLET_V2    = $F2
+SC_BULLET_V3    = $F3               ; vertical phase 3 (bottom)
+SC_BULLET_H0    = $F4               ; horizontal phase 0 (left)
+SC_BULLET_H1    = $F5
+SC_BULLET_H2    = $F6
+SC_BULLET_H3    = $F7               ; horizontal phase 3 (right)
+SC_BULLET_FIRST = SC_BULLET_V0
+SC_BULLET_COUNT = 8
+BULLET_PHASES   = 4                 ; sub-cell frames per axis

@@ -45,21 +45,13 @@ attract_expired:
     sta VIC_BORDER
     sta VIC_BG0
 
-    ; VIC bank 0 ($0000–$3FFF): bits 0–1 of $DD00 are inverted select.
-    lda CIA2_PRA
-    and #%11111100
-    ora #%00000011
-    sta CIA2_PRA
-
-    jsr title_copy_bitmap
-    jsr title_copy_colors
-
-    ; Bitmap mode still blanked, then reveal
+    ; Assets already parked under KERNAL at cold init — just point VIC at them.
+    jsr vic_select_bank3
     lda #VIC_CTRL1_BITMAP_BLANK
     sta VIC_CTRL1
     lda #VIC_CTRL2_HIRES
     sta VIC_CTRL2
-    lda #VIC_MEM_BITMAP
+    lda #VIC_MEM_TITLE              ; matrix $CC00, bitmap $E000
     sta VIC_MEM
     jsr screen_unblank
 
@@ -91,51 +83,20 @@ gfx_done:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Copy title_bitmap (8000) → BITMAP_RAM ($2000).
+; title_park_hires — once at cold init.
+;   bitmap  title_bitmap → $E000 (RAM under KERNAL)
+;   matrix  title_colors → $CC00 (VIC bank 3; away from object pool)
+; Clobbers A,X,Y,ptr_*,print_ptr_*,tmp0
 ; ---------------------------------------------------------------------------
-.proc title_copy_bitmap
-    lda #<title_bitmap
-    sta ptr_lo
-    lda #>title_bitmap
-    sta ptr_hi
-    lda #<BITMAP_RAM
-    sta print_ptr_lo
-    lda #>BITMAP_RAM
-    sta print_ptr_hi
-
-    ldx #31                         ; 31×256 = 7936
-    ldy #0
-bmp_page:
-    lda (ptr_lo), y
-    sta (print_ptr_lo), y
-    iny
-    bne bmp_page
-    inc ptr_hi
-    inc print_ptr_hi
-    dex
-    bne bmp_page
-
-    ldy #0
-bmp_tail:
-    lda (ptr_lo), y
-    sta (print_ptr_lo), y
-    iny
-    cpy #64
-    bne bmp_tail
-    rts
-.endproc
-
-; ---------------------------------------------------------------------------
-; Copy title_colors (1000) → SCREEN_RAM ($0400) — hires colour matrix.
-; ---------------------------------------------------------------------------
-.proc title_copy_colors
+.proc title_park_hires
+    ; --- colour matrix @ $CC00 (always RAM; no $01 dance) ---
     lda #<title_colors
     sta ptr_lo
     lda #>title_colors
     sta ptr_hi
-    lda #<SCREEN_RAM
+    lda #<TITLE_MATRIX_RAM
     sta print_ptr_lo
-    lda #>SCREEN_RAM
+    lda #>TITLE_MATRIX_RAM
     sta print_ptr_hi
 
     ldx #3                          ; 3×256 = 768
@@ -157,6 +118,46 @@ col_tail:
     iny
     cpy #(BITMAP_COLOR_SIZE - 768)
     bne col_tail
+
+    ; --- bitmap @ $E000: bank out KERNAL (keep I/O) ---
+    sei
+    lda $01
+    sta tmp0
+    lda #$35                        ; RAM $A000, I/O $D000, RAM $E000
+    sta $01
+
+    lda #<title_bitmap
+    sta ptr_lo
+    lda #>title_bitmap
+    sta ptr_hi
+    lda #<TITLE_BITMAP_RAM
+    sta print_ptr_lo
+    lda #>TITLE_BITMAP_RAM
+    sta print_ptr_hi
+
+    ldx #31                         ; 31×256 = 7936
+    ldy #0
+bmp_page:
+    lda (ptr_lo), y
+    sta (print_ptr_lo), y
+    iny
+    bne bmp_page
+    inc ptr_hi
+    inc print_ptr_hi
+    dex
+    bne bmp_page
+
+    ldy #0
+bmp_tail:
+    lda (ptr_lo), y
+    sta (print_ptr_lo), y
+    iny
+    cpy #64                         ; 7936+64 = 8000
+    bne bmp_tail
+
+    lda tmp0
+    sta $01
+    cli
     rts
 .endproc
 

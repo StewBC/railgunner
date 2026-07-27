@@ -21,21 +21,43 @@
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Restore stock VIC text mode (screen $0400, charset ROM) and clear.
-; Leaves the display blanked — caller draws, then jsr screen_unblank.
+; VIC bank 0 (play + all text UI). Clobbers A.
+; ---------------------------------------------------------------------------
+.proc vic_select_bank0
+    lda CIA2_PRA
+    and #%11111100
+    ora #VIC_BANK0_BITS
+    sta CIA2_PRA
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; VIC bank 3 (title hires under KERNAL). Clobbers A.
+; ---------------------------------------------------------------------------
+.proc vic_select_bank3
+    lda CIA2_PRA
+    and #%11111100
+    ora #VIC_BANK3_BITS
+    sta CIA2_PRA
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Text mode: bank 0, RAM charset @ $2000, clear. Display left blanked.
 ; ---------------------------------------------------------------------------
 .proc vic_text_mode
     jsr screen_blank
-    lda #VIC_CTRL1_TEXT_BLANK       ; text mode, DEN still off
+    jsr vic_select_bank0
+    lda #VIC_CTRL1_TEXT_BLANK
     sta VIC_CTRL1
-    lda #VIC_CTRL2_HIRES            ; multicolour off, 40 cols
+    lda #VIC_CTRL2_HIRES
     sta VIC_CTRL2
-    lda #VIC_MEM_TEXT
+    lda #VIC_MEM_TEXT_RAM           ; always our RAM font — never ROM after install
     sta VIC_MEM
     lda #COL_BLACK
     sta VIC_BORDER
     sta VIC_BG0
-    jmp screen_clear                ; tail-call (still blanked)
+    jmp screen_clear
 .endproc
 
 ; ---------------------------------------------------------------------------

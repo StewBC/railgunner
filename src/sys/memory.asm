@@ -9,10 +9,10 @@
 ;   DATA      $6328   strings / tables / sprite frame source
 ;   OBJECTS   $C000   noemit graphical-object/mux runtime state
 ;
-; VIC bank 0 runtime buffers (not PRG-resident source):
-;   BITMAP_RAM    $2000   8000-byte hires/multicolour bitmap destination
-;   SCREEN_RAM    $0400   text screen / bitmap colour matrix destination
-;   COLOR_RAM     $D800   multicolour-bitmap colour nybbles (later)
+; VIC bank 0 runtime (not PRG-resident source):
+;   SCREEN_RAM    $0400   text screen
+;   CHARSET_RAM   $2000   2K RAM font (after cold init)
+;   COLOR_RAM     $D800
 ;
 ; Launch: tools/agent_session.py assembles, fixes BASIC pointers, pastes RUN
 ; (agent path); tools/play.sh builds a PRG and autoruns it (user path).
@@ -23,22 +23,28 @@
 ;   Color RAM     $D800
 ;   Sprite ptrs   $07F8–$07FF (when sprites used)
 
-; Game sprite/runtime regions (VIC bank 0 = $0000–$3FFF):
-;   BITMAP_RAM    = $2000   ; title hires dest, 8000 bytes → $2000–$3F3F
-;   SPRITE_BLOCK  = $3000   ; installed drone frames (runtime copy)
-;   PLAYER_BUF_0  = $3E00   ; sprite pointer $F8 (runtime; zeroed on install)
+; VIC bank 0 ($0000–$3FFF) — play + all text UI:
+;   CHARSET_RAM   = $2000   ; 2K font (ROM copy + UDGs); install once at cold init
+;   SPRITE_BLOCK  = $3000   ; drone frames (reinstall each stage enter)
+;   PLAYER_BUF_0  = $3E00   ; sprite pointer $F8
 ;   PLAYER_BUF_1  = $3E40   ; sprite pointer $F9
-;   OBJECT_STATE  = $C000   ; pool/plans/scratch through $C8FF
 ;
-; Title blit overwrites $2000–$3F3F. video::install_sprite_frames (game-only,
-; stage enter) copies spr_frames_src from DATA into $3000 and clears player bufs.
+; VIC bank 3 ($C000–$FFFF) — title hires only (parked once at cold init):
+;   OBJECT_STATE  = $C000   ; pool/mux runtime (CPU); not shown in title bank
+;   TITLE_MATRIX  = $CC00   ; hires colour matrix (1000 bytes)
+;   TITLE_BITMAP  = $E000   ; 8000-byte bitmap under KERNAL ROM
+;
+; Attract: switch CIA2 bank + $D018; no re-copy. Text always uses bank 0 + RAM font.
 ; tst/ demos place their own frames in a SPRITES segment at $3000 instead.
 ;
-; After install (64-byte blocks, multicolour):
-;   $3000–$30FF  drone C (small)  left/right/up/down   ptr $C0–$C3
-;   $3100–$31FF  drone B (medium) left/right/up/down   ptr $C4–$C7
-;   $3200–$32FF  drone A (large)  left/right/up/down   ptr $C8–$CB
-;   $3E00–$3E7F  player dynamic buffers                 ptr $F8–$F9
+; After cold init + stage sprite install:
+;   $2000–$27FF  character set ($F0–$F7 = bullet UDGs)
+;   $3000–$30FF  drone C   ptr $C0–$C3
+;   $3100–$31FF  drone B   ptr $C4–$C7
+;   $3200–$32FF  drone A   ptr $C8–$CB
+;   $3E00–$3E7F  player buffers  ptr $F8–$F9
+;   $CC00–$CFCF  title colour matrix (idle during play)
+;   $E000–$FF3F  title bitmap under KERNAL (idle during play)
 ;
 ; OBJECTS exact pages (all 24-byte arrays stay inside one page):
 ;   $C000-$C0EF   core object SoA (flags through sprite attributes)

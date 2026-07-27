@@ -73,6 +73,7 @@ main_loop:
 .include "sys/irq.asm"
 .include "sys/input.asm"
 .include "render/screen.asm"
+.include "render/charset.asm"
 .include "frontend/mode.asm"
 .include "frontend/title.asm"
 .include "frontend/typewriter.asm"
@@ -101,3 +102,4 @@ main_loop:
 .segment "DATA"
 .include "data/strings.asm"
 .include "data/sprites.asm"
+.include "data/charset_bullets.asm"

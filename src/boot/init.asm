@@ -11,11 +11,12 @@ BLNSW           = $CC
     lda #1
     sta BLNSW
 
-    ; Stock VIC text mode (safe defaults) before any mode enter
+    ; Safe text defaults (ROM font) until charset_install
     lda #VIC_CTRL1_TEXT
     sta VIC_CTRL1
     lda #VIC_CTRL2_HIRES
     sta VIC_CTRL2
+    jsr vic_select_bank0
     lda #VIC_MEM_TEXT
     sta VIC_MEM
 
@@ -25,8 +26,15 @@ BLNSW           = $CC
     sta VIC_BG0
 
     jsr screen_clear
-    jsr charset_install_stub        ; no-op until assets exist
-    jsr hiscore_reset               ; zeros in RAM (disk load later)
+
+    ; Fire-and-forget: title hires under KERNAL; RAM font for every text screen
+    jsr title_park_hires
+    jsr charset_install
+    jsr vic_select_bank0
+    lda #VIC_MEM_TEXT_RAM
+    sta VIC_MEM
+
+    jsr hiscore_reset
     jsr objects::init
     jsr video::detect_standard
     jsr video::init_sprite_palette
@@ -46,17 +54,11 @@ BLNSW           = $CC
     sta score_color_phase
     sta score_color_tick
 
-    ; Frontend entry: hires art first; attract loop ↔ text title.
-    ; Game over returns to text title so high scores are visible.
+    ; Attract starts on parked hires (no re-copy)
     lda #MODE_TITLE_GFX
     sta game_mode
     jsr title_gfx_enter
 
     cli
-    rts
-.endproc
-
-; Placeholder: copy char ROM → RAM / install UDGs later.
-.proc charset_install_stub
     rts
 .endproc

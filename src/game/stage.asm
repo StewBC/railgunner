@@ -7,10 +7,21 @@
     lda #0
     sta wave
 
+    ; Bank 0 + RAM font already installed at cold init
+    jsr screen_blank
+    jsr vic_select_bank0
+    lda #VIC_CTRL1_TEXT_BLANK
+    sta VIC_CTRL1
+    lda #VIC_CTRL2_HIRES
+    sta VIC_CTRL2
+    lda #VIC_MEM_TEXT_RAM
+    sta VIC_MEM
+
     jsr screen_draw_playfield
     jsr video::init_sprite_palette
     jsr video::install_sprite_frames
     jsr player::init
+    jsr screen_unblank
 
     lda #MODE_PLAY
     jsr mode_set
