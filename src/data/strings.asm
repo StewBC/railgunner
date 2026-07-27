@@ -64,8 +64,32 @@ story_text:
     .byte $0A
     .byte "YOU ARE A RAIL GUNNER.", 0
 
-str_instructions_here:
-    .byte "INSTRUCTIONS HERE", 0
+; Instructions body for typewriter (left-justified). $0A = newline, $00 = end.
+instructions_text:
+    .byte "YOU RIDE THE CROSS RAILS.", $0A
+    .byte $0A
+    .byte "JOYSTICK OR WASD TO MOVE.", $0A
+    .byte "FIRE OR SPACE TO SHOOT.", $0A
+    .byte $0A
+    .byte "DRONES STRIKE FROM THE EDGES:", $0A
+    .byte $0A
+    .byte "A  SMALL. 1 HIT. ATTACKS RAIL.", $0A
+    .byte "B  MEDIUM. 2 HITS. ATTACKS RAIL.", $0A
+    .byte "C  LARGE. 3 HITS. ATTACKS YOU.", $0A
+    .byte "   ITS BLAST HITS THE GUNNER,", $0A
+    .byte "   NOT THE RAIL.", $0A
+    .byte $0A
+    .byte "STOP A AND B BEFORE THEY HIT", $0A
+    .byte "THE RAIL. STOP C BEFORE IT", $0A
+    .byte "DETONATES ON YOUR POSITION.", $0A
+    .byte $0A
+    .byte "WATCH FOR POWERUP PARCELS.", $0A
+    .byte "THEY RIDE THE OPPOSITE ARM.", $0A
+    .byte "SHIELD, DAMAGE, REPAIR, AMMO", $0A
+    .byte "AND MORE - INTERCEPT THEM.", $0A
+    .byte $0A
+    .byte "GAME OVER WHEN ALL LIVES ARE", $0A
+    .byte "LOST, OR YOUR RAIL IS DESTROYED.", 0
 
 str_press_fire:
     .byte "PRESS FIRE", 0
