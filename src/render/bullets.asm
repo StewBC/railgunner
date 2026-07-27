@@ -277,4 +277,69 @@ col_ok:
     rts
 .endproc
 
+; ---------------------------------------------------------------------------
+; Find active bullet at col=draw_i, row=draw_j, half=tmp0.
+; C clear + X=slot if found; C set if none.
+; ---------------------------------------------------------------------------
+.proc find_at
+    ldx #0
+find_loop:
+    lda bullet_active, x
+    beq find_next
+    lda bullet_col, x
+    cmp draw_i
+    bne find_next
+    lda bullet_row, x
+    cmp draw_j
+    bne find_next
+    lda bullet_half, x
+    cmp tmp0
+    bne find_next
+    clc
+    rts
+find_next:
+    inx
+    cpx #BULLET_MAX
+    bne find_loop
+    sec
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Destroy bullet slot X: erase glyph, free slot. Preserves Y; clobbers A.
+; ---------------------------------------------------------------------------
+.proc destroy
+    lda bullet_active, x
+    beq destroy_done
+    jsr erase_slot
+    lda #0
+    sta bullet_active, x
+destroy_done:
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Half from vertical bullet glyph A → tmp0 (0 left / 1 right). C set if not V.
+; ---------------------------------------------------------------------------
+.proc half_from_glyph
+    cmp #SC_BULLET_VL0
+    bcc not_v
+    cmp #SC_BULLET_HT0              ; $F8 — first horizontal glyph
+    bcs not_v
+    cmp #SC_BULLET_VR0              ; $F4
+    bcc half_l
+    lda #BULLET_HALF_RIGHT
+    sta tmp0
+    clc
+    rts
+half_l:
+    lda #BULLET_HALF_LEFT
+    sta tmp0
+    clc
+    rts
+not_v:
+    sec
+    rts
+.endproc
+
 .endscope

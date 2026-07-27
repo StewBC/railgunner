@@ -152,6 +152,15 @@ addr_add_base:
     rts
 .endproc
 
+; Read screen code at column X, row Y → A.
+; Clobbers tmp1/tmp2,ptr_*; Y not preserved; X survives.
+.proc screen_get_xy
+    jsr screen_addr_xy
+    ldy #0
+    lda (ptr_lo), y
+    rts
+.endproc
+
 ; Put colour A at column X, row Y (colour RAM).
 ; Clobbers tmp0-tmp2,ptr_lo/hi; does not preserve A,Y (X survives).
 .proc screen_color_xy

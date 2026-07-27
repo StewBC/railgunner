@@ -7,7 +7,34 @@
 
 ; ---------------------------------------------------------------------------
 .proc init
+    jsr ensure_slice_mover
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Keep exactly one active slice C in play (UL). Call after kills / arrivals.
+; ---------------------------------------------------------------------------
+.proc ensure_slice_mover
+    ldx #1
+    lda #0
+    sta tmp0                        ; count
+count_loop:
+    lda objects::obj_flags, x
+    and #(OBJF_ALLOCATED | OBJF_RETIRING)
+    cmp #OBJF_ALLOCATED
+    bne count_next
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_C
+    bne count_next
+    inc tmp0
+count_next:
+    inx
+    cpx #OBJECT_CAPACITY
+    bne count_loop
+    lda tmp0
+    bne ensure_done                 ; already have ≥1
     jsr spawn_slice_mover
+ensure_done:
     rts
 .endproc
 
@@ -48,8 +75,8 @@
     lda #QUAD_UL
     sta objects::obj_user, x        ; quadrant for clamp / wave logic
 
-    ; No BG/SS interest until collision consumer is implemented & tested.
-    lda #(OBJF_ALLOCATED | OBJF_RENDER)
+    ; BG interest: $D01F candidate latch; gameplay peeks chars to disambiguate.
+    lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
     sta objects::obj_flags, x
     jsr objects::mark_dirty
 spawn_fail:
@@ -77,6 +104,7 @@ upd_next:
     inx
     cpx #OBJECT_CAPACITY
     bne upd_loop
+    jsr ensure_slice_mover          ; top up if arrivals cleared the last one
     rts
 .endproc
 
@@ -164,18 +192,13 @@ clamp_done:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Reach H-rail edge (not over it): retire + respawn slice mover.
+; Reach H-rail edge (not over it): retire only. ensure_slice_mover respawns.
 ; ---------------------------------------------------------------------------
 .proc check_rail_arrival
     lda objects::obj_y_int, x
     cmp #DRONE_RAIL_ARRIVE_Y
     bcc arrive_done
-    jsr objects::retire
-    txa
-    pha
-    jsr spawn_slice_mover
-    pla
-    tax
+    jsr objects::retire_and_try_free
 arrive_done:
     rts
 .endproc

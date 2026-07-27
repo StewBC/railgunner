@@ -85,6 +85,7 @@ main_loop:
 .include "game/game_init.asm"
 .include "game/player.asm"
 .include "game/drones.asm"
+.include "game/collision.asm"
 .include "game/stage.asm"
 .include "game/play.asm"
 .include "game/life.asm"

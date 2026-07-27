@@ -199,6 +199,25 @@ retire_done:
     rts
 .endproc
 
+; X=slot. Retire, then free immediately if the current plan does not reference
+; it (gameplay kills). Falls back to deferred reap if still on-screen in plan.
+.proc retire_and_try_free
+    jsr retire
+    jsr slot_referenced
+    bcs try_free_done
+    ; Not in front/ready plan — reclaim now so pool does not fill with zombies
+    jsr clear_slot
+    ldy free_count
+    txa
+    sta free_stack, y
+    inc free_count
+    lda #1
+    sta mux_objects_dirty
+try_free_done:
+    clc
+    rts
+.endproc
+
 ; Call after changing any render-visible field in an allocated slot. Movement
 ; helpers will do this internally when they are added in a later round.
 .proc mark_dirty

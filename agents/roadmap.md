@@ -46,11 +46,11 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Mode dispatcher | Done | Jump table; modes include story/instructions extras |
 | Frontend attract | Ahead of plan | Hires title ↔ text menu; typewriter; S/I stubs |
 | Game / stage init | Minimal | Session vars reset; playfield draw; player on H-rail |
-| Play | **Player + bullets + mover** | H-rail; bullets; one C drone top→rail; RUN/STOP → game over |
+| Play | **Combat slice** | Player, bullets, C mover, bullet/rail collision; RUN/STOP → game over |
 | Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
 | Player sprite / move | **Done (H-arm)** | Slot 0 sprite; 4px steps; U/D barrel via mid frame; V-rail later |
 | Bullets / charset UDGs | **Done (V stream)** | RAM font + 8 UDGs; H-rail fire up/down with 4-phase cells |
-| Collision consumer | Not started | Mux latches events; play does not interpret them |
+| Collision consumer | **Slice done** | Char-peek bullet vs rail under drone; score+100; respawn mover |
 | Waves / lives / rail damage | Stubs only | Mode hooks exist; nothing drives them from play |
 | High score entry / disk | Stub | Always skip hiscore from game over |
 
@@ -91,12 +91,12 @@ installed; do not require multi-type AI for the slice.
    - Rail arrival currently **retires** the slot (stub until collision consumer).  
    - Spawn API ready to grow to 3-per-quadrant waves later.
 
-5. **Collision consumer (the remaining hard unknown)**  
-   - Drain `objects::` IRQ events after mux attribution.  
-   - Char-peek under drone hitbox: bullet → damage/score/consume bullet; rail chars
-     → arrival (rail damage stub or instant “hit rail” for slice).  
-   - Prove path with live c64m tests; see [`sprite-mux-issues.md`](sprite-mux-issues.md)
-     stress item on latch-before-reuse.
+5. ~~**Collision consumer**~~ **done (slice path)**  
+   - `game/collision.asm`: software hitbox char-peek (authoritative).  
+   - Bullet glyph → destroy bullet, retire drone, +100 score, respawn mover.  
+   - Rail glyph / Y-arrival → retire + respawn.  
+   - `OBJF_BG_INTEREST` on; mux latch still secondary to peek.  
+   - Latch-before-reuse stress still open for later mux hardening.
 
 6. **Score + thin HUD**  
    - Tick score on kill; show digits (placeholder string → live values).  
