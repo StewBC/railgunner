@@ -274,40 +274,43 @@ color_row_loop:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Placeholder HUD + cross rails (plain screen codes).
+; Playfield: HUD + a–j rail map (stock font A–J until UDGs).
+;
+; Rows 1–11, 15–24: vertical ABC at cols 18–20
+; Row 12: D… DGBHDD…D   Row 13: E×40   Row 14: F… FIBJFF…F
 ; ---------------------------------------------------------------------------
 .proc screen_draw_playfield
     jsr screen_clear
 
-    lda #<str_hud_placeholder
+    lda #<str_hud
     sta ptr_lo
-    lda #>str_hud_placeholder
+    lda #>str_hud
     sta ptr_hi
     ldx #0
-    ldy #0
+    ldy #HUD_ROW
     jsr screen_print
+    jsr hud_color_static
 
-    ; Vertical rail band: cols 19–21 (quadrants are 0–18 and 22–39)
-    ; (use draw_i — screen_put_xy clobbers tmp1/tmp2)
+    ; --- Vertical shafts (rows 1–11 and 15–24) ---
     lda #1
 vloop:
     sta draw_i
-    cmp #12
+    cmp #RAIL_ROW_TOP               ; skip 12–14 (H-rail)
     bcc vdraw
-    cmp #14
+    cmp #RAIL_ROW_BOT + 1
     bcc vnext
 vdraw:
-    ldx #19
+    ldx #RAIL_COL_LEFT
     ldy draw_i
-    lda #SC_VBAR
+    lda #SC_RAIL_A
     jsr screen_put_xy
-    ldx #20
+    ldx #RAIL_COL_MID
     ldy draw_i
-    lda #SC_VBAR
+    lda #SC_RAIL_B
     jsr screen_put_xy
-    ldx #21
+    ldx #RAIL_COL_RIGHT
     ldy draw_i
-    lda #SC_VBAR
+    lda #SC_RAIL_C
     jsr screen_put_xy
 vnext:
     lda draw_i
@@ -316,29 +319,132 @@ vnext:
     cmp #25
     bcc vloop
 
-    ; Horizontal arms: rows 12–13, cols 0..18 and 22..39 (gap 19–21)
+    ; --- Row 12: top H-edge D with elbows G B H ---
     lda #0
-hloop:
+h12:
     sta draw_j
-    cmp #19
-    bcc hdraw
-    cmp #22
-    bcc hnext
-hdraw:
-    ldx draw_j
-    ldy #12
-    lda #SC_DASH
-    jsr screen_put_xy
-    ldx draw_j
-    ldy #13
-    lda #SC_DASH
-    jsr screen_put_xy
-hnext:
+    cmp #RAIL_COL_LEFT
+    bcc h12_d
+    cmp #RAIL_COL_RIGHT + 1
+    bcs h12_d
+    ; centre junction
     lda draw_j
-    clc
-    adc #1
+    cmp #RAIL_COL_LEFT
+    beq h12_g
+    cmp #RAIL_COL_MID
+    beq h12_b
+    lda #SC_RAIL_H                  ; right elbow top→R
+    jmp h12_put
+h12_g:
+    lda #SC_RAIL_G
+    jmp h12_put
+h12_b:
+    lda #SC_RAIL_B
+    jmp h12_put
+h12_d:
+    lda #SC_RAIL_D
+h12_put:
+    ldx draw_j
+    ldy #RAIL_ROW_TOP
+    jsr screen_put_xy
+    inc draw_j
+    lda draw_j
     cmp #40
-    bcc hloop
-    ; Player is a hardware sprite (slot 0); no character stand-in.
+    bcc h12
+
+    ; --- Row 13: solid mid E full width ---
+    lda #0
+h13:
+    sta draw_j
+    ldx draw_j
+    ldy #RAIL_ROW_MID
+    lda #SC_RAIL_E
+    jsr screen_put_xy
+    inc draw_j
+    lda draw_j
+    cmp #40
+    bcc h13
+
+    ; --- Row 14: bottom H-edge F with elbows I B J ---
+    lda #0
+h14:
+    sta draw_j
+    cmp #RAIL_COL_LEFT
+    bcc h14_f
+    cmp #RAIL_COL_RIGHT + 1
+    bcs h14_f
+    lda draw_j
+    cmp #RAIL_COL_LEFT
+    beq h14_i
+    cmp #RAIL_COL_MID
+    beq h14_b
+    lda #SC_RAIL_J
+    jmp h14_put
+h14_i:
+    lda #SC_RAIL_I
+    jmp h14_put
+h14_b:
+    lda #SC_RAIL_B
+    jmp h14_put
+h14_f:
+    lda #SC_RAIL_F
+h14_put:
+    ldx draw_j
+    ldy #RAIL_ROW_BOT
+    jsr screen_put_xy
+    inc draw_j
+    lda draw_j
+    cmp #40
+    bcc h14
+
+    ; Colour whole rail structure mid-gray for now
+    lda #COL_GRAY
+    ldy #1
+rail_col_rows:
+    jsr screen_color_row
+    iny
+    cpy #25
+    bcc rail_col_rows
+    jsr hud_color_static            ; restore HUD colours after full-row paints
+    rts
+.endproc
+
+; Colour HUD segments: score white, health blue, ammo red, level/lives white.
+.proc hud_color_static
+    ldx #HUD_SCORE_COL
+hud_sc:
+    lda #COL_WHITE
+    ldy #HUD_ROW
+    jsr screen_color_xy
+    inx
+    cpx #HUD_SCORE_COL + HUD_SCORE_LEN
+    bcc hud_sc
+
+    ldx #HUD_HEALTH_LABEL_COL
+hud_h:
+    lda #COL_LT_BLUE
+    ldy #HUD_ROW
+    jsr screen_color_xy
+    inx
+    cpx #HUD_AMMO_LABEL_COL
+    bcc hud_h
+
+    ldx #HUD_AMMO_LABEL_COL
+hud_a:
+    lda #COL_RED
+    ldy #HUD_ROW
+    jsr screen_color_xy
+    inx
+    cpx #HUD_LEVEL_LABEL_COL
+    bcc hud_a
+
+    ldx #HUD_LEVEL_LABEL_COL
+hud_l:
+    lda #COL_WHITE
+    ldy #HUD_ROW
+    jsr screen_color_xy
+    inx
+    cpx #40
+    bcc hud_l
     rts
 .endproc

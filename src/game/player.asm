@@ -1,8 +1,8 @@
 ; Player — logical object slot 0.
 ; Stage 2 slice: horizontal rail only, 4px steps, barrel up/down with mid swing.
 ;
-; Fire: bullets::try_fire only when barrel at rest (player_swing_t = 0).
-; Rail-transition lock-out is separate (not in this slice).
+; Fire: bullets::try_fire only when barrel at rest and not in the V-rail
+; centre gap (see in_centre_gap — arms only).
 ;
 ; Barrel change (H-rail): only if not swinging, and stick presses the opposite
 ; of rest aim: UP rest + DOWN → U→R→D; DOWN rest + UP → D→L→U.
@@ -139,7 +139,7 @@ no_stick:
     bne apply_step                  ; coast
     ; No last dir (shouldn't happen mid-gap): exit toward nearer arm
     lda tmp0
-    cmp #170                        ; mid of ~160..180 band
+    cmp #PLAYER_GAP_MID
     bcc force_left
     lda #PLAYER_DIR_RIGHT
     sta player_move_dir

@@ -432,10 +432,12 @@ tr_col:
     ldx draw_i
     ldy draw_j
     jsr screen_get_xy
-    cmp #SC_DASH
-    beq tr_hit
-    cmp #SC_VBAR
-    beq tr_hit
+    cmp #SC_RAIL_FIRST
+    bcc tr_cn
+    cmp #SC_RAIL_LAST + 1
+    bcs tr_cn
+    ; A–J rail tiles (placeholders or UDGs)
+    jmp tr_hit
 tr_cn:
     inc draw_i
     lda draw_i

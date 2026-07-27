@@ -11,48 +11,104 @@ A Commodore 64 shooter. The player is a gun mounted on rails that form a cross a
 
 ## The screen layout
 
-40 columns by 25 rows.
+40 columns × 25 rows (0-based in code). Implemented playfield matches
+`str_hud` / `screen_draw_playfield` / `const.asm` rail geometry.
 
 ```
-  |1234567890123456789012345678901234567890|
-  +----------------------------------------+
- 1| 000000  HEALTH: XXXXXX  LEVEL: 00 AAAA |
- 2|                  |  |                  |
- 3|                  |  |                  |
- 4|                  |  |                  |
- 5|                  |  |                  |
- 6|                  |  |                  |
- 7|                  |  |                  |
- 8|                  |  |                  |
- 9|                  |  |                  |
-10|                  |  |                  |
-11|                  |  |                  |
-12|                  |  |                  |
-13|------------------+  +------------------|
-14|------------------+  +------------------|
-15|                  |  |                  |
-16|                  |  |                  |
-17|                  |  |                  |
-18|                  |  |                  |
-19|                  |  |                  |
-20|                  |  |                  |
-21|                  |  |                  |
-22|                  |  |                  |
-23|                  |  |                  |
-24|                  |  |                  |
-25|                  |  |                  |
-  +----------------------------------------+
+col: 0123456789012345678901234567890123456789
+row +----------------------------------------+
+  0 |000000  H:######## A:######## L:01  AAAA|  HUD (see below)
+  1 |                  ABC                   |  V-rail only
+  2 |                  ABC                   |
+    |                  ...                   |  rows 1–11: ABC @ cols 18–20
+ 11 |                  ABC                   |
+ 12 |DDDDDDDDDDDDDDDDDDGBHDDDDDDDDDDDDDDDDDDD|  H-rail top edge
+ 13 |EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE|  H-rail mid (full width)
+ 14 |FFFFFFFFFFFFFFFFFFIBJFFFFFFFFFFFFFFFFFFF|  H-rail bottom edge
+ 15 |                  ABC                   |
+    |                  ...                   |  rows 15–24: ABC @ cols 18–20
+ 24 |                  ABC                   |
+    +----------------------------------------+
 ```
 
-The center gap (rows 13-14, cols 20-21) is the intersection where the player switches between the vertical and horizontal rails.
+**Rail geometry (0-based cells)** — source of truth: `RAIL_*` in `src/sys/const.asm`:
 
-### Top line (HUD)
+| Band | Cells | Tiles (placeholder letters today) |
+|------|--------|-----------------------------------|
+| V-rail | cols **18–20** | A left edge, B solid mid, C right edge |
+| H-rail | rows **12–14** | D top edge, E mid solid, F bottom edge |
+| Junction | col 18–20 × row 12–14 | G elbow L→up, H elbow top→R, I L→down, J R→down, B solid cross |
 
-- **Score**: 6 digits, leading zeros, no label.
-- **Health bar**: replaces the old numeric "HEALTH:" readout. Rendered in blue as a graphical bar (user-defined characters, likely 4 characters wide, decrementing in 2px steps for 16 total steps of granularity).
-- **Ammo bar**: same structure as the health bar, rendered in red. Inactive (grayed out, visibly present but non-functional) until the ammo mechanic is unlocked at a later stage — see **Ammo**, below. Health and ammo bars should be distinguishable by shape/end-cap, not color alone, for legibility.
-- **Level**: 2 digits, leading zero.
-- **Lives**: graphical rail-gun icon (user-defined character), one per reserve life, max 4 shown, left to right (`A` = 1 life in reserve, `AA` = 2, etc.).
+- Left free play: cols 0–17 · Right free: cols 21–39.
+- Stage-2 player rides the **H-rail** (Y on the E band). Crossing the V-band
+  (between left/right arm rests) is walk-through only; **fire is locked out**
+  there so bullets cannot chew the vertical rail.
+- Final art replaces A–J with UDGs (same map, different screen codes — see
+  **Character / UDG map** below). Letters are layout stand-ins, not the product look.
+
+### Top line (HUD) — row 0
+
+Exactly 40 columns; template in `src/data/strings.asm` (`str_hud`):
+
+```
+000000  H:######## A:######## L:01  AAAA
+|     | ||      | ||      | ||  | ||  |
+0     6 8 10    17 19 21   28 30 32 35 36  39
+```
+
+| Field | Cols | Len | Notes |
+|-------|------|-----|--------|
+| **Score** | 0–5 | 6 | Digits, leading zeros, no label. Colour wheel later. |
+| *(pad)* | 6–7 | 2 | Spaces. |
+| **H:** | 8–9 | 2 | Health label (ASCII until UDGs). |
+| **Health bar** | 10–17 | 8 | `#` stand-in; blue. Final: UDG bar (finer steps later). |
+| *(pad)* | 18 | 1 | Space. |
+| **A:** | 19–20 | 2 | Ammo label. |
+| **Ammo bar** | 21–28 | 8 | `#` stand-in; red / grayed when inactive. Same structure as health; shape/end-caps should differ for non-colour legibility. See **Ammo**. |
+| *(pad)* | 29 | 1 | Space. |
+| **L:** | 30–31 | 2 | Level label. |
+| **Level** | 32–33 | 2 | Digits, leading zero. |
+| *(pad)* | 34–35 | 2 | Spaces. |
+| **Lives** | 36–39 | 4 | One icon per reserve life, max 4. Today: letter `A`; final: life UDG. |
+
+Constants: `HUD_*` in `src/sys/const.asm` (must stay in sync with `str_hud`).
+
+Live score/level/lives/bar fill is still partially placeholder (static template +
+static colouring); wire-up is a later roadmap item.
+
+### Character / UDG map
+
+256-glyph RAM font at `CHARSET_RAM` ($2800). Cold init copies the ROM uppercase
+set, then overlays UDGs. **Reserved game block** (39 glyphs; do not use for
+plain text):
+
+| Codes | Count | Use |
+|-------|------:|-----|
+| `$C0` | 1 | Life icon (HUD) |
+| `$C1`–`$CA` | 10 | Rail normal a–j |
+| `$CB`–`$D0` | 6 | Rail damage set 1 (a–f only) |
+| `$D1`–`$D6` | 6 | Rail damage set 2 (a–f only) |
+| `$F0`–`$F7` | 8 | Vertical bullets (4 phases × L/R half-cell) |
+| `$F8`–`$FF` | 8 | Horizontal bullets (reserved; later) |
+
+**What ships today**
+
+- **Bullets** already use the final high codes (`$F0`–`$FF`) and install real
+  UDG bitmaps at those slots — no conflict with the text font.
+- **Rails / lives / bars** still draw **stock font placeholders** (A–J, `#`)
+  via low screen codes so the cross and HUD stay readable before art exists.
+  Planned production codes are the `$C0+` block above (`SC_UDG_*` in
+  `const.asm`); playfield draw will switch `SC_RAIL_*` to those values when
+  glyphs are installed.
+
+**Why not already draw at `$C1` (e.g. “start at 129”)?**  
+That is the right *end state*, and the map is reserved for it. Using A–J on
+screen *now* is only so agents and playtests see a legible cross without a
+second “seed A–J into UDG slots” step. It does **not** mean final art will
+overwrite the letter forms in the text range: art installs into `$C0`–`$D6` /
+`$F0`–`$FF`, and draw codes move with it. Prefer that path over a render-time
+hack. Optional interim: copy ROM A–J bitmaps into `$C1`–`$CA` at init and draw
+final codes immediately — same visual, one less constant flip later.
 
 ## Controls
 

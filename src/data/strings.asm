@@ -100,8 +100,14 @@ str_game_over:
 str_hiscore:
     .byte "HIGH SCORES", 0
 
-str_hud_placeholder:
-    .byte "000000  H########  L01 AAA", 0
+; Top HUD (exactly 40 cols) — live fields later overwrite in place:
+;   000000  H:######## A:######## L:01  AAAA
+;   score   H: health  A: ammo    L:lv  lives
+; # / A stand in for future UDG bar and life icons.
+str_hud:
+    .byte "000000  H:######## A:######## L:01  AAAA", 0
+; Alias for older call sites
+str_hud_placeholder = str_hud
 
 str_wave_clear:
     .byte "WAVE CLEAR", 0

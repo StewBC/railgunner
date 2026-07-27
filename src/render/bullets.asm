@@ -161,8 +161,14 @@ adv_next:
 fire_unlocked:
     lda player_swing_t
     beq fire_swing_ok
-    rts
+    rts                             ; mid barrel swing
 fire_swing_ok:
+    ; No fire while crossing the V-rail (centre gap between arm rests)
+    jsr player::load_x_to_tmp
+    jsr player::in_centre_gap
+    bcc fire_on_arm
+    rts
+fire_on_arm:
     lda input_fire
     bne fire_held
     rts

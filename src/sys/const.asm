@@ -169,14 +169,21 @@ WAVES_PER_LEVEL = 20
 ; ---------------------------------------------------------------------------
 PLAYER_MOVE_STEP        = 4
 PLAYER_SWING_MID_FRAMES = 5
-PLAYER_Y_HRAIL          = 144
-PLAYER_GUN_X_OFF        = 12        ; aim point from sprite left
-; Keep all of these ≡ 0 or 4 (mod 8) so aim stays on half-cell lanes
-PLAYER_X_MIN            = 28        ; 28+12-24=16 → col2 left
-PLAYER_X_MAX            = 316       ; stay on 4px grid (< 320)
-PLAYER_ARM_LEFT_MAX     = 156       ; last rest left of centre on grid
-PLAYER_ARM_RIGHT_MIN    = 180
-PLAYER_X_START          = 156       ; left of V-rail, left half-cell lane
+; H-rail mid (layout): sit on the E row band.
+PLAYER_Y_HRAIL          = 146
+; Aim X = sprite_x + GUN_OFF. One coordinate for move, clamp, fire, and draw.
+; GUN_OFF 11: barrel tip (~px 10–11) meets half-cell bullet lanes on the 4px grid.
+PLAYER_GUN_X_OFF        = 11
+;
+; Rail stops (4px grid from X_MIN). Left good; mid-L / mid-R / full-R each +4
+; from prior, then +1 so ship sits on the bullet stream (same gun world X as
+; the old 12/152/180/328 + GUN 12 setup).
+PLAYER_X_MIN            = 13
+PLAYER_X_MAX            = 329
+PLAYER_ARM_LEFT_MAX     = 153
+PLAYER_ARM_RIGHT_MIN    = 181
+PLAYER_X_START          = 153
+PLAYER_GAP_MID          = 167
 ; player_move_dir values
 PLAYER_DIR_NONE         = 0
 PLAYER_DIR_RIGHT        = 1
@@ -305,66 +312,109 @@ STORY_STATE_DONE   = 1
 
 ; Screen codes for placeholder art
 SC_SPACE        = $20
-SC_STAR         = $2A               ; "*" player stand-in
-SC_PLUS         = $2B               ; "+"
-SC_DASH         = $2D               ; "-" horizontal rail stand-in
+SC_STAR         = $2A
+SC_PLUS         = $2B
+SC_DASH         = $2D               ; legacy; playfield uses SC_RAIL_*
 SC_ZERO         = $30
-SC_VBAR         = $5D               ; "|" vertical bar (vertical rail stand-in)
+SC_VBAR         = $5D               ; legacy; playfield uses SC_RAIL_*
+SC_HASH         = $23               ; HUD bar stand-in until UDGs
+SC_LETTER_A     = $01               ; life icon stand-in / rail tile A placeholder
+
+; Playfield rail placeholders (font A–J until UDGs installed). Key:
+;   A left V-edge  B solid mid  C right V-edge
+;   D top H-edge   E mid H      F bottom H-edge
+;   G elbow L→up   H elbow top→R
+;   I elbow L→down J elbow R→down
+SC_RAIL_A       = $01
+SC_RAIL_B       = $02
+SC_RAIL_C       = $03
+SC_RAIL_D       = $04
+SC_RAIL_E       = $05
+SC_RAIL_F       = $06
+SC_RAIL_G       = $07
+SC_RAIL_H       = $08
+SC_RAIL_I       = $09
+SC_RAIL_J       = $0A
+SC_RAIL_FIRST   = SC_RAIL_A
+SC_RAIL_LAST    = SC_RAIL_J
+
+; HUD row 0 layout (must match str_hud in data/strings.asm — 40 columns)
+HUD_ROW                 = 0
+HUD_SCORE_COL           = 0         ; 6 digits
+HUD_SCORE_LEN           = 6
+HUD_HEALTH_LABEL_COL    = 8         ; "H:"
+HUD_HEALTH_BAR_COL      = 10        ; 8 × #
+HUD_HEALTH_BAR_LEN      = 8
+HUD_AMMO_LABEL_COL      = 19        ; "A:"
+HUD_AMMO_BAR_COL        = 21        ; 8 × #
+HUD_AMMO_BAR_LEN        = 8
+HUD_LEVEL_LABEL_COL     = 30        ; "L:"
+HUD_LEVEL_COL           = 32        ; 2 digits
+HUD_LEVEL_LEN           = 2
+HUD_LIVES_COL           = 36        ; up to 4 life icons
+HUD_LIVES_MAX_SHOW      = 4
 
 ; ---------------------------------------------------------------------------
-; Bullet UDG screen codes (16 glyphs; data/charset_bullets.asm)
-;   $F0–$F3  VL  vertical travel, left  half (OO......), phases 0..3
-;   $F4–$F7  VR  vertical travel, right half (....OO..), phases 0..3
-;   $F8–$FB  HT  horizontal travel, top half, phases 0..3
-;   $FC–$FF  HB  horizontal travel, bottom half, phases 0..3
-; DOWN/RIGHT: phase 0→3; UP/LEFT: 3→0
+; UDG reservation map (install over ROM copy at CHARSET_RAM)
+; Bullets already use half-cell lanes (4 phases × 2 halves = 8 per axis):
+;   $F0–$F7  vertical  (VL0–3, VR0–3)
+;   $F8–$FF  horizontal (HT0–3, HB0–3)  — reserved & defined
+; Planned block below (when art lands; placeholders print A–J from stock font):
+;   $C0      life icon (HUD)
+;   $C1–$CA  rail normal a–j (10)
+;   $CB–$D0  rail damage set 1 (a–f only, 6)
+;   $D1–$D6  rail damage set 2 (a–f only, 6)
+; Count: 1 life + 8v + 8h + 10 rail + 6 + 6 = 39 (not 35 — see bullets note)
 ; ---------------------------------------------------------------------------
 SC_BULLET_VL0   = $F0
 SC_BULLET_VR0   = $F4
 SC_BULLET_HT0   = $F8
 SC_BULLET_HB0   = $FC
 SC_BULLET_FIRST = SC_BULLET_VL0
-SC_BULLET_COUNT = 16
+SC_BULLET_COUNT = 16                ; 8 vert + 8 horiz (4px half-lanes)
+SC_UDG_LIFE     = $C0
+SC_UDG_RAIL0    = $C1               ; a–j normal → $C1..$CA
+SC_UDG_DMG1     = $CB               ; a–f damage 1
+SC_UDG_DMG2     = $D1               ; a–f damage 2
+SC_UDG_COUNT    = 39
 
 ; ---------------------------------------------------------------------------
 ; Bullets (character stream; H-rail vertical aim for Stage 2)
 ; ---------------------------------------------------------------------------
 BULLET_MAX              = 16
-BULLET_HOLD             = 1         ; ticks per sub-cell pose (1 = max cell speed)
-BULLET_PHASES           = 4         ; poses per cell
-; Gun may not fire again until prior shot finishes one full cell (4 phases).
+BULLET_HOLD             = 1
+BULLET_PHASES           = 4
 BULLET_CELL_TICKS       = BULLET_HOLD * BULLET_PHASES
 BULLET_HALF_LEFT        = 0
 BULLET_HALF_RIGHT       = 1
+; 3-row H-rail at rows 12–14 (d/e/f); fire from adjacent cells
 BULLET_RAIL_ROW_TOP     = 12
-BULLET_RAIL_ROW_BOT     = 13
+BULLET_RAIL_ROW_BOT     = 14
 BULLET_LAUNCH_ROW_UP    = 11
-BULLET_LAUNCH_ROW_DOWN  = 14
-; Top line (row 0) = score/HUD — bullets may use row 1, then die (no row 0).
+BULLET_LAUNCH_ROW_DOWN  = 15
 BULLET_ROW_MIN          = 1
 BULLET_COLOR            = COL_YELLOW
 
 ; ---------------------------------------------------------------------------
-; Playfield rail / quadrant geometry (char cells)
-;   Vertical rail band: cols 19–21  (drones never overlap)
-;   Horizontal rail:    rows 12–13
-;   Left  free cols: 0–18     Right free cols: 22–39
-; Four quadrants (later: 3 drones per quadrant per wave):
-;   UL top-left   UR top-right   LL bot-left   LR bot-right
+; Playfield rail / quadrant geometry (0-based char cells; matches a–j map)
+;   Vertical band: cols 18–20  (A B C)
+;   H-rail: rows 12–14 (D/G/B/H, full E, F/I/B/J)
+;   Left free: 0–17   Right free: 21–39
 ; ---------------------------------------------------------------------------
-RAIL_COL_LEFT           = 19
-RAIL_COL_RIGHT          = 21        ; inclusive
-RAIL_ROW_TOP            = 12
-RAIL_ROW_BOT            = 13
-QUAD_LEFT_COL_MAX       = 18
-QUAD_RIGHT_COL_MIN      = 22
+RAIL_COL_LEFT           = 18
+RAIL_COL_MID            = 19
+RAIL_COL_RIGHT          = 20        ; inclusive
+RAIL_ROW_TOP            = 12        ; D edge
+RAIL_ROW_MID            = 13        ; E solid
+RAIL_ROW_BOT            = 14        ; F edge
+QUAD_LEFT_COL_MAX       = 17
+QUAD_RIGHT_COL_MIN      = 21
 
-; Sprite X so a 24px-wide sprite stays fully left or right of the V-rail band.
-; Col C left edge = 24 + C*8. Band pixels 176..199 (cols 19–21).
-; Left:  X+23 < 176 → X <= 152.  Right: X >= 200.
+; 24px sprite fully left of col 18 / right of col 21
+; Left: X+23 < 24+18*8=168 → X<=144.  Right: X >= 24+21*8=192
 DRONE_X_LEFT_MIN        = 28
-DRONE_X_LEFT_MAX        = 152
-DRONE_X_RIGHT_MIN       = 200
+DRONE_X_LEFT_MAX        = 144
+DRONE_X_RIGHT_MIN       = 192
 DRONE_X_RIGHT_MAX       = 320
 
 ; ---------------------------------------------------------------------------
@@ -376,7 +426,7 @@ DRONE_SPAWN_X_LO        = 100       ; within DRONE_X_LEFT_*
 DRONE_SPAWN_X_HI        = 0
 ; Below score (row 0 ≈ Y 50–57): row-1 top (58) + full 21-line sprite → no HUD overlap
 DRONE_SPAWN_Y           = 50 + 8 + SPRITE_H_PX   ; 79
-; Arrival: stop before overlapping H-rail (row 12 top ≈ VIC Y 146)
+; Arrival: stop before overlapping H-rail top (row 12 ≈ VIC Y 146)
 DRONE_RAIL_ARRIVE_Y     = 140
 ; obj_user quadrant ids (for clamp / future waves)
 QUAD_UL                 = 0
