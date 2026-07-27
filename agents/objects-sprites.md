@@ -1,10 +1,17 @@
 # Graphical objects and hardware-sprite system
 
-**Status:** implementation design locked; source not yet implemented.
+**Status:** design locked; **pool + mux implemented** in production
+(`src/game/objects.asm`, `src/sprite/mux_build.asm`, `src/sprite/mux_irq.asm`)
+and exercised by `tst/` demos. Live status, verification, and remaining stress
+tests: [`sprite-mux-status.md`](sprite-mux-status.md). Integration review:
+[`sprite-mux-issues.md`](sprite-mux-issues.md).
+
 **Scope:** the common pool for objects drawn with VIC-II hardware sprites, the
 frame snapshot, the general-purpose raster multiplexer, and collision-event
 attribution. Character objects (rail and bullets), drone AI, wave composition,
-and motion helpers are consumers of this system and remain separate.
+and motion helpers are consumers of this system and remain separate — the
+**gameplay collision consumer** and motion/AI layer are still Stage 2+ work
+(see [`roadmap.md`](roadmap.md) → Next steps).
 
 Companions:
 
@@ -14,6 +21,7 @@ Companions:
 - [`assembler-syntax.md`](assembler-syntax.md) — required before writing source.
 - [`build-debug.md`](build-debug.md) — c64m launch, raster, and collision
   inspection.
+- [`sprite-mux-status.md`](sprite-mux-status.md) — what is built and verified.
 
 This document is deliberately implementation-oriented. A coder should not have
 to choose a data representation, collision-ownership rule, frame handoff, or

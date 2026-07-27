@@ -12,10 +12,11 @@ the tool (and fix the handoff).
 
 1. **`railgunner.md`** — top-level design brief (what the game is, layout,
    mechanics, technical approach).
-2. **`roadmap.md`** — development stages, game flow (modes), and what to build
-   when. Living guide; detail docs hang off it later.
-3. **`repo-layout.md`** — where source lives, component → folder map, expected
-   file count, include rules. Create new files only under this plan.
+2. **`roadmap.md`** — development stages, game flow (modes), **where we are**,
+   and the ordered **Next steps** list (default work order — prefer this over
+   freestyle features). Living guide; detail docs hang off it later.
+3. **`repo-layout.md`** — where source lives, what already exists, Stage 2 files
+   still to add, include rules. Create new files only under this plan.
 4. **`assembler-syntax.md`** — **required before writing any `.asm`**. c64m
    assembler language only (not ACME / ca65 / KickAsm / 64tass unless listed
    there). Syntax, directives, macros, scopes, segments, pitfalls.
@@ -24,7 +25,8 @@ the tool (and fix the handoff).
    BASIC pointers, ZP clobber, keyboard matrix). Read the pitfalls before
    debugging input or screen code.
 6. Component handoffs relevant to the task. For graphical objects, hardware
-   sprites, the mux, or collision attribution, read **`objects-sprites.md`**.
+   sprites, the mux, or collision attribution: **`objects-sprites.md`** (ABI)
+   plus **`sprite-mux-status.md`** / **`sprite-mux-issues.md`** (live status).
 7. Source under `src/` (root unit: `src/main.asm`) and samples under
    `../c64m/samples/` when learning idioms.
 
@@ -37,10 +39,11 @@ update the handoff so the next agent does not rediscover it.
 | Doc | Role |
 |-----|------|
 | [`railgunner.md`](railgunner.md) | Top-level design brief: screen, controls, combat, bonuses, wave data, HOW |
-| [`roadmap.md`](roadmap.md) | Dev stages, game flow/modes, stage×element matrix, open questions |
-| [`repo-layout.md`](repo-layout.md) | Repo tree, components, file-count rationale, vertical-slice file set |
-| [`objects-sprites.md`](objects-sprites.md) | 24-slot graphical-object pool, fixed-point layout, mux, IRQ/collision contracts, PAL/NTSC timing |
+| [`roadmap.md`](roadmap.md) | Stages, flow, **where we are**, ordered **Next steps**, matrix, open questions |
+| [`repo-layout.md`](repo-layout.md) | Repo tree, what exists vs Stage 2 files to add, include rules |
+| [`objects-sprites.md`](objects-sprites.md) | Pool/mux design + ABI (implemented; consumers still Stage 2+) |
 | [`sprite-mux-status.md`](sprite-mux-status.md) | Implemented mux status, demos, verification, remaining stress tests |
+| [`sprite-mux-issues.md`](sprite-mux-issues.md) | Mux review findings / integration hazards |
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
 | [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, debug/control recipes for agents |
 

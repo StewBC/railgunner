@@ -1,6 +1,8 @@
 # Repo layout — decision
 
-**Status:** chosen. Stage 1 scaffold source + play/agent launch tools present.  
+**Status:** chosen. Stage 1 scaffold + object pool/mux + rich frontend present.
+Play is still an art harness; Stage 2 vertical-slice files below are the next
+creates. Current phase and ordered work: [`roadmap.md`](roadmap.md) → **Next steps**.  
 **Companion docs:** [`railgunner.md`](railgunner.md) (design), [`roadmap.md`](roadmap.md) (stages/flow), [`build-debug.md`](build-debug.md) (run/debug), [`assembler-syntax.md`](assembler-syntax.md) (syntax).
 
 ## Decision summary
@@ -229,33 +231,47 @@ Repo root stays thin: optional top-level `README.md` / makefile later; **no game
 
 ---
 
-## Vertical-slice file set (first implementation target)
+## Actual tree vs vertical-slice target
 
-Aligned with the design brief’s suggested build order (one rail arm, one drone type, no bonuses):
+### Already present (do not reinvent)
 
 ```
-src/main.asm
-src/sys/const.asm
-src/sys/zeropage.asm
-src/sys/memory.asm
+src/main.asm                 ; sole assemble root; main loop drains events + mux build
 src/boot/init.asm
-src/sys/irq.asm              ; stub IRQ first; mux later
-src/sys/input.asm
-src/render/screen.asm        ; draw one arm + structure
-src/render/bullets.asm
-src/sprite/player.asm
-src/sprite/drones.asm        ; one drone type at first
-src/sprite/mux_build.asm
-src/sprite/mux_irq.asm
-src/game/player.asm
-src/game/objects.asm
-src/game/shoot.asm
-src/game/drones.asm
-src/game/collision.asm
-src/game/play.asm             ; frame loop
+src/sys/{const,zeropage,memory,irq,input,video,sprite_install}.asm
+src/render/screen.asm        ; full-cross placeholder + print helpers
+src/game/{objects,game_init,stage,play,life}.asm
+src/sprite/{mux_build,mux_irq}.asm
+src/frontend/{mode,title,typewriter,story,instructions,gameover,hiscore}.asm
+src/data/{strings,sprites,title_gfx}.asm
+assets/sprites/              ; A/B/C × facings
+assets/screens/              ; title hires
+tst/                         ; mux demos (not the game)
 ```
 
-Frontend and bonuses land **after** mux + collision are proven.
+**Play today:** `game/stage.asm` spawns a temporary drone art harness;
+`game/play.asm` cycles facings and FIRE → game over. Replace that path during
+Stage 2; keep pool/mux/frontend.
+
+### Still to add (Stage 2 — vertical slice)
+
+Aligned with the design brief (one arm / one combat type enough; no bonuses):
+
+```
+src/game/player.asm          ; rail-lock move, barrel, intersection
+src/game/shoot.asm           ; fire stream / ammo hook later
+src/game/drones.asm          ; one mover: edge → rail (replace harness spawn)
+src/game/collision.asm       ; drain IRQ events; bullet vs rail char peek
+src/render/bullets.asm       ; char bullet state machines / stand-ins
+src/sprite/player.asm        ; optional: player frame/composite helpers
+; drones: may stay in game/drones + data/sprites until a split is needed
+```
+
+Wire new files through `src/main.asm`. Prefer extending `play.asm` / `stage.asm`
+only for loop/enter glue; put real systems in the topic files above.
+
+Bonuses, wave tables, and deeper Features remain **after** the slice exits
+([`roadmap.md`](roadmap.md) Next steps).
 
 ---
 

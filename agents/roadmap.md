@@ -9,6 +9,12 @@ docs; this file only keeps the map coherent.
 [`repo-layout.md`](repo-layout.md) (where code lives), [`README.md`](README.md)
 (index).
 
+**Current phase:** Stage 1 (Scaffold) **done**. Object-pool / sprite-mux
+foundation **done** early (Stage 4 tech). Frontend shell richer than scaffold
+expected. **Stage 2 (Vertical slice) is the active work** — see **Next steps**
+below. Do not expand Features (bonuses, ammo unlock, disk HS, music) until the
+slice can kill a drone and die cleanly.
+
 ---
 
 ## How to use this document
@@ -20,9 +26,99 @@ docs; this file only keeps the map coherent.
 - Prefer implementing **one vertical path through the flow** early (init →
   title → game init → stage init → thin play → death/game over stubs) rather
   than perfecting a single system in isolation — except where the design brief
-  calls out hard unknowns (mux, collision disambiguation).
+  calls out hard unknowns (mux, collision disambiguation). The mux exception
+  was taken: pool + mux exist; **use them**, do not rebuild them.
+- **Next steps** (below) is the ordered work list. Prefer it over freestyle
+  feature picks when unsure what to do next.
 - When a sketch becomes load-bearing, spin out a detail doc and leave a
   one-line pointer here. Do not bloat this file into a full design rewrite.
+
+---
+
+## Where we are (reconciled with the tree)
+
+Honest snapshot for agents. Update this when a Next-steps item lands.
+
+| Area | Status | Notes |
+|------|--------|--------|
+| Cold init / IRQ / input | Done | `boot/init`, `sys/*`, main loop with logic ticks |
+| Mode dispatcher | Done | Jump table; modes include story/instructions extras |
+| Frontend attract | Ahead of plan | Hires title ↔ text menu; typewriter; S/I stubs |
+| Game / stage init | Minimal | Session vars reset; playfield draw; **demo drones** |
+| Play | **Art harness only** | Facing cycle on static A/B/C; FIRE → game over |
+| Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
+| Player sprite / move / shoot | Not started | `*` char stand-in; empty player sprite buffers |
+| Bullets / charset UDGs | Not started | `charset_install_stub` is a no-op |
+| Collision consumer | Not started | Mux latches events; play does not interpret them |
+| Waves / lives / rail damage | Stubs only | Mode hooks exist; nothing drives them from play |
+| High score entry / disk | Stub | Always skip hiscore from game over |
+
+**Intentional early work (keep):** mux foundation, title art, drone art (all
+sizes/facings), mode skeleton, full-cross placeholder playfield.
+
+**Temporary (replace during Stage 2):** `stage_spawn_demo_drones` / facing
+animation in `game/stage.asm` + `game/play.asm` — not gameplay.
+
+---
+
+## Next steps (do these in order)
+
+Active checklist for **Stage 2 — Vertical slice**. Exit criteria: one moving
+drone can be shot for score, can reach the rail (or kill the player path), and
+a death or “session end” reaches existing game-over → title. Full four arms,
+wave tables, and bonuses are **out of scope** here.
+
+Prefer **one rail arm** and **one drone type** for combat logic even though all
+three drone arts and the full cross are already drawn. Extra art can stay
+installed; do not require multi-type AI for the slice.
+
+1. **Player as graphical object (slot 0)**  
+   - Install/use real player sprite frames (compositing buffers already reserved).  
+   - Remove `*` screen-code stand-in once the sprite shows.  
+   - Place at cross centre; rail-lock later in this list if needed for shooting proof.
+
+2. **Player movement on rails**  
+   - Vertical arm first (or horizontal — pick one and stick to it for the slice).  
+   - Barrel switch + intersection mount per [`railgunner.md`](railgunner.md).  
+   - Input already normalized in `sys/input.asm`.
+
+3. **Character bullets**  
+   - New `render/bullets.asm` + fire path from play (throttle: one bullet per cell).  
+   - UDG or plain stand-in chars until a real charset lands; stand-ins OK for the slice.  
+   - Auto-fire while FIRE held.
+
+4. **One moving drone**  
+   - Replace the static art harness with **one** spawn: edge → straight line to rail.  
+   - Use any one of A/B/C art; prefer **C (small)** if testing player damage later, or
+     **B** for rail-reach-only. Keep other harness drones out of the slice path.  
+   - Motion can be simple constant velocity into the pool’s reserved vx/vy layout.
+
+5. **Collision consumer (the remaining hard unknown)**  
+   - Drain `objects::` IRQ events after mux attribution.  
+   - Char-peek under drone hitbox: bullet → damage/score/consume bullet; rail chars
+     → arrival (rail damage stub or instant “hit rail” for slice).  
+   - Prove path with live c64m tests; see [`sprite-mux-issues.md`](sprite-mux-issues.md)
+     stress item on latch-before-reuse.
+
+6. **Score + thin HUD**  
+   - Tick score on kill; show digits (placeholder string → live values).  
+   - Health/lives can stay constants until step 7.
+
+7. **Death / session end into existing modes**  
+   - Health 0 or “rail destroyed” stub → `MODE_NEXT_LIFE` or `MODE_GAME_OVER`
+     (stubs already exist).  
+   - Prefer: one life / no lives → game over → title, matching current FIRE-to-quit
+     demo path but driven by combat.
+
+8. **Only after 1–7:** expand to multi-wave (`MODE_NEXT_WAVE`), multi-arm, A/B/C
+   AI, rail damage levels, real HUD bars — **Stage 3 / 4**. Do not start bonuses,
+   ammo rationing, disk HS, or music before the slice exit criteria hold.
+
+**File ownership (new work):** see vertical-slice list in
+[`repo-layout.md`](repo-layout.md). Wire every new `.asm` through `src/main.asm`.
+
+**Out of scope until Stage 2 exit:** richer story/instructions, more title polish,
+mux rewrites, extra drone showcase layouts, high-score entry UX.
 
 ---
 
@@ -164,6 +260,9 @@ Per-stage or post-death re-entry into play.
 
 Main loop until an exit condition.
 
+**Today:** art harness only (static demo drones + facing cycle; FIRE ends
+session). Not combat. Replace harness as Stage 2 items land (see **Next steps**).
+
 Loop body (grows by stage):
 
 - Spawn / advance waves from wave data (stub constants early; tables at Systems).
@@ -186,9 +285,9 @@ Exit conditions:
 Lots of subsystems live under Play (mux, collision, bonuses, ammo). Those get
 their own detail docs; this element only owns the loop and its exits. The
 graphical-object pool, mux frame contract, and hardware collision attribution
-are specified and their support layer is implemented in
-[`objects-sprites.md`](objects-sprites.md). Motion/AI accessors remain a later
-layer.
+are implemented ([`objects-sprites.md`](objects-sprites.md),
+[`sprite-mux-status.md`](sprite-mux-status.md)). Motion/AI and the **gameplay
+collision consumer** remain Stage 2+ work.
 
 ### Next Wave (3)
 
@@ -234,36 +333,40 @@ On player death:
 
 | Element | Scaffold | Vertical slice | Core loop | Systems | Features | Polish | Ship |
 |---------|:--------:|:--------------:|:---------:|:-------:|:--------:|:------:|:----:|
-| Cold Init | ● | ● | ● | ● | ● | ○ | ○ |
-| Frontend | ● | ○ | ○ | ○ | ● | ● | ○ |
-| Game Init | ◐ | ● | ● | ○ | ○ | ○ | ○ |
-| Stage Init | ◐ | ● | ● | ○ | ○ | ○ | ○ |
-| Play | ◐ empty | ● thin | ● multi-wave | ● full mech | ● bonuses/ammo | ● feel | ○ |
+| Cold Init | ✓ | ● | ● | ● | ● | ○ | ○ |
+| Frontend | ✓+ | ○ | ○ | ○ | ● | ● | ○ |
+| Game Init | ✓◐ | ● | ● | ○ | ○ | ○ | ○ |
+| Stage Init | ✓◐ harness | ● | ● | ○ | ○ | ○ | ○ |
+| Play | ✓◐ art only | **← here** | ● multi-wave | ● full mech | ● bonuses/ammo | ● feel | ○ |
+| Object/mux support | — | ○ use | ○ | ✓ early | ○ | ○ | ○ |
 | Next Wave | — | — | ● | ○ | ○ | ● | ○ |
 | Next Level | — | — | ● | ○ | ● tables | ● | ○ |
-| Next Life | — | — | ● | ○ | ○ | ● FX | ○ |
-| Game Over | ◐ stub | ○ | ● | ○ | ○ | ● | ○ |
+| Next Life | ✓ stub | ○ | ● | ○ | ○ | ● FX | ○ |
+| Game Over | ✓ stub | ○ | ● | ○ | ○ | ● | ○ |
 | High Score | — | — | — | — | ● | ● | ○ |
 
-● = primary work for that stage · ◐ = stub / minimal · ○ = improve as needed · — = not yet
+✓ = done (for that column’s intent) · ✓+ = done beyond scaffold scope · ✓◐ = stub/minimal done  
+● = primary work for that stage · ◐ = stub / minimal · ○ = improve as needed · — = not yet  
+
+**Object/mux support** is not a flow mode; it is listed so agents do not re-implement
+the pool/mux during Stage 2 — **consume** it for player/drone sprites and events.
 
 ---
 
 ## Suggested build sequence (narrative)
 
-1. **Scaffold** — `boot` + `sys` enough to draw something; mode labels or blank
-   screens that advance on FIRE; prove assemble → load → run via
-   [`build-debug.md`](build-debug.md).
-2. **Vertical slice** — one rail arm, player sprite, one drone type, bullets as
-   UDG state machine, collision path (bullet hit vs rail reach), score tick.
-   Matches design brief risk reduction.
+1. **Scaffold** — **done.** Boot, modes, title attract, stub game over, assemble
+   → play via [`build-debug.md`](build-debug.md). Mux foundation landed here early.
+2. **Vertical slice** — **active** (see **Next steps**). Player sprite + move,
+   bullets, one moving drone, collision consumer, score, death → game over.
+   One arm / one combat type is enough; full cross art may stay on screen.
 3. **Core loop** — wrap the slice in real session flow: waves, lives, re-init,
    game over back to title. Placeholder wave count (20). Second/third rail arms
-   can start appearing here if the slice is solid.
-4. **Systems** — A/B/C, health bar and rail damage levels, wave tables, and
-   gameplay consumers for the implemented object-pool/sprite-mux foundation.
+   if the slice is solid.
+4. **Systems** — remaining A/B/C behaviour, health bar and rail damage levels,
+   wave tables; gameplay fully driven through the existing pool/mux.
 5. **Features** — bonuses, ammo unlock fiction + bar, disk high scores, music
-   hooks, fuller title/HS presentation.
+   hooks. Frontend is already partly here — do not deepen it until Stage 2 exits.
 6. **Polish / Ship** — messages, timing, explosions, entry UX, balance, final
    disk and smoke path.
 
@@ -282,7 +385,8 @@ Record decisions here when made; do not block early stages on them.
 | High scores without disk | RAM zeros / no persist | Load/save file format |
 | Wave-clear vs level-clear UI | Short pause + text | Art / SFX |
 | Ammo inactive early | Grayed bar present | Radio-message unlock stage |
-| Mode implementation | Jump table / state byte | Detail when code lands |
+| Mode implementation | **Done:** jump table in `frontend/mode.asm` | — |
+| Play content during Stage 2 | Replace art harness; full-cross draw OK | Multi-wave / multi-type AI |
 
 ---
 
@@ -294,12 +398,17 @@ When an area outgrows a sketch, add a focused handoff and link it from
 Present:
 
 - [`objects-sprites.md`](objects-sprites.md) — graphical-object pool, sprite
-  mux, IRQ/collision attribution, PAL/NTSC cadence.
+  mux, IRQ/collision attribution, PAL/NTSC cadence (design + ABI).
+- [`sprite-mux-status.md`](sprite-mux-status.md) — implementation status, demos,
+  verification, remaining stress tests.
+- [`sprite-mux-issues.md`](sprite-mux-issues.md) — review findings / integration
+  hazards for the mux (read before relying on collision).
 
 Future candidates:
 
-- Play loop & frame timing (IRQ vs main, update order)
-- Collision disambiguation (sprite–bg + char peek)
+- Play loop & frame timing (IRQ vs main, update order) — main already drains
+  events and builds plans; formalize when play grows
+- Collision disambiguation (sprite–bg + char peek) — **Stage 2 step 5**
 - Wave / level data format
 - Bonus spawn and parcel motion
 - High-score file format and disk I/O
@@ -311,6 +420,7 @@ Future candidates:
 ## Doc hygiene
 
 - Update this roadmap when a stage’s exit criteria or the control map changes.
+- Tick or rewrite **Next steps** when an item ships; keep **Where we are** honest.
 - Keep mechanics rules in [`railgunner.md`](railgunner.md); keep file placement
   in [`repo-layout.md`](repo-layout.md).
 - Prefer a short matrix/flow edit over long prose when the only change is

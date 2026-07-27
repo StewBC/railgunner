@@ -506,7 +506,26 @@ session re-verifies `get-frame format=argb8888` end-to-end; do not delete.
   ARGB payload, or return a protocol error before the data header if the
   requested payload cannot be delivered.
 
-### 2026-07-26 — `message_queue_push` NULL SIGSEGV on runtime thread (control stress)
+### ~~2026-07-26 — `message_queue_push` NULL SIGSEGV on runtime thread (control stress)~~
+
+**Resolved 2026-07-27 — two separate concerns:**
+
+- **`run-to-raster` desync + `CLOSE_WAIT` wedge: fixed in c64m febed99.**
+  run-to-raster was missing from the response-formatting tail switch, so it
+  posted a zeroed reply with wire id `0` (the "unsolicited `0 ok`"); id 0 never
+  matched the handler's outstanding set, so on disconnect the sole-client
+  connection handler looped forever draining and wedged the port for all future
+  clients. Fixed, plus a bounded post-disconnect drain so one lost/misrouted
+  response can never wedge the port again. Regression test
+  `run_to_raster_control_integration`.
+- **NULL SIGSEGV: closed as CNR (could not reproduce).** Did not reproduce under
+  ASan+UBSan *or* TSan control-stress matching this report
+  (pause/step-frame/run-to-raster/bulk `get-memory`+`set-memory`/joystick,
+  turbo 2, no `get-frame`) — 0 races, 0 sanitizer hits. `rt->event_queue` is
+  single-producer and joined before destroy (`runtime_destroy` → `runtime_stop`
+  → `thread_join` precedes `message_queue_destroy`), so a NULL `items` on a live
+  queue implies heap corruption from elsewhere, which stayed unlocated. Reopen
+  with a fresh IPS + a concrete repro if it recurs.
 
 - **Severity:** blocks-work (process dies; session must be relaunched).
 - **Did:** RailGunner sprite-mux review over the control port (windowed c64m,

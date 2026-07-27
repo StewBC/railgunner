@@ -73,14 +73,14 @@ instructions_text:
     .byte $0A
     .byte "DRONES STRIKE FROM THE EDGES:", $0A
     .byte $0A
-    .byte "A  SMALL. 1 HIT. ATTACKS YOU.", $0A
+    .byte "A  LARGE. 3 HITS. ATTACKS RAIL.", $0A
     .byte "B  MEDIUM. 2 HITS. ATTACKS RAIL.", $0A
-    .byte "C  LARGE. 3 HITS. ATTACKS RAIL.", $0A
-    .byte "   A BLASTS THE GUNNER, NOT", $0A
+    .byte "C  SMALL. 1 HIT. ATTACKS YOU.", $0A
+    .byte "   C BLASTS THE GUNNER, NOT", $0A
     .byte "   THE RAIL.", $0A
     .byte $0A
-    .byte "STOP B AND C BEFORE THEY HIT", $0A
-    .byte "THE RAIL. STOP A BEFORE IT", $0A
+    .byte "STOP A AND B BEFORE THEY HIT", $0A
+    .byte "THE RAIL. STOP C BEFORE IT", $0A
     .byte "DETONATES ON YOUR POSITION.", $0A
     .byte $0A
     .byte "WATCH FOR POWERUP PARCELS.", $0A
