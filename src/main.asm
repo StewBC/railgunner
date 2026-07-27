@@ -9,9 +9,10 @@
 ; ---------------------------------------------------------------------------
 .segdef "ZEROPAGE", $02, noemit
 .segdef "BASIC", $0801
-.segdef "CODE", $080d
+.segdef "CODE", $080d               ; low code — keep below CHARSET $2800
 .segdef "TITLE", $4000              ; hires source (bitmap + colours)
 .segdef "DATA", $6328               ; strings/tables + sprite frame source
+.segdef "CODE_HI", $7000            ; overflow game logic (rail, future bulk)
 .segdef "OBJECTS", $C000, noemit
 
 ; ---------------------------------------------------------------------------
@@ -84,6 +85,8 @@ main_loop:
 .include "frontend/hiscore.asm"
 .include "game/game_init.asm"
 .include "game/score.asm"
+.include "game/hud.asm"
+.include "game/rail.asm"
 .include "game/player.asm"
 .include "game/drones.asm"
 .include "game/collision.asm"
@@ -107,3 +110,4 @@ main_loop:
 .include "data/strings.asm"
 .include "data/sprites.asm"
 .include "data/charset_bullets.asm"
+.include "data/charset_bars.asm"

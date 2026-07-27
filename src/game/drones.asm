@@ -1,6 +1,5 @@
 ; Drone spawn + motion.
-; Drones live only in the four quadrants — never over the cross rails
-; (char cols 19–21, rows 12–13). Stage 2: one C in UL flying down to H-rail.
+; Stage 2: one C (UL, player threat) + one B (UR, rail threat); vertical only.
 ; Later: waves of 3 per quadrant.
 
 .scope drones
@@ -8,42 +7,70 @@
 ; ---------------------------------------------------------------------------
 .proc init
     jsr ensure_slice_mover
+    jsr ensure_rail_attacker
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Keep exactly one active slice C in play (UL). Call after kills / arrivals.
+; Keep exactly one active C in play (UL).
 ; ---------------------------------------------------------------------------
 .proc ensure_slice_mover
     ldx #1
     lda #0
-    sta tmp0                        ; count
-count_loop:
+    sta tmp0
+count_c:
     lda objects::obj_flags, x
     and #(OBJF_ALLOCATED | OBJF_RETIRING)
     cmp #OBJF_ALLOCATED
-    bne count_next
+    bne count_c_n
     lda objects::obj_kind, x
     cmp #OBJ_DRONE_C
-    bne count_next
+    bne count_c_n
     inc tmp0
-count_next:
+count_c_n:
     inx
     cpx #OBJECT_CAPACITY
-    bne count_loop
+    bne count_c
     lda tmp0
-    bne ensure_done                 ; already have ≥1
+    bne ensure_c_done
     jsr spawn_slice_mover
-ensure_done:
+ensure_c_done:
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; One C in upper-left quadrant, nose down → H-rail.
+; Keep exactly one active B in play (UR) — damages rail on arrival.
+; ---------------------------------------------------------------------------
+.proc ensure_rail_attacker
+    ldx #1
+    lda #0
+    sta tmp0
+count_b:
+    lda objects::obj_flags, x
+    and #(OBJF_ALLOCATED | OBJF_RETIRING)
+    cmp #OBJF_ALLOCATED
+    bne count_b_n
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_B
+    bne count_b_n
+    inc tmp0
+count_b_n:
+    inx
+    cpx #OBJECT_CAPACITY
+    bne count_b
+    lda tmp0
+    bne ensure_b_done
+    jsr spawn_rail_attacker
+ensure_b_done:
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; One C in upper-left, nose down → H-rail (player blast on arrival).
 ; ---------------------------------------------------------------------------
 .proc spawn_slice_mover
     jsr objects::alloc
-    bcs spawn_fail
+    bcs spawn_c_fail
 
     lda #OBJ_DRONE_C
     sta objects::obj_kind, x
@@ -73,13 +100,56 @@ ensure_done:
     sta objects::obj_vy_int, x
 
     lda #QUAD_UL
-    sta objects::obj_user, x        ; quadrant for clamp / wave logic
+    sta objects::obj_user, x
 
-    ; BG interest: $D01F candidate latch; gameplay peeks chars to disambiguate.
     lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
     sta objects::obj_flags, x
     jsr objects::mark_dirty
-spawn_fail:
+spawn_c_fail:
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; One B in upper-right, nose down → H-rail (rail damage on arrival).
+; ---------------------------------------------------------------------------
+.proc spawn_rail_attacker
+    jsr objects::alloc
+    bcs spawn_b_fail
+
+    lda #OBJ_DRONE_B
+    sta objects::obj_kind, x
+    lda #SPR_COLOR_DRONE_B
+    sta objects::obj_sprite_color, x
+    lda #OBJA_MULTICOLOR
+    sta objects::obj_sprite_attr, x
+    lda #SPR_PTR_DRONE_B_DOWN
+    sta objects::obj_sprite_ptr, x
+
+    lda #DRONE_B_SPAWN_X_LO
+    sta objects::obj_x_lo, x
+    lda #DRONE_B_SPAWN_X_HI
+    sta objects::obj_x_hi, x
+    lda #0
+    sta objects::obj_x_frac, x
+    sta objects::obj_y_frac, x
+    lda #DRONE_SPAWN_Y
+    sta objects::obj_y_int, x
+
+    lda #0
+    sta objects::obj_vx_frac, x
+    sta objects::obj_vx_lo, x
+    sta objects::obj_vx_hi, x
+    sta objects::obj_vy_frac, x
+    lda #DRONE_B_SPEED_Y
+    sta objects::obj_vy_int, x
+
+    lda #QUAD_UR
+    sta objects::obj_user, x
+
+    lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
+    sta objects::obj_flags, x
+    jsr objects::mark_dirty
+spawn_b_fail:
     rts
 .endproc
 
@@ -104,7 +174,8 @@ upd_next:
     inx
     cpx #OBJECT_CAPACITY
     bne upd_loop
-    jsr ensure_slice_mover          ; top up if arrivals cleared the last one
+    jsr ensure_slice_mover
+    jsr ensure_rail_attacker
     rts
 .endproc
 
@@ -135,17 +206,14 @@ upd_next:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Keep 24px sprite fully in left (cols 0–18) or right (22–39) band.
-; ---------------------------------------------------------------------------
 .proc clamp_to_quadrant
     lda objects::obj_user, x
     cmp #QUAD_UR
     beq clamp_right
     cmp #QUAD_LR
     beq clamp_right
-    ; UL / LL — left band
     lda objects::obj_x_hi, x
-    bne left_hi                     ; X >= 256: force max left
+    bne left_hi
     lda objects::obj_x_lo, x
     cmp #DRONE_X_LEFT_MIN
     bcs left_max
@@ -166,10 +234,8 @@ left_hi:
     rts
 
 clamp_right:
-    ; 16-bit X vs DRONE_X_RIGHT_MIN ($00C8) / MAX ($0140)
     lda objects::obj_x_hi, x
     bne right_ge_256
-    ; X < 256: must be >= RIGHT_MIN (200); MAX is 320 so always <= if hi=0
     lda objects::obj_x_lo, x
     cmp #DRONE_X_RIGHT_MIN
     bcs clamp_done
@@ -179,7 +245,6 @@ clamp_right:
     sta objects::obj_x_hi, x
     rts
 right_ge_256:
-    ; X = $100 + lo; MAX = $140 → lo must be <= $40
     lda objects::obj_x_lo, x
     cmp #$41
     bcc clamp_done
@@ -192,12 +257,34 @@ clamp_done:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Reach H-rail edge (not over it): retire only. ensure_slice_mover respawns.
+; Rail arrival: C → player blast; A/B → rail damage (2 cells); then retire.
 ; ---------------------------------------------------------------------------
 .proc check_rail_arrival
     lda objects::obj_y_int, x
     cmp #DRONE_RAIL_ARRIVE_Y
     bcc arrive_done
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_C
+    beq arrive_c
+    cmp #OBJ_DRONE_A
+    beq arrive_ab
+    cmp #OBJ_DRONE_B
+    beq arrive_ab
+    jmp arrive_retire
+arrive_c:
+    txa
+    pha
+    jsr player::apply_c_blast_full
+    pla
+    tax
+    jmp arrive_retire
+arrive_ab:
+    txa
+    pha
+    jsr rail::apply_ab_hit
+    pla
+    tax
+arrive_retire:
     jsr objects::retire_and_try_free
 arrive_done:
     rts

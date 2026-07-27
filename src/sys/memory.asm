@@ -4,9 +4,10 @@
 ; Segments (see main.asm):
 ;   ZEROPAGE  $02     noemit variable map
 ;   BASIC     $0801   SYS stub (10 SYS 2061)
-;   CODE      $080d   executable (start = SYS target)
+;   CODE      $080d   low executable (must end before CHARSET $2800)
 ;   TITLE     $4000   title hires source (bitmap + colour matrix)
 ;   DATA      $6328   strings / tables / sprite frame source
+;   CODE_HI   $7000   overflow game logic (rail damage, future bulk)
 ;   OBJECTS   $C000   noemit graphical-object/mux runtime state
 ;
 ; VIC bank 0 runtime (not PRG-resident source):

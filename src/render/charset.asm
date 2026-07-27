@@ -1,4 +1,4 @@
-; Character set: copy C64 char ROM → RAM once, install bullet UDGs.
+; Character set: copy C64 char ROM → RAM once, install bullet + bar UDGs.
 ; All text modes use this font (VIC bank 0, CHARSET_RAM @ $2800).
 
 ; ---------------------------------------------------------------------------
@@ -48,12 +48,30 @@ copy_pages:
     sta print_ptr_hi
 
     ldy #0
-overlay:
+overlay_bul:
     lda (ptr_lo), y
     sta (print_ptr_lo), y
     iny
     cpy #CHR_BULLET_UDG_BYTES
-    bne overlay
+    bne overlay_bul
+
+    ; Overlay HUD bar UDGs at SC_UDG_BAR_FIRST (8/6/4/2 px left-fill)
+    lda #<chr_bar_udg
+    sta ptr_lo
+    lda #>chr_bar_udg
+    sta ptr_hi
+    lda #<(CHARSET_RAM + SC_UDG_BAR_FIRST * 8)
+    sta print_ptr_lo
+    lda #>(CHARSET_RAM + SC_UDG_BAR_FIRST * 8)
+    sta print_ptr_hi
+
+    ldy #0
+overlay_bar:
+    lda (ptr_lo), y
+    sta (print_ptr_lo), y
+    iny
+    cpy #CHR_BAR_UDG_BYTES
+    bne overlay_bar
 
     rts
 .endproc

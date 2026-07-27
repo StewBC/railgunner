@@ -298,6 +298,29 @@ copy_loop:
     rts
 .endproc
 
+; ---------------------------------------------------------------------------
+; C drone rail blast — full hit (slice: no range check). Health 0 → next life.
+; Clobbers A. Preserves X,Y.
+; ---------------------------------------------------------------------------
+.proc apply_c_blast_full
+    lda health
+    beq blast_done                  ; already dead this life
+    sec
+    sbc #C_BLAST_FULL
+    bcs blast_store
+    lda #0
+blast_store:
+    sta health
+    lda #1
+    sta hud_status_dirty
+    lda health
+    bne blast_done
+    lda #MODE_NEXT_LIFE
+    jsr mode_set
+blast_done:
+    rts
+.endproc
+
 ; Word table: index = SPR_DIR_* (left, right, up, down)
 player_frame_ptr:
     .word spr_player_left

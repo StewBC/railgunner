@@ -18,11 +18,18 @@
     sta VIC_MEM
 
     jsr screen_draw_playfield
+    jsr rail::reset                 ; fresh H-rail damage map
     jsr bullets::init
     jsr video::init_sprite_palette
     jsr video::install_sprite_frames
     jsr player::init
-    jsr drones::init                ; Stage 2: one C mover top→rail
+    jsr drones::init                ; C (player) + B (rail), vertical
+    ; Template HUD — paint live session score / health / lives.
+    lda #1
+    sta hud_status_dirty
+    sta score_dirty
+    jsr score::paint_if_dirty
+    jsr hud::paint_status_if_dirty
     jsr screen_unblank
 
     lda #MODE_PLAY

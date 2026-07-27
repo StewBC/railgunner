@@ -154,11 +154,15 @@ MODE_TITLE      = MODE_TITLE_TEXT
 ; ---------------------------------------------------------------------------
 ; Session defaults (roadmap placeholders)
 ; ---------------------------------------------------------------------------
-START_LIVES     = 3
-START_HEALTH    = 8                 ; bar-driven later; stub full pool
+START_LIVES     = 3                 ; total lives; max show HUD_LIVES_MAX_SHOW (4)
+START_HEALTH    = 32                ; 8 bar chars × 4 steps (2px each)
 START_AMMO      = 8
 START_LEVEL     = 1
 WAVES_PER_LEVEL = 20
+
+; C blast (player only). Full hit for slice; half-range later.
+C_BLAST_FULL    = 2
+C_BLAST_HALF    = 1
 
 ; Score: 1 registered hit = 1 point (not 1 bullet). Cap for 6-digit HUD.
 ; A/B/C kill totals = hit points (3/2/1) once multi-HP is live.
@@ -366,12 +370,14 @@ HUD_LIVES_MAX_SHOW      = 4
 ; Bullets already use half-cell lanes (4 phases × 2 halves = 8 per axis):
 ;   $F0–$F7  vertical  (VL0–3, VR0–3)
 ;   $F8–$FF  horizontal (HT0–3, HB0–3)  — reserved & defined
-; Planned block below (when art lands; placeholders print A–J from stock font):
+; Planned / reserved block (placeholders until art installs):
 ;   $C0      life icon (HUD)
 ;   $C1–$CA  rail normal a–j (10)
 ;   $CB–$D0  rail damage set 1 (a–f only, 6)
 ;   $D1–$D6  rail damage set 2 (a–f only, 6)
-; Count: 1 life + 8v + 8h + 10 rail + 6 + 6 = 39 (not 35 — see bullets note)
+;   $D7–$DA  HUD bar fill (shared health + ammo): 8, 6, 4, 2 px tall
+;            Empty cell = SC_SPACE (no blank UDG)
+; Count: 1 life + 10 rail + 6 + 6 + 4 bar + 8v + 8h = 43
 ; ---------------------------------------------------------------------------
 SC_BULLET_VL0   = $F0
 SC_BULLET_VR0   = $F4
@@ -383,7 +389,14 @@ SC_UDG_LIFE     = $C0
 SC_UDG_RAIL0    = $C1               ; a–j normal → $C1..$CA
 SC_UDG_DMG1     = $CB               ; a–f damage 1
 SC_UDG_DMG2     = $D1               ; a–f damage 2
-SC_UDG_COUNT    = 39
+; Bar cells: one set for H and A (colour RAM distinguishes). Index by fill step.
+SC_UDG_BAR8     = $D7               ; full 8 px
+SC_UDG_BAR6     = $D8
+SC_UDG_BAR4     = $D9
+SC_UDG_BAR2     = $DA
+SC_UDG_BAR_FIRST = SC_UDG_BAR8
+SC_UDG_BAR_COUNT = 4
+SC_UDG_COUNT    = 43                ; life+rails+dmg+bars+bullets
 
 ; ---------------------------------------------------------------------------
 ; Bullets (character stream; H-rail vertical aim for Stage 2)
@@ -425,12 +438,16 @@ DRONE_X_RIGHT_MIN       = 192
 DRONE_X_RIGHT_MAX       = 320
 
 ; ---------------------------------------------------------------------------
-; Drones (Stage 2: one mover; later waves of 3 per quadrant)
+; Drones (Stage 2: C player-threat + B rail-threat; later waves of 3/quad)
 ; ---------------------------------------------------------------------------
 DRONE_C_SPEED_Y         = 1         ; pixels per logic tick
-; Slice spawn: upper-left quadrant only (inside cols 0–18)
+DRONE_B_SPEED_Y         = 1
+; Slice C: upper-left
 DRONE_SPAWN_X_LO        = 100       ; within DRONE_X_LEFT_*
 DRONE_SPAWN_X_HI        = 0
+; Slice B rail attacker: upper-right (vertical only)
+DRONE_B_SPAWN_X_LO      = 220       ; within DRONE_X_RIGHT_*
+DRONE_B_SPAWN_X_HI      = 0
 ; Below score (row 0 ≈ Y 50–57): row-1 top (58) + full 21-line sprite → no HUD overlap
 DRONE_SPAWN_Y           = 50 + 8 + SPRITE_H_PX   ; 79
 ; Arrival: stop before overlapping H-rail top (row 12 ≈ VIC Y 146)

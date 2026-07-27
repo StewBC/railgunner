@@ -104,8 +104,9 @@ str_hiscore:
 ;   000000  H:######## A:######## L:01  AAAA
 ;   score   H: health  A: ammo    L:lv  lives
 ; # / A stand in for future UDG bar and life icons.
+; Lives right-aligned: 3 start lives → " AAA" (last life always col 39).
 str_hud:
-    .byte "000000  H:######## A:######## L:01  AAAA", 0
+    .byte "000000  H:######## A:######## L:01   AAA", 0
 ; Alias for older call sites
 str_hud_placeholder = str_hud
 

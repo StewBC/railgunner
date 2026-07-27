@@ -88,8 +88,14 @@ plain text):
 | `$C1`–`$CA` | 10 | Rail normal a–j |
 | `$CB`–`$D0` | 6 | Rail damage set 1 (a–f only) |
 | `$D1`–`$D6` | 6 | Rail damage set 2 (a–f only) |
+| `$D7`–`$DA` | 4 | HUD bar fill **8 / 6 / 4 / 2** px (shared health + ammo; empty = space) |
 | `$F0`–`$F7` | 8 | Vertical bullets (4 phases × L/R half-cell) |
 | `$F8`–`$FF` | 8 | Horizontal bullets (reserved; later) |
+
+**Bars:** 8 characters wide × 4 steps (2 px) = **32** pool points each for health
+(and later ammo). Per cell, pick `$D7`…`$DA` by remaining steps in that cell;
+fully empty cells use `SC_SPACE` (no blank UDG). Same glyphs for H and A;
+colour RAM (blue vs red) separates them.
 
 **What ships today**
 
@@ -186,7 +192,13 @@ The rail visibly accumulates damage from A/B impacts, represented via redefined 
 
 ## Player health, shield, and damage resolution
 
-The player has a health pool rather than a binary "hit = dead" state. A full (direct-range) **C** blast costs 2 points; a half (outer-range) blast costs 1 point. Starting health is tunable, likely `4 * health-bar-character-count` given a 2px-per-step bar, so that a full hit removes a clearly visible chunk of the bar. Health reaching 0 kills the player, at which point a reserve life (if any) is consumed and the player respawns; running out of lives, or the rail being fully destroyed, both end the game (there is no meaningful distinction between the two loss conditions — either way, it's Game Over).
+The player has a health pool rather than a binary "hit = dead" state. Pool size is
+**32** (8 HUD bar characters × 4 steps of 2px). A full (direct-range) **C** blast
+costs **2** points; a half (outer-range) blast costs **1**. Health reaching 0
+consumes one life and restages (or game over if none left). Lives start at **3**,
+max **4** on the HUD, right-aligned (last life in col 39); extras fill right→left.
+Running out of lives, or the rail being fully destroyed, both end the game (no
+special distinction — either way, Game Over).
 
 **Shield** (see Bonuses) uses the same damage-point currency as health: while a shield is active, incoming **C-blast** damage is deducted from the shield pool instead of health, fully absorbing each hit regardless of size until the shield pool is exhausted, at which point damage resumes coming off health directly.
 

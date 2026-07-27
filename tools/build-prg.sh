@@ -25,6 +25,7 @@ ASM_LOG="${OUT_DIR}/assemble.log"
 CHARSET_RAM=0x2800
 SPRITE_BLOCK=0x3000
 PLAYER_BUF=0x3E00
+OBJECTS_RAM=0xC000                  # CODE_HI must stay below pool
 
 mkdir -p "${OUT_DIR}"
 
@@ -64,7 +65,7 @@ if [[ ! -f "${SYM}" ]]; then
 fi
 
 # Parse SEGMENTS block from symbols (c64masm writes e.g. CODE [080D-20F1))
-python3 - "${SYM}" "${CHARSET_RAM}" "${SPRITE_BLOCK}" "${PLAYER_BUF}" <<'PY'
+python3 - "${SYM}" "${CHARSET_RAM}" "${SPRITE_BLOCK}" "${PLAYER_BUF}" "${OBJECTS_RAM}" <<'PY'
 import re
 import sys
 from pathlib import Path
@@ -73,6 +74,7 @@ sym_path = Path(sys.argv[1])
 charset = int(sys.argv[2], 0)
 sprite = int(sys.argv[3], 0)
 player = int(sys.argv[4], 0)
+objects = int(sys.argv[5], 0)
 
 text = sym_path.read_text(encoding="utf-8", errors="replace")
 # Prefer the last SEGMENTS block (file may list symbols then summary)
@@ -106,7 +108,7 @@ if "CODE" not in segs:
 code_start, code_end = segs["CODE"]
 # code_end is exclusive first free address after CODE
 limits = [
-    ("CHARSET_RAM", charset, "move font or shrink CODE"),
+    ("CHARSET_RAM", charset, "move font or shrink CODE / use CODE_HI"),
     ("SPRITE_BLOCK", sprite, "CODE must stay below sprite bank"),
     ("PLAYER_BUF", player, "CODE must stay below player sprite buffers"),
 ]
@@ -122,11 +124,26 @@ for label, addr, hint in limits:
         room = addr - code_end
         print(f"  layout OK: CODE ends ${code_end:04X}, {room} bytes free before {label} ${addr:04X}")
 
-# Soft warning if getting tight (< 256 bytes before charset)
+# CODE_HI (optional) must stay below OBJECTS pool
+if "CODE_HI" in segs:
+    hi_start, hi_end = segs["CODE_HI"]
+    if hi_end > objects:
+        print(
+            f"error: CODE_HI ends at ${hi_end:04X}, overlaps OBJECTS ${objects:04X}",
+            file=sys.stderr,
+        )
+        failed = True
+    else:
+        print(
+            f"  layout OK: CODE_HI ends ${hi_end:04X}, "
+            f"{objects - hi_end} bytes free before OBJECTS ${objects:04X}"
+        )
+
+# Soft warning if LOW code getting tight (< 256 bytes before charset)
 room_cs = charset - code_end
 if not failed and room_cs < 256:
     print(
-        f"warning: only {room_cs} bytes free before CHARSET_RAM ${charset:04X} — plan a split soon",
+        f"warning: only {room_cs} bytes free before CHARSET_RAM ${charset:04X} — prefer CODE_HI for new code",
         file=sys.stderr,
     )
 

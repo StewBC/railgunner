@@ -51,8 +51,9 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Player sprite / move | **Done (H-arm)** | Slot 0 sprite; 4px steps; U/D barrel via mid frame; V-rail later |
 | Bullets / charset UDGs | **Done (V stream)** | RAM font + 8 UDGs; H-rail fire up/down with 4-phase cells |
 | Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch kill; soft AABB kept for later; mux-load unproven |
-| Score / thin HUD | **Done (thin)** | Hit→point, 6-digit paint; bars/lives still static |
-| Waves / lives / rail damage | Stubs only | Mode hooks exist; nothing drives them from play |
+| Score / thin HUD | **Done (thin)** | Hit→point, 6-digit paint; health/lives live coarse fill |
+| Death / session end | **Done (slice)** | C rail blast → health; 0 → next life / game over → title |
+| Waves / rail damage | Stubs only | Mode hooks exist; A/B rail damage later |
 | High score entry / disk | Stub | Always skip hiscore from game over |
 
 **Intentional early work (keep):** mux foundation, title art, drone art (all
@@ -103,11 +104,11 @@ installed; do not require multi-type AI for the slice.
    - HW latch scores only when a nearby bullet is consumed (rail = 0 pts).  
    - Health/lives still constants until step 7.
 
-7. **Death / session end into existing modes**  
-   - Health 0 or “rail destroyed” stub → `MODE_NEXT_LIFE` or `MODE_GAME_OVER`
-     (stubs already exist).  
-   - Prefer: one life / no lives → game over → title, matching current FIRE-to-quit
-     demo path but driven by combat.
+7. ~~**Death / session end into existing modes**~~ **done (slice)**  
+   - `START_HEALTH=32` (8×4); C rail arrival = full blast (−2); half-range later.  
+   - Health 0 → `MODE_NEXT_LIFE` (lives--, restage) or `MODE_GAME_OVER` → title.  
+   - Lives HUD right-aligned cols 36–39; RUN/STOP still emergency quit.  
+   - Rail destroyed / A/B damage not in this slice.
 
 8. **Only after 1–7:** expand to multi-wave (`MODE_NEXT_WAVE`), multi-arm, A/B/C
    AI, rail damage levels, real HUD bars — **Stage 3 / 4**. Do not start bonuses,

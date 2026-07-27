@@ -74,9 +74,37 @@ upd_next:
     jsr objects::retire_and_try_free
     rts
 hw_rail:
-    ldx mode_state
-    jsr objects::retire_and_try_free
+    jsr rail_arrival_retire         ; C blast if needed, then free
 hw_done:
+    rts
+.endproc
+
+; Rail path (no bullet): C → player; A/B → rail cells; then retire.
+.proc rail_arrival_retire
+    ldx mode_state
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_C
+    beq ra_c
+    cmp #OBJ_DRONE_A
+    beq ra_ab
+    cmp #OBJ_DRONE_B
+    beq ra_ab
+    jmp ra_free
+ra_c:
+    txa
+    pha
+    jsr player::apply_c_blast_full
+    pla
+    tax
+    jmp ra_free
+ra_ab:
+    txa
+    pha
+    jsr rail::apply_ab_hit
+    pla
+    tax
+ra_free:
+    jsr objects::retire_and_try_free
     rts
 .endproc
 
@@ -144,8 +172,7 @@ as_bullet:
     jsr objects::retire_and_try_free
     rts
 as_rail:
-    ldx mode_state
-    jsr objects::retire_and_try_free
+    jsr rail_arrival_retire
     rts
 .endproc
 

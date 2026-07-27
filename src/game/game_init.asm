@@ -16,6 +16,8 @@
     sta level
     lda #0
     sta wave
+    lda #1
+    sta hud_status_dirty
 
     ; Fresh object pool each session (slot 0 = player; rest free)
     jsr objects::init

@@ -14,11 +14,27 @@
     rts
 
 play_logic:
+    ; Death may mode_set away from PLAY mid-tick — stop combat and skip HUD
+    ; so we do not paint over game-over / stage-init screens.
+    lda game_mode
+    cmp #MODE_PLAY
+    bne play_skip
     jsr player::update
+    lda game_mode
+    cmp #MODE_PLAY
+    bne play_skip
     jsr drones::update
+    lda game_mode
+    cmp #MODE_PLAY
+    bne play_skip
     jsr bullets::update
     jsr collision::update
+    lda game_mode
+    cmp #MODE_PLAY
+    bne play_skip
     jsr score::paint_if_dirty
+    jsr hud::paint_status_if_dirty
+play_skip:
     rts
 .endproc
 

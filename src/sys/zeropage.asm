@@ -19,6 +19,7 @@ score_dirty:    .res 1              ; nonzero → rewrite HUD score digits
 score_work0:    .res 1              ; paint scratch (not tmp* — put_xy clobbers those)
 score_work1:    .res 1
 score_work2:    .res 1
+hud_status_dirty: .res 1            ; nonzero → rewrite health bar + lives icons
 lives:          .res 1
 health:         .res 1
 ammo:           .res 1
