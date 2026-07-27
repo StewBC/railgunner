@@ -92,10 +92,10 @@ Speed is constant within a given wave; later waves within a level, and later lev
 
 ### What each type attacks
 
-- **A and B drones** attack the **rail only**. On reaching the rail they explode, causing rail damage. They do not harm the player directly.
-- **C drones** attack the **player only**. On reaching the rail they explode with a radial blast: player within ~8px of the blast origin takes a **direct hit**, player within ~8-16px takes a **half hit** (exact radii tunable). The blast does not damage the rail and does not chain into other drones.
+- **A (small) drones** attack the **player only**. On reaching the rail they explode with a radial blast: player within ~8px of the blast origin takes a **direct hit**, player within ~8-16px takes a **half hit** (exact radii tunable). The blast does not damage the rail and does not chain into other drones.
+- **B (medium) and C (large) drones** attack the **rail only**. On reaching the rail they explode, causing rail damage. They do not harm the player directly.
 
-Since a C drone's explosion origin is always at the rail edge, the player is in some degree of blast range any time they are occupying the rail arm a C reaches — this is the core risk/reward of choosing which arm to defend, not an oversight.
+Since an A drone's explosion origin is always at the rail edge, the player is in some degree of blast range any time they are occupying the rail arm an A reaches — this is the core risk/reward of choosing which arm to defend, not an oversight.
 
 ### Layering and hit resolution
 
@@ -109,19 +109,19 @@ For a bullet reaching a stack of overlapping drones, the frontmost (lowest sprit
 
 ## Rail damage
 
-The rail visibly accumulates damage from A/B impacts, represented via redefined characters (roughly 5 tunable damage levels per segment, same technique as static-frame character redefinition elsewhere in the project).
+The rail visibly accumulates damage from B/C impacts, represented via redefined characters (roughly 5 tunable damage levels per segment, same technique as static-frame character redefinition elsewhere in the project).
 
 ## Player health, shield, and damage resolution
 
-The player has a health pool rather than a binary "hit = dead" state. A full (direct-range) C blast costs 2 points; a half (outer-range) blast costs 1 point. Starting health is tunable, likely `4 * health-bar-character-count` given a 2px-per-step bar, so that a full hit removes a clearly visible chunk of the bar. Health reaching 0 kills the player, at which point a reserve life (if any) is consumed and the player respawns; running out of lives, or the rail being fully destroyed, both end the game (there is no meaningful distinction between the two loss conditions — either way, it's Game Over).
+The player has a health pool rather than a binary "hit = dead" state. A full (direct-range) **A** blast costs 2 points; a half (outer-range) blast costs 1 point. Starting health is tunable, likely `4 * health-bar-character-count` given a 2px-per-step bar, so that a full hit removes a clearly visible chunk of the bar. Health reaching 0 kills the player, at which point a reserve life (if any) is consumed and the player respawns; running out of lives, or the rail being fully destroyed, both end the game (there is no meaningful distinction between the two loss conditions — either way, it's Game Over).
 
-**Shield** (see Bonuses) uses the same damage-point currency as health: while a shield is active, incoming C-blast damage is deducted from the shield pool instead of health, fully absorbing each hit regardless of size until the shield pool is exhausted, at which point damage resumes coming off health directly.
+**Shield** (see Bonuses) uses the same damage-point currency as health: while a shield is active, incoming **A-blast** damage is deducted from the shield pool instead of health, fully absorbing each hit regardless of size until the shield pool is exhausted, at which point damage resumes coming off health directly.
 
 ## Bonuses
 
 Periodically, a bonus "parcel" spawns at the end of a rail arm and travels its full length. It always starts on the rail arm the player is **not** currently occupying, forcing a deliberate choice to move and intercept it. A bonus type never spawns while that same type is already active on the player (no stacking within a type), but different bonus types can be held simultaneously.
 
-- **Shield**: absorbs incoming C-blast damage before it touches health (see above). Comes in three strengths — 6, 4, or 2 damage-points' worth — shown as a colored ring around the player, color indicating strength. Drop rate is weighted so the strongest tier (6) is rare and the weakest (2) is common.
+- **Shield**: absorbs incoming A-blast damage before it touches health (see above). Comes in three strengths — 6, 4, or 2 damage-points' worth — shown as a colored ring around the player, color indicating strength. Drop rate is weighted so the strongest tier (6) is rare and the weakest (2) is common.
 - **Damage multiplier**: player projectiles do 2x or 3x damage for a tunable duration. 3x is short-lived and degrades to 2x rather than expiring outright. Indicated by projectile color, using the same color coding as the shield tiers.
 - **Repair**: shown as a small object orbiting the player. While active, standing stationary over a damaged rail segment repairs it.
 - **Ammo** (once the ammo mechanic is live): replenishes the ammo bar. Missing one while ammo is scarce is a real threat.

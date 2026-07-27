@@ -127,7 +127,7 @@ MENU_FIRE_GUARD = 20
 ; Story typewriter
 STORY_MARGIN_X  = 1                 ; left-justified inset
 STORY_START_Y   = 0
-STORY_TYPE_DELAY = 2                ; frames between glyphs (~25 cps PAL)
+STORY_TYPE_DELAY = 1                ; frames between glyphs (~50% faster than 2)
 STORY_STATE_TYPING = 0
 STORY_STATE_DONE   = 1
 

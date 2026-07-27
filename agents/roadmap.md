@@ -273,7 +273,7 @@ Record decisions here when made; do not block early stages on them.
 |-------|-----------------|--------|
 | Waves per level | 20 | Wave/level tables |
 | Starting lives | 3 | Tuning |
-| Starting health | Full bar (design formula) | Tuning with C-blast costs |
+| Starting health | Full bar (design formula) | Tuning with A-blast costs |
 | Rail/health on next life | Reset full | Confirm vs carry damage |
 | High scores without disk | RAM zeros / no persist | Load/save file format |
 | Wave-clear vs level-clear UI | Short pause + text | Art / SFX |

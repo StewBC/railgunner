@@ -116,6 +116,11 @@ tw_whiten_none:
 .endproc
 
 .proc typewriter_skip_to_end
+    ; Age any glyph already on screen in gray (last typed before Fire).
+    jsr typewriter_whiten_prev
+    lda #$ff
+    sta type_prev_col
+
 tw_skip_loop:
     ldy #0
     lda (type_src_lo), y
@@ -140,8 +145,6 @@ tw_skip_glyph:
     jsr typewriter_src_advance
     jmp tw_skip_loop
 tw_skip_finish:
-    lda #$ff
-    sta type_prev_col
     jsr typewriter_show_continue
     rts
 .endproc

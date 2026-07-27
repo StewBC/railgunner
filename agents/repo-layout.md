@@ -84,7 +84,7 @@ Logic that mutates game state; may call into render/sprite modules.
 | Drones / motion | Straight-line to rail, speed, spawn from edges/quadrants |
 | Collision | `$D01F` sprite-BG; disambiguate bullet vs rail char; hit priority |
 | Rail damage logic | A/B impact → segment damage; full rail destruction → game over |
-| Health / lives | C blast radii (full/half), shield pool, respawn, lives |
+| Health / lives | A blast radii (full/half), shield pool, respawn, lives |
 | Bonuses | Parcel spawn on opposite arm, types, no same-type stack |
 | Waves / levels | Table-driven waves: quadrants, speed, mix, overlap, bonus timing |
 | Score | Points, multipliers |
