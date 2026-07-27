@@ -34,7 +34,7 @@ Machine bring-up shared by every mode (title and play).
 | Entry / BASIC stub | `$0801` SYS stub, jump to init |
 | Memory map & ZP | Segment layout, zero-page allocations, hardware constants |
 | Init | VIC bank, charset pointer, screen clear, IRQ install |
-| IRQ / frame | Raster IRQ shell; eventually hosts sprite mux |
+| IRQ / frame | Raster frame clock, PAL/NTSC cadence, sprite-mux command owner |
 | Input | Joystick + keyboard (WASD/space) → normalized dir/fire |
 
 ### B. Frontend / meta-game (~6–8 files)

@@ -12,11 +12,31 @@ VIC_BG0         = $D021
 VIC_CTRL1       = $D011
 VIC_CTRL2       = $D016
 VIC_MEM         = $D018
+VIC_SPR_X_MSB   = $D010
+VIC_SPR_ENABLE  = $D015
+VIC_SPR_Y_EXPAND = $D017
+VIC_IRQ_STATUS  = $D019
+VIC_IRQ_ENABLE  = $D01A
+VIC_SPR_BG_PRIORITY = $D01B
+VIC_SPR_MULTICOLOR = $D01C
+VIC_SPR_X_EXPAND = $D01D
+VIC_SPR_SPR_COLL = $D01E
+VIC_SPR_BG_COLL = $D01F
+VIC_RASTER      = $D012
+VIC_SPR_MC0     = $D025
+VIC_SPR_MC1     = $D026
+VIC_SPR_COLOR0  = $D027
 CIA1_PRA        = $DC00             ; joy port 2 / keyboard columns
 CIA1_PRB        = $DC01             ; joy port 1 / keyboard rows
 CIA1_DDRA       = $DC02
 CIA1_DDRB       = $DC03
+CIA1_ICR        = $DC0D
 CIA2_PRA        = $DD00             ; VIC bank select (bits 0–1 inverted)
+CIA2_ICR        = $DD0D
+IRQ_VECTOR_LO   = $0314
+IRQ_VECTOR_HI   = $0315
+KERNAL_IRQ_EXIT = $EA81
+SPRITE_PTR_BASE = SCREEN_RAM + $03F8
 
 ; VIC defaults / modes
 VIC_DEN         = %00010000         ; $D011 bit 4 — display enable
@@ -125,6 +145,66 @@ ATTRACT_FRAMES  = ATTRACT_SECONDS * ATTRACT_HZ   ; 750
 
 ; Score-row colour wheel step (frames per shift; ~5 Hz on PAL)
 SCORE_COLOR_PERIOD = 10
+
+; ---------------------------------------------------------------------------
+; Video cadence
+; ---------------------------------------------------------------------------
+VIDEO_PAL       = 0
+VIDEO_NTSC      = 1
+LOGIC_HZ        = 50
+PAL_DISPLAY_HZ  = 50
+NTSC_DISPLAY_HZ = 60
+
+; ---------------------------------------------------------------------------
+; Graphical-object pool
+; ---------------------------------------------------------------------------
+OBJECT_CAPACITY = 24
+OBJECT_LAST     = OBJECT_CAPACITY - 1
+OBJECT_FREE_CAPACITY = OBJECT_CAPACITY - 1
+OBJECT_NONE     = $FF
+
+OBJ_PLAYER      = 0
+OBJ_DRONE_A     = 1                ; large, back
+OBJ_DRONE_B     = 2                ; medium
+OBJ_DRONE_C     = 3                ; small, front
+OBJ_BONUS       = 4
+OBJ_EFFECT      = 5
+
+OBJF_ALLOCATED  = %00000001
+OBJF_RENDER     = %00000010
+OBJF_RETIRING   = %00000100
+OBJF_BG_INTEREST = %00001000
+OBJF_SS_INTEREST = %00010000
+
+OBJA_MULTICOLOR = %00000001
+OBJA_X_EXPAND   = %00000010
+OBJA_Y_EXPAND   = %00000100
+OBJA_BEHIND_BG  = %00001000
+
+OBJE_BG         = %00000001
+OBJE_SS         = %00000010
+
+OBJ_ERR_POOL_FULL   = 1
+OBJ_ERR_PLAYER_FIXED = 2
+
+; ---------------------------------------------------------------------------
+; Sprite mux
+; ---------------------------------------------------------------------------
+MUX_HW_COUNT        = 8
+MUX_MAX_COMMANDS    = OBJECT_CAPACITY
+MUX_FRAME_IRQ_LINES = 28
+MUX_FIRST_JOB_LINE  = 28
+MUX_JOB_LINES       = 9
+MUX_POST_GUARD      = 1
+
+MUX_OK                  = 0
+MUX_ERR_TOO_MANY_VISIBLE = 1
+MUX_ERR_LANE_CAPACITY   = 2
+MUX_ERR_PRIORITY        = 3
+MUX_ERR_RASTER_DEADLINE = 4
+MUX_ERR_COMMAND_CAPACITY = 5
+MUX_ERR_PLAN_BUSY       = 6
+MUX_ERR_BAD_COORDINATE  = 7
 
 ; Ignore fire for a few frames after entering a menu (held-button bleed)
 MENU_FIRE_GUARD = 20

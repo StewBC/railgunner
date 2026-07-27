@@ -7,12 +7,14 @@
 .proc screen_blank
     lda VIC_CTRL1
     and #VIC_DEN_MASK
+    and #$7f                        ; $D011 read bit 7 is live raster, not shadow
     sta VIC_CTRL1
     rts
 .endproc
 
 .proc screen_unblank
     lda VIC_CTRL1
+    and #$7f                        ; keep raster compare in common 0..255 range
     ora #VIC_DEN
     sta VIC_CTRL1
     rts

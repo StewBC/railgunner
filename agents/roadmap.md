@@ -186,7 +186,9 @@ Exit conditions:
 Lots of subsystems live under Play (mux, collision, bonuses, ammo). Those get
 their own detail docs; this element only owns the loop and its exits. The
 graphical-object pool, mux frame contract, and hardware collision attribution
-are specified in [`objects-sprites.md`](objects-sprites.md).
+are specified and their support layer is implemented in
+[`objects-sprites.md`](objects-sprites.md). Motion/AI accessors remain a later
+layer.
 
 ### Next Wave (3)
 
@@ -258,8 +260,8 @@ On player death:
 3. **Core loop** — wrap the slice in real session flow: waves, lives, re-init,
    game over back to title. Placeholder wave count (20). Second/third rail arms
    can start appearing here if the slice is solid.
-4. **Systems** — A/B/C, health bar and rail damage levels, draw priority,
-   wave tables, sprite multiplexer when concurrent drones demand it.
+4. **Systems** — A/B/C, health bar and rail damage levels, wave tables, and
+   gameplay consumers for the implemented object-pool/sprite-mux foundation.
 5. **Features** — bonuses, ammo unlock fiction + bar, disk high scores, music
    hooks, fuller title/HS presentation.
 6. **Polish / Ship** — messages, timing, explosions, entry UX, balance, final

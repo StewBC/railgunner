@@ -27,6 +27,9 @@ BLNSW           = $CC
     jsr screen_clear
     jsr charset_install_stub        ; no-op until assets exist
     jsr hiscore_reset               ; zeros in RAM (disk load later)
+    jsr objects::init
+    jsr video::detect_standard
+    jsr sprite_mux_irq::init
     jsr irq_install
 
     lda #0

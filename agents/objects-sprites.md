@@ -261,6 +261,8 @@ This page holds:
 - Physical frame sequence, main acknowledgement, logic accumulator, and
   pending logical-tick count.
 - Diagnostic counters and the last mux error.
+- A render-state dirty byte; `objects::mark_dirty` sets it after any direct
+  write to a render-visible object field.
 
 Exact scalar order may be chosen when source is laid out, but it must remain
 inside this page and be documented in `src/sys/memory.asm`.
@@ -401,9 +403,9 @@ At raster line 0, in this order:
    `hw_owner[]/hw_interest[]` maps.
 4. Disable all hardware sprites and set every owner to `$FF`.
 5. Finish the current IRQ event bank. If the main loop acknowledged the prior
-   read bank, swap event-bank roles and clear the new write bank. If not, keep
-   accumulating and set an event-overrun diagnostic; never overwrite unread
-   events.
+   read bank, swap event-bank roles; that new writer was cleared by the main
+   drain before acknowledgement. If not, keep accumulating and set an
+   event-overrun diagnostic; never overwrite unread events.
 6. Accept the published plan if ready; otherwise retain the current plan.
 7. Patch the command-reader operand high bytes for the chosen front plan.
 8. Publish that plan's reference mask for retirement checks.
@@ -413,8 +415,8 @@ At raster line 0, in this order:
 12. Program the next command raster, or raster 0 of the next frame if the plan
     is empty.
 
-The frame-start handler owns raster lines 0–7. No sprite-load command may be
-scheduled earlier than line 8.
+The measured worst-case frame-start handler owns raster lines 0–27. No
+sprite-load command may be scheduled earlier than line 28.
 
 ### 6.3 Main-loop order
 
@@ -423,14 +425,17 @@ Once per physical frame:
 1. Wait for a new physical-frame sequence.
 2. Drain the completed IRQ event bank by ORing it into
    `obj_pending_events[]`; acknowledge the bank.
-3. Run `objects::reap`.
-4. If a normalized logical tick is due:
+3. If no normalized logical tick is due, retain the displayed plan and wait
+   for the next physical frame.
+4. On a logical tick:
+   1. run `objects::reap`;
    1. resolve pending collisions;
    2. update AI and timers;
    3. integrate motion when that layer exists;
    4. perform spawn attempts.
-5. Build a new mux plan from the resulting object state.
-6. Publish only a complete successful plan.
+5. If render-visible object state is dirty, build a new mux plan from the
+   resulting state.
+6. Publish only a complete successful plan, then clear the dirty byte.
 7. Mark the physical frame consumed.
 
 Collision is handled before motion so an event is interpreted at the position
@@ -585,8 +590,9 @@ available lanes preserves every overlapping C/B/A ordering while minimizing
 the constraint placed on later classes. Same-class overlaps receive distinct
 lanes but no special order.
 
-Lane assignment is rebuilt each physical frame. A logical object is not
-promised the same hardware sprite number on consecutive frames.
+Lane assignment is rebuilt whenever render-visible object state is dirty. A
+logical object is not promised the same hardware sprite number in consecutive
+published plans.
 
 ---
 
@@ -600,19 +606,21 @@ prove that the CPU has time to reprogram a lane between two occupants.
 The first implementation uses:
 
 ```text
-MUX_FRAME_IRQ_LINES = 8   ; frame-start work owns lines 0–7
-MUX_FIRST_JOB_LINE  = 8
-MUX_JOB_LINES       = 4   ; reserved start-to-start cost per load command
+MUX_FRAME_IRQ_LINES = 28  ; measured worst path owns lines 0–27
+MUX_FIRST_JOB_LINE  = 28
+MUX_JOB_LINES       = 9   ; measured worst path plus IRQ-exit/re-entry margin
 MUX_POST_GUARD      = 1   ; line after prior interval before reprogramming
 MUX_MAX_COMMANDS    = 24
 ```
 
-Four PAL raster lines provide 252 nominal cycles. Even with one bad line and
-sprite DMA steals from seven active lanes, the command handler must be kept
-within this reserved window. The implementation must cycle-audit the worst
-path on both standards. If it exceeds the budget, increase the single
-`MUX_JOB_LINES` constant and let the builder reject denser schedules; do not
-silently rely on typical rather than worst-case collisions.
+The 28-line frame-start reservation covers worst-case collision attribution,
+ownership reset, event/plan rotation, and front-plan load-table patching.
+
+The implemented PAL cycle audit measured a collision-free command below four
+raster lines and the worst collision-attribution body below eight. Nine lines
+are reserved to include IRQ exit/re-entry margin, so correctness does not
+depend on typical collisions. The builder rejects denser schedules rather than
+relying on optimistic timing.
 
 ### 10.2 Job windows
 
@@ -635,8 +643,14 @@ latest_start  = object_top - MUX_JOB_LINES
 If arithmetic wraps or `release_start > latest_start`, the plan is
 unschedulable.
 
-Sort jobs by `(latest_start, object_top, hardware_lane)`. Starting with a cursor
-at `MUX_FIRST_JOB_LINE`:
+After coloring, build a second order by `(object_top, priority, logical_slot)`.
+The implementation clears 256 scanline heads at `$C800`, links the candidates
+through the 24-byte scratch array, and scans the heads once; this avoids a
+second insertion sort. Because every deadline is `object_top-MUX_JOB_LINES`,
+that order is also deadline order. Track the last logical slot assigned to
+each of the eight lanes to derive predecessor releases in one pass.
+
+Starting with a cursor at `MUX_FIRST_JOB_LINE`, visit that deadline order:
 
 ```text
 job_start = max(cursor, release_start)

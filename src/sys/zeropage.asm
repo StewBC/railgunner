@@ -64,3 +64,51 @@ print_ptr_lo:   .res 1
 print_ptr_hi:   .res 1
 draw_i:         .res 1              ; playfield draw loops (put_xy clobbers tmp*)
 draw_j:         .res 1
+
+; Graphical objects / mux builder (main-thread scratch)
+mux_i:          .res 1
+mux_j:          .res 1
+mux_k:          .res 1
+mux_key:        .res 1
+mux_key_prio:   .res 1
+mux_current:    .res 1
+mux_current_top:.res 1
+mux_current_bottom_lo: .res 1
+mux_current_bottom_hi: .res 1
+mux_forbidden:  .res 1
+mux_min_lane:   .res 1
+mux_cursor:     .res 1
+mux_best_slot:  .res 1
+mux_best_value: .res 1
+mux_lane:       .res 1
+mux_bit:        .res 1
+mux_clear:      .res 1
+mux_ref0:       .res 1
+mux_ref1:       .res 1
+mux_ref2:       .res 1
+mux_shadow_enable: .res 1
+mux_shadow_xmsb:   .res 1
+mux_shadow_xexp:   .res 1
+mux_shadow_yexp:   .res 1
+mux_shadow_multi:  .res 1
+mux_shadow_bgprio: .res 1
+
+; Raster IRQ scratch/state
+irq_command_index: .res 1
+irq_lane:       .res 1
+irq_owner:      .res 1
+irq_interest:   .res 1
+irq_value_x:    .res 1
+irq_value_y:    .res 1
+irq_value_ptr:  .res 1
+irq_value_color:.res 1
+irq_bit:        .res 1
+irq_plan_delta: .res 1
+irq_pending_mask: .res 1
+irq_clear_lane: .res 1
+irq_shadow_enable: .res 1
+irq_shadow_xmsb:   .res 1
+irq_shadow_xexp:   .res 1
+irq_shadow_yexp:   .res 1
+irq_shadow_multi:  .res 1
+irq_shadow_bgprio: .res 1

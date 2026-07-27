@@ -488,6 +488,24 @@ reproducible (exact command + response). Mark severity (papercut / slows-work /
 blocks-work). Cross off (`~~struck~~ fixed in c64m <ref>`) when resolved
 upstream — do not delete history.
 
+### 2026-07-26 — `agent_session.py` retains the control server's sole client
+
+- **Severity:** slows-work.
+- **Did:** launched `tools/agent_session.py` normally, then opened a second
+  `Ctl(port=6510)` process to inspect mux counters while the visible session
+  remained active.
+- **c64m did:** accepted only the helper's existing connection; the inspection
+  client was reset/hung because the control server is single-client.
+- **Friction:** the helper says the session is live for breakpoints and memory
+  inspection, but it keeps its connection without exposing an interactive
+  command path. `--once` releases the client but this execution environment
+  reaps the detached emulator, so the practical workaround was to launch
+  windowed `tools/c64m` directly and perform boot plus all inspection through
+  one client process.
+- **Suggested improvement:** give `agent_session.py` an interactive command
+  loop, a command-script option, or explicitly release/reconnect its client
+  after boot. Alternatively support multiple localhost control clients.
+
 ### ~~2026-07-26 — `assemble` success echoes the *default* origin, not where code landed~~
 
 **Fixed in c64m 241cea1.** `assemble-complete` now reports the actual emitted
