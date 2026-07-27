@@ -229,6 +229,10 @@ OBJA_BEHIND_BG  = %00001000
 OBJE_BG         = %00000001
 OBJE_SS         = %00000010
 
+; Collision dogfood: 0 = hybrid ($D01F latch then software authority)
+;                    1 = software every tick (ignore latch filter)
+COLLISION_SOFT_ALWAYS = 0
+
 OBJ_ERR_POOL_FULL   = 1
 OBJ_ERR_PLAYER_FIXED = 2
 

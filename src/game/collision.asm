@@ -1,10 +1,16 @@
-; Gameplay collision consumer (Stage 2).
+; Gameplay collision consumer (Stage 2) — hybrid mux dogfood path.
 ;
-; Bullet hits: AABB of estimated bullet *pixels* vs tight drone hitbox
-;   (not full sprite rectangle, not whole char cell).
-; Rail hits: char-peek only under the same tight box for dash/vbar.
+; Filter: only run software tests when OBJE_BG is set (from $D01F via mux
+; attribution + drain_irq_events). That proves the latch/owner path under play.
 ;
-; OBJE_BG is cleared as hygiene; software tests are authoritative.
+; Authority: still software after the latch:
+;   Bullet — pixel AABB (bullet col/half/phase → px) vs tight drone box
+;   Rail   — dash/vbar char-peek under the same tight box
+;
+; If a real contact never sets OBJE_BG, the drone will pass through (Y-arrival
+; still retires at the rail line). That miss is useful feedback on the mux path.
+;
+; Set COLLISION_SOFT_ALWAYS = 1 in const to force software every tick (debug).
 
 .scope collision
 
@@ -32,10 +38,20 @@ upd_loop:
     cmp #OBJ_BONUS
     bcs upd_next
 
+    ; --- Hybrid filter: need OBJE_BG latch (unless soft-always debug) ---
+    .if COLLISION_SOFT_ALWAYS
+    jmp do_resolve
+    .endif
+    lda objects::obj_pending_events, x
+    and #OBJE_BG
+    beq upd_next                    ; no HW candidate this tick
+
+do_resolve:
     stx mode_state
     jsr resolve_drone
     ldx mode_state
 
+    ; Consume latch bit after handling
     lda objects::obj_pending_events, x
     and #($FF ^ OBJE_BG)
     sta objects::obj_pending_events, x
