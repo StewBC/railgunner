@@ -11,7 +11,7 @@
 # Generators live under tools/; this file only wires timestamps and targets.
 # Agent path stays tools/agent_session.py (live assemble; no Makefile required).
 
-.PHONY: all prg assets screens charset sprites play clean help
+.PHONY: all prg assets screens charset sprites play clean help ensure_prg_header
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 TOOLS := $(ROOT)/tools
@@ -66,9 +66,19 @@ help:
 	@echo "  make sprites      assets/sprites/*.png → *.bin (64-byte MC)"
 	@echo "  make clean        wipe build/ (keeps assets/ PNGs; bins via make assets)"
 
-prg: $(PRG)
+# Drop a mis-tagged PRG (raw c64masm image written to .prg without $0801 load
+# header). Make would otherwise treat it as up-to-date and play/--autorun fails.
+ensure_prg_header:
+	@$(PYTHON) -c "from pathlib import Path; p=Path(r'$(PRG)');\
+import sys;\
+sys.exit(0 if p.is_file() and p.stat().st_size>=4 and p.read_bytes()[:2]==b'\x01\x08' else 1)" \
+		|| { echo "note: $(PRG) missing C64 load header 01 08 (raw assemble?) — rebuilding"; rm -f $(PRG); }
+
+prg: ensure_prg_header $(PRG)
 
 # Assets are prerequisites of the PRG so a PNG edit rebuilds bins then PRG.
+# Always produce PRG via build-prg.sh (raw image + 2-byte load address).
+# Do NOT point c64masm -o at build/railgunner.prg — that omits the header.
 $(PRG): $(ASSET_BINS) $(ASM_SRC) $(TOOLS)/build-prg.sh $(TOOLS)/c64masm
 	@mkdir -p $(ROOT)/build
 	$(TOOLS)/build-prg.sh
@@ -96,7 +106,7 @@ $(TITLE_HIRES_BIN): $(TITLE_PNG) $(PNG_TO_HIRES)
 $(TITLE_HIRES_COL): $(TITLE_HIRES_BIN)
 	@test -f $(TITLE_HIRES_COL) || { echo "error: missing $(TITLE_HIRES_COL) after hires convert" >&2; exit 1; }
 
-# Build then launch; skip a second assemble inside play.sh.
+# Build then launch; skip a second assemble inside play.sh (header already checked).
 play: prg
 	RAILGUNNER_SKIP_BUILD=1 $(TOOLS)/play.sh
 

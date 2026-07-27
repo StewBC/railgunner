@@ -168,9 +168,20 @@ N ok address=$080D name=start
 Useful for CI-ish “does it assemble?” without a live machine:
 
 ```sh
-# From RailGunner root:
-tools/c64masm -i src/main.asm -o build/main.bin -s build/symbols.txt
+# From RailGunner root — playable PRG for humans:
+make prg                    # or: tools/build-prg.sh
+# → build/railgunner.raw  (c64masm memory image @ $0801)
+# → build/railgunner.prg  (2-byte load $0801 + raw)  ← only this is --prg safe
+
+# Assemble-only check (do NOT use this path as the play PRG):
+tools/c64masm -i src/main.asm -o build/railgunner.raw -s build/symbols.txt
 ```
+
+**Never** `c64masm -o build/railgunner.prg`. The CLI writes a raw image; a C64
+`.prg` needs a little-endian load address prefix. A raw file left as `.prg`
+keeps Make “up to date” while `make play` / `--autorun` loads garbage and RUN
+does nothing — until `make clean && make`. `make prg` / `play.sh` now reject a
+missing `$01 $08` header and rebuild.
 
 `C64MASM` is predefined to `1` in this path (see assembler syntax).  
 **Primary game loop for agents remains live `assemble` into the emulator** so
@@ -387,6 +398,8 @@ offline `--prg --autorun`.
 | `get-frame` at turbo 3 | Debug-only geometry; use turbo 1 or 2 |
 | Client default port 17652 | Always `Ctl(port=6510)` for this project |
 | Edit `../c64m/` | **Never** — read-only reference only |
+| `c64masm -o build/railgunner.prg` | Writes **raw** (no load header). Use `make prg` / `build-prg.sh`. Make may skip rebuild; play RUN no-ops |
+| Human `make play` after agent session | Agent live-assembles into the emu only; offline PRG is separate — `make prg` if sources changed and you play offline |
 
 ---
 

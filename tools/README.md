@@ -12,7 +12,7 @@ Make wires timestamps so a changed `title.png` regenerates `.bin`s before assemb
 | `c64masm` | symlink → offline assembler |
 | `c64_control_client.py` | symlink → control-port Python client |
 | **`play.sh`** | **User path:** `make prg` (unless `RAILGUNNER_SKIP_BUILD=1`) + windowed `--prg --autorun` |
-| **`build-prg.sh`** | Assemble `src/main.asm` → `build/railgunner.prg` (no asset graph) |
+| **`build-prg.sh`** | Assemble `src/main.asm` → raw + **PRG with `$0801` load header** (only correct way to write `.prg`) |
 | **`agent_session.py`** | **Agent path:** windowed + control port + assemble + RUN |
 | **`png_to_c64_hires.py`** | PNG → C64 hires bitmap + colour-matrix `.bin` (title art) |
 | **`png_to_c64_sprite.py`** | PNG → C64 multicolour sprite `.bin` (64 bytes, 12×21) |
@@ -28,6 +28,12 @@ make play
 
 # Equivalent without Make's play target
 tools/play.sh
+
+# Assemble offline PRG (always use this — not bare c64masm -o …prg)
+make prg
+# c64masm writes a raw $0801 image; build-prg.sh prepends the 2-byte load
+# address. Pointing c64masm -o at build/railgunner.prg skips the header and
+# breaks --prg/--autorun (RUN does nothing) until `make clean && make`.
 
 # Agent debug session
 tools/agent_session.py
