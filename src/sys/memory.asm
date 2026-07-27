@@ -30,8 +30,9 @@
 ;   PLAYER_BUF_1  = $3E40   ; sprite pointer $F9
 ;   OBJECT_STATE  = $C000   ; pool/plans/scratch through $C8FF
 ;
-; Title blit overwrites $2000–$3F3F. sprite_frames_install (stage enter) copies
-; spr_frames_src from DATA into $3000 and clears player buffers.
+; Title blit overwrites $2000–$3F3F. video::install_sprite_frames (game-only,
+; stage enter) copies spr_frames_src from DATA into $3000 and clears player bufs.
+; tst/ demos place their own frames in a SPRITES segment at $3000 instead.
 ;
 ; After install (64-byte blocks, multicolour):
 ;   $3000–$30FF  drone C (small)  left/right/up/down   ptr $C0–$C3

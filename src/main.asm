@@ -69,6 +69,7 @@ main_loop:
 
 .include "boot/init.asm"
 .include "sys/video.asm"
+.include "sys/sprite_install.asm"   ; game-only (spr_frames_src); not for tst/
 .include "sys/irq.asm"
 .include "sys/input.asm"
 .include "render/screen.asm"

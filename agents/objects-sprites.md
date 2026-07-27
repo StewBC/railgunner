@@ -524,10 +524,13 @@ Reserve two sprite blocks in VIC bank 0, preferably `$3E00` and `$3E40`
 4. The next back plan captures that pointer.
 
 Sprite **source** frames live in the DATA segment (`src/data/sprites.asm`).
-`video::install_sprite_frames` copies them to `$3000` on stage enter (title
-bitmap dest `$2000–$3F3F` would otherwise wipe a resident bank-0 image).
-After install: drones `$3000–$32FF` (ptr `$C0–$CB`), player bufs `$3E00/$3E40`
-(ptr `$F8/$F9`). Shared MC colours: `$D025`/`$D026` via `video::init_sprite_palette`.
+`video::install_sprite_frames` (game-only, `src/sys/sprite_install.asm`) copies
+them to `$3000` on stage enter (title bitmap dest `$2000–$3F3F` would otherwise
+wipe a resident bank-0 image). After install: drones `$3000–$32FF` (ptr
+`$C0–$CB`), player bufs `$3E00/$3E40` (ptr `$F8/$F9`). Shared MC colours:
+`$D025`/`$D026` via `video::init_sprite_palette` (shared with `tst/` demos).
+Demos do **not** include `sprite_install.asm` or game DATA — they place their
+own frame(s) in a `SPRITES` segment at `$3000`.
 
 ---
 
@@ -954,12 +957,13 @@ sprite frames. That is a test harness, not a public accessor API.
 
 | File | Responsibility |
 |------|----------------|
-| `src/sys/video.asm` | PAL/NTSC detection and normalized tick constants/state |
+| `src/sys/video.asm` | PAL/NTSC detection, normalized tick state, shared MC palette (safe for `tst/`) |
+| `src/sys/sprite_install.asm` | game-only: copy `spr_frames_src` DATA → `$3000` (not included by demos) |
 | `src/game/objects.asm` | pool layout API, free stack, retirement, events |
 | `src/sprite/mux_build.asm` | gather, sort, lane coloring, job schedule, plan emit |
 | `src/sprite/mux_irq.asm` | front-plan execution, owner maps, collision capture |
 | `src/game/collision.asm` | later event interpretation, not mux attribution |
-| `src/data/sprites.asm` | static MC drone frames (`.incbin` from `assets/sprites/*.bin`) + player buffers |
+| `src/data/sprites.asm` | static MC drone frame SOURCE (`.incbin` from `assets/sprites/*.bin`) |
 | `src/sys/irq.asm` | vector install and dispatch shell |
 | `src/sys/memory.asm` | `$C000–$C8FF`, sprite install `$3000` (ptr `$C0–$CB`), bitmap `$2000–$3F3F` |
 | `src/sys/const.asm` | VIC sprite registers, flags, capacities, error IDs |
