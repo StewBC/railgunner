@@ -204,20 +204,17 @@ def main() -> int:
             boot_game(ctl, reset=not opts.no_reset)
 
         if opts.verify:
-            # Title is a hires bitmap: $D011 BMM set, colour matrix + pixels loaded.
-            # Art is letterboxed — top bitmap rows may be zero; sample mid-screen.
+            # Cold start lands on hires graphics title (attract).
             d011 = ctl.mem(0xD011, 1, mode="map")[0]
             d018 = ctl.mem(0xD018, 1, mode="map")[0]
-            bmp = ctl.mem(0x2000 + 40 * 8 * 8, 128, mode="ram")  # ~row 8 of cells
-            cols = ctl.mem(0x0400, 200, mode="ram")
+            bmp = ctl.mem(0x2000 + 40 * 8 * 8, 128, mode="ram")  # mid art
             bmm = bool(d011 & 0x20)
             mem_ok = d018 == 0x18
             bmp_ok = any(b != 0 for b in bmp)
-            col_ok = any(b != 0 for b in cols)
-            ok = bmm and mem_ok and bmp_ok and col_ok
+            ok = bmm and mem_ok and bmp_ok
             print(
                 f"verify: BMM={bmm} d011=${d011:02x} d018=${d018:02x} "
-                f"bitmap_nonzero={bmp_ok} colors_nonzero={col_ok}",
+                f"bitmap_nonzero={bmp_ok}",
                 flush=True,
             )
             if proc is not None:

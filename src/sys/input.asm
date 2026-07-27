@@ -12,6 +12,10 @@
     sta input_dirs
     sta input_fire
     sta input_fire_edge
+    sta input_key_s
+    sta input_key_i
+    sta input_key_s_edge
+    sta input_key_i_edge
 
     ; CIA direction: PA out (matrix select + joy2 sense), PB in (matrix + joy1)
     lda #$ff
@@ -52,20 +56,41 @@ joy1_fire_done:
 
     ; Rising edge on fire
     lda input_fire
-    beq save_prev
+    beq save_fire_prev
     lda input_fire_prev
-    bne save_prev
+    bne save_fire_prev
     lda #1
     sta input_fire_edge
-save_prev:
+save_fire_prev:
     lda input_fire
     sta input_fire_prev
+
+    ; Rising edge on S / I (title menu)
+    lda input_key_s
+    beq save_s_prev
+    lda input_key_s_prev
+    bne save_s_prev
+    lda #1
+    sta input_key_s_edge
+save_s_prev:
+    lda input_key_s
+    sta input_key_s_prev
+
+    lda input_key_i
+    beq save_i_prev
+    lda input_key_i_prev
+    bne save_i_prev
+    lda #1
+    sta input_key_i_edge
+save_i_prev:
+    lda input_key_i
+    sta input_key_i_prev
 
     inc frame_count
     rts
 .endproc
 
-; Scan WASD + Space; OR into input_dirs / input_fire.
+; Scan WASD + Space + I; OR into input_dirs / input_fire; set input_key_s/i.
 ; PRA = select (0-bit), PRB = data (0 = down). Clobbers A.
 .proc input_scan_keyboard
     ; W → up
@@ -88,7 +113,7 @@ not_w:
     ora #JOY_LEFT
     sta input_dirs
 not_a:
-    ; S → down
+    ; S → down + menu key
     lda #KEY_SEL_S
     sta CIA1_PRA
     lda CIA1_PRB
@@ -97,6 +122,8 @@ not_a:
     lda input_dirs
     ora #JOY_DOWN
     sta input_dirs
+    lda #1
+    sta input_key_s
 not_s:
     ; D → right
     lda #KEY_SEL_D
@@ -108,6 +135,15 @@ not_s:
     ora #JOY_RIGHT
     sta input_dirs
 not_d:
+    ; I → instructions (menu only; not a play control)
+    lda #KEY_SEL_I
+    sta CIA1_PRA
+    lda CIA1_PRB
+    and #KEY_BIT_I
+    bne not_i
+    lda #1
+    sta input_key_i
+not_i:
     ; Space → fire
     lda #KEY_SEL_SPACE
     sta CIA1_PRA

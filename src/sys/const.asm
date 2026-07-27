@@ -53,6 +53,10 @@ KEY_SEL_D       = %11111011         ; ~(1<<2)
 KEY_BIT_D       = %00000100         ;  (1<<2)
 KEY_SEL_SPACE   = %01111111         ; ~(1<<7)
 KEY_BIT_SPACE   = %00010000         ;  (1<<4)
+; I key (c64m keyboard.c {row,col} = {4,1})
+KEY_SEL_I       = %11101111         ; ~(1<<4)
+KEY_BIT_I       = %00000010         ;  (1<<1)
+; S is KEY_SEL_S / KEY_BIT_S above (also used as joy-down)
 
 ; Screen geometry
 SCREEN_W        = 40
@@ -80,7 +84,7 @@ COL_LT_GRAY     = $0F
 ; ---------------------------------------------------------------------------
 ; Game mode IDs (game_mode ZP)
 ; ---------------------------------------------------------------------------
-MODE_TITLE      = 0
+MODE_TITLE_GFX  = 0                 ; hires art attract page
 MODE_GAME_INIT  = 1
 MODE_STAGE_INIT = 2
 MODE_PLAY       = 3
@@ -89,7 +93,13 @@ MODE_NEXT_LEVEL = 5
 MODE_NEXT_LIFE  = 6
 MODE_GAME_OVER  = 7
 MODE_HISCORE    = 8
-MODE_COUNT      = 9
+MODE_TITLE_TEXT = 9                 ; text menu + high scores (primary frontend)
+MODE_STORY      = 10                ; placeholder
+MODE_INSTRUCTIONS = 11              ; placeholder
+MODE_COUNT      = 12
+
+; Alias: cold-start / return-from-game frontend entry
+MODE_TITLE      = MODE_TITLE_TEXT
 
 ; ---------------------------------------------------------------------------
 ; Session defaults (roadmap placeholders)
@@ -102,6 +112,17 @@ WAVES_PER_LEVEL = 20
 
 ; Play stub: frames to wait before FIRE ends the session (PAL ~1s)
 PLAY_FIRE_DELAY = 50
+
+; Attract loop: text ↔ graphics (PAL 50Hz × 15s)
+ATTRACT_SECONDS = 15
+ATTRACT_HZ      = 50
+ATTRACT_FRAMES  = ATTRACT_SECONDS * ATTRACT_HZ   ; 750
+
+; Score-row colour wheel step (frames per shift; ~5 Hz on PAL)
+SCORE_COLOR_PERIOD = 10
+
+; Ignore fire for a few frames after entering a menu (held-button bleed)
+MENU_FIRE_GUARD = 20
 
 ; Screen codes for placeholder art
 SC_SPACE        = $20

@@ -31,7 +31,7 @@
 .proc hiscore_update
     lda input_fire_edge
     beq hiscore_done
-    lda #MODE_TITLE
+    lda #MODE_TITLE_TEXT
     jsr mode_set
 hiscore_done:
     rts

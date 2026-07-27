@@ -32,6 +32,6 @@ tools/play.sh
 tools/agent_session.py
 
 # Asset converters only
-make screens          # title.png → title_hires*.bin
+make screens          # railgunner.png → title_hires*.bin
 make assets           # screens + charset + sprites (placeholders ok)
 ```

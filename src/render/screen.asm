@@ -12,9 +12,8 @@
     sta VIC_CTRL2
     lda #VIC_MEM_TEXT
     sta VIC_MEM
-    lda #COL_BLUE
-    sta VIC_BORDER
     lda #COL_BLACK
+    sta VIC_BORDER
     sta VIC_BG0
     jmp screen_clear                ; tail-call
 .endproc
@@ -154,6 +153,54 @@ print_loop:
     iny
     bne print_loop
 print_done:
+    rts
+.endproc
+
+; Paint all 40 colour-RAM cells of row Y with colour A.
+; Clobbers A,X,Y,tmp0-tmp2,ptr_lo/hi. Colour is low nybble only.
+.proc screen_color_row
+    sta tmp0
+    ldx #0                          ; column
+    ; ptr = COLOR_RAM + Y*40
+    tya
+    sta ptr_lo
+    lda #0
+    sta ptr_hi
+    asl ptr_lo
+    rol ptr_hi
+    asl ptr_lo
+    rol ptr_hi
+    asl ptr_lo
+    rol ptr_hi                      ; *8
+    lda ptr_lo
+    sta tmp1
+    lda ptr_hi
+    sta tmp2
+    asl ptr_lo
+    rol ptr_hi
+    asl ptr_lo
+    rol ptr_hi                      ; *32
+    lda ptr_lo
+    clc
+    adc tmp1                        ; *40
+    sta ptr_lo
+    lda ptr_hi
+    adc tmp2
+    sta ptr_hi
+    lda ptr_lo
+    clc
+    adc #<COLOR_RAM
+    sta ptr_lo
+    lda ptr_hi
+    adc #>COLOR_RAM
+    sta ptr_hi
+    ldy #0
+    lda tmp0
+color_row_loop:
+    sta (ptr_lo), y
+    iny
+    cpy #SCREEN_W
+    bne color_row_loop
     rts
 .endproc
 

@@ -4,7 +4,7 @@
     lda game_mode
     cmp #MODE_COUNT
     bcc mode_run_ok
-    lda #MODE_TITLE
+    lda #MODE_TITLE_TEXT
     sta game_mode
 mode_run_ok:
     asl a
@@ -18,7 +18,7 @@ mode_run_jmp:
 .endproc
 
 mode_table:
-    .word title_update
+    .word title_gfx_update          ; MODE_TITLE_GFX
     .word game_init_update
     .word stage_init_update
     .word play_update
@@ -27,6 +27,9 @@ mode_table:
     .word next_life_update
     .word gameover_update
     .word hiscore_update
+    .word title_text_update         ; MODE_TITLE_TEXT
+    .word story_update
+    .word instructions_update
 
 ; Set game_mode and call enter routine. A = new mode.
 .proc mode_set
@@ -46,7 +49,7 @@ mode_set_jmp:
 .endproc
 
 mode_enter_table:
-    .word title_enter
+    .word title_gfx_enter
     .word game_init_enter
     .word stage_init_enter
     .word play_enter
@@ -55,3 +58,6 @@ mode_enter_table:
     .word next_life_enter
     .word gameover_enter
     .word hiscore_enter
+    .word title_text_enter
+    .word story_enter
+    .word instructions_enter

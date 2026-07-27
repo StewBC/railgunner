@@ -38,7 +38,7 @@ gameover_ready:
     ora input_fire
     beq gameover_done
     ; TODO Features: if top-10 → MODE_HISCORE
-    lda #MODE_TITLE
+    lda #MODE_TITLE_TEXT
     jsr mode_set
 gameover_done:
     rts

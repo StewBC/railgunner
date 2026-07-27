@@ -29,6 +29,22 @@ player_row:     .res 1
 mode_timer:     .res 1
 mode_state:     .res 1
 
+; Attract loop countdown (16-bit frames remaining on current attract page)
+attract_lo:     .res 1
+attract_hi:     .res 1
+
+; Text-title score colour wheel
+score_color_phase: .res 1           ; 0..9 base index into palette
+score_color_tick:  .res 1           ; frames until next rotate
+
+; Menu letter keys (level + edge); S also drives joy-down in play
+input_key_s:    .res 1
+input_key_i:    .res 1
+input_key_s_edge: .res 1
+input_key_i_edge: .res 1
+input_key_s_prev: .res 1
+input_key_i_prev: .res 1
+
 ; General temps / pointers
 tmp0:           .res 1
 tmp1:           .res 1

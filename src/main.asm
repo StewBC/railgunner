@@ -59,6 +59,8 @@ main_loop:
 .include "render/screen.asm"
 .include "frontend/mode.asm"
 .include "frontend/title.asm"
+.include "frontend/story.asm"
+.include "frontend/instructions.asm"
 .include "frontend/gameover.asm"
 .include "frontend/hiscore.asm"
 .include "game/game_init.asm"

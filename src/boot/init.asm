@@ -32,12 +32,20 @@ BLNSW           = $CC
     lda #0
     sta frame_count
     sta input_fire_prev
+    sta input_key_s_prev
+    sta input_key_i_prev
     sta mode_timer
     sta mode_state
+    sta attract_lo
+    sta attract_hi
+    sta score_color_phase
+    sta score_color_tick
 
-    lda #MODE_TITLE
+    ; Frontend entry: hires art first; attract loop ↔ text title.
+    ; Game over returns to text title so high scores are visible.
+    lda #MODE_TITLE_GFX
     sta game_mode
-    jsr title_enter                 ; switches VIC to hires bitmap
+    jsr title_gfx_enter
 
     cli
     rts

@@ -21,10 +21,12 @@ PYTHON ?= python3
 # Converted assets (PNG → .bin for .incbin)
 # ---------------------------------------------------------------------------
 
-TITLE_PNG := $(ROOT)/assets/screens/title.png
+# Source art (hires products keep title_* names for .incbin stability)
+TITLE_PNG := $(ROOT)/assets/screens/railgunner.png
 TITLE_HIRES_BIN := $(ROOT)/assets/screens/title_hires.bin
 TITLE_HIRES_COL := $(ROOT)/assets/screens/title_hires_col.bin
 TITLE_BINS := $(TITLE_HIRES_BIN) $(TITLE_HIRES_COL)
+TITLE_OUT_PREFIX := $(ROOT)/assets/screens/title
 PNG_TO_HIRES := $(TOOLS)/png_to_c64_hires.py
 
 # Future: list more screen / charset / sprite products here.
@@ -54,7 +56,7 @@ help:
 	@echo "  make / make prg   regenerate assets if needed, assemble PRG"
 	@echo "  make play         build then tools/play.sh (windowed)"
 	@echo "  make assets       screens + charset + sprites converters"
-	@echo "  make screens      title hires bins from assets/screens/*.png"
+	@echo "  make screens      railgunner.png → title_hires*.bin"
 	@echo "  make charset      (no converters yet)"
 	@echo "  make sprites      (no converters yet)"
 	@echo "  make clean        wipe build/ (keeps assets/ source + bins)"
@@ -81,7 +83,7 @@ sprites:
 
 # One converter writes both hires products; col bin tracks the bitmap bin.
 $(TITLE_HIRES_BIN): $(TITLE_PNG) $(PNG_TO_HIRES)
-	$(PYTHON) $(PNG_TO_HIRES) $(TITLE_PNG)
+	$(PYTHON) $(PNG_TO_HIRES) $(TITLE_PNG) -o $(TITLE_OUT_PREFIX)
 
 $(TITLE_HIRES_COL): $(TITLE_HIRES_BIN)
 	@test -f $(TITLE_HIRES_COL) || { echo "error: missing $(TITLE_HIRES_COL) after hires convert" >&2; exit 1; }
