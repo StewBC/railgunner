@@ -74,6 +74,7 @@ main_loop:
 .include "sys/input.asm"
 .include "render/screen.asm"
 .include "render/charset.asm"
+.include "render/bullets.asm"
 .include "frontend/mode.asm"
 .include "frontend/title.asm"
 .include "frontend/typewriter.asm"

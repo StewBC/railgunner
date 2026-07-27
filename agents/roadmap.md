@@ -46,10 +46,10 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Mode dispatcher | Done | Jump table; modes include story/instructions extras |
 | Frontend attract | Ahead of plan | Hires title ↔ text menu; typewriter; S/I stubs |
 | Game / stage init | Minimal | Session vars reset; playfield draw; player on H-rail |
-| Play | **Player slice** | H-rail move + barrel swing; RUN/STOP → game over; no drones/bullets yet |
+| Play | **Player + bullets** | H-rail move/barrel; char bullets up/down; RUN/STOP → game over |
 | Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
 | Player sprite / move | **Done (H-arm)** | Slot 0 sprite; 4px steps; U/D barrel via mid frame; V-rail later |
-| Bullets / charset UDGs | Not started | `charset_install_stub` is a no-op; fire path next |
+| Bullets / charset UDGs | **Done (V stream)** | RAM font + 8 UDGs; H-rail fire up/down with 4-phase cells |
 | Collision consumer | Not started | Mux latches events; play does not interpret them |
 | Waves / lives / rail damage | Stubs only | Mode hooks exist; nothing drives them from play |
 | High score entry / disk | Stub | Always skip hiscore from game over |
@@ -81,10 +81,10 @@ installed; do not require multi-type AI for the slice.
    - RUN/STOP → game over (FIRE reserved for shooting).  
    - Vertical rail mount / full intersection rules still later.
 
-3. **Character bullets**  
-   - New `render/bullets.asm` + fire path from play (throttle: one bullet per cell).  
-   - UDG or plain stand-in chars until a real charset lands; stand-ins OK for the slice.  
-   - Auto-fire while FIRE held.
+3. ~~**Character bullets**~~ **done (H-rail vertical)**  
+   - RAM charset + 8 bullet UDGs; `render/bullets.asm` stream.  
+   - 4 sub-cell phases × `BULLET_HOLD`; launch cell occupancy = ROF cap.  
+   - Auto-fire while FIRE held and barrel at rest; L/R aim later with H UDGs.
 
 4. **One moving drone**  
    - Replace the static art harness with **one** spawn: edge → straight line to rail.  

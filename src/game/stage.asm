@@ -18,6 +18,7 @@
     sta VIC_MEM
 
     jsr screen_draw_playfield
+    jsr bullets::init
     jsr video::init_sprite_palette
     jsr video::install_sprite_frames
     jsr player::init

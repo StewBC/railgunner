@@ -1,5 +1,4 @@
-; Play loop — player move / barrel; RUN/STOP → game over (kill switch).
-; FIRE is reserved for shooting (bullets later). Demo drone harness removed.
+; Play loop — player, bullets; RUN/STOP → game over (kill switch).
 
 .proc play_enter
     lda #COL_GREEN
@@ -8,7 +7,6 @@
 .endproc
 
 .proc play_update
-    ; Kill switch: RUN/STOP edge → game over
     lda input_runstop_edge
     beq play_logic
     lda #MODE_GAME_OVER
@@ -17,6 +15,7 @@
 
 play_logic:
     jsr player::update
+    jsr bullets::update
     rts
 .endproc
 

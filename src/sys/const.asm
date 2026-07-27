@@ -318,3 +318,15 @@ SC_BULLET_H3    = $F7               ; horizontal phase 3 (right)
 SC_BULLET_FIRST = SC_BULLET_V0
 SC_BULLET_COUNT = 8
 BULLET_PHASES   = 4                 ; sub-cell frames per axis
+
+; ---------------------------------------------------------------------------
+; Bullets (character stream; H-rail vertical aim for Stage 2)
+; ---------------------------------------------------------------------------
+BULLET_MAX              = 12        ; concurrent shots
+BULLET_HOLD             = 2         ; logic ticks per sub-cell phase
+; H-rail stand-in rows 12–13 are a dead zone for bullets
+BULLET_RAIL_ROW_TOP     = 12
+BULLET_RAIL_ROW_BOT     = 13
+BULLET_LAUNCH_ROW_UP    = 11        ; first cell above rail
+BULLET_LAUNCH_ROW_DOWN  = 14        ; first cell below rail
+BULLET_COLOR            = COL_YELLOW

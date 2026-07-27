@@ -1,11 +1,8 @@
 ; Player — logical object slot 0.
 ; Stage 2 slice: horizontal rail only, 4px steps, barrel up/down with mid swing.
 ;
-; Fire rules (for later bullets — not implemented here):
-;   - Fire only when barrel is at rest (stable cardinal aim).
-;   - Mid-swing is not rest; no shot while player_swing_t != 0.
-;   - Rail-transition lock-out is separate (not in this slice).
-;   - Shot cooldown TBD with render/bullets.asm.
+; Fire: bullets::try_fire only when barrel at rest (player_swing_t = 0).
+; Rail-transition lock-out is separate (not in this slice).
 ;
 ; Barrel change (H-rail): only if not swinging, and stick presses the opposite
 ; of rest aim: UP rest + DOWN → U→R→D; DOWN rest + UP → D→L→U.
