@@ -56,30 +56,33 @@ upd_next:
     rts
 .endproc
 
-; Mode 0: $D01F latch = candidate only. Disambiguate with software:
-;   soft bullet AABB hit → score, consume that bullet, retire drone
-;   else → rail arrival (retire, no score)
-; Old center-column bullet search missed left-wing half-cell lanes (same
-; char col as center only on the right half of the 24px sprite).
+; Mode 0: $D01F latch = candidate only (bullet chars OR rail). Disambiguate:
+;   1) soft bullet AABB → score, consume bullet, retire (no rail damage)
+;   2) else soft rail under hitbox → real rail arrival (C blast / A/B damage)
+;   3) else ignore (spurious latch — e.g. bullet hit without AABB match while
+;      still high above the rail; must NOT call rail_arrival_retire)
 .proc mode_hw_only
     ldx mode_state
     lda objects::obj_pending_events, x
     and #OBJE_BG
     beq hw_done
     jsr test_bullets                ; C clear + X = bullet slot
-    bcs hw_rail
+    bcs hw_try_rail
     jsr bullets::destroy
     jsr score::add_hit
     ldx mode_state
     jsr objects::retire_and_try_free
     rts
-hw_rail:
-    jsr rail_arrival_retire         ; C blast if needed, then free
+hw_try_rail:
+    ldx mode_state
+    jsr test_rail                   ; C clear = rail char under tight hitbox
+    bcs hw_done                     ; no rail contact — do not damage rail
+    jsr rail_arrival_retire
 hw_done:
     rts
 .endproc
 
-; Rail path (no bullet): C → player; A/B → rail cells; then retire.
+; Confirmed rail contact: C → player blast; A/B → rail cells; then retire.
 .proc rail_arrival_retire
     ldx mode_state
     lda objects::obj_kind, x
