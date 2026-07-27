@@ -51,6 +51,7 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Player sprite / move | **Done (H-arm)** | Slot 0 sprite; 4px steps; U/D barrel via mid frame; V-rail later |
 | Bullets / charset UDGs | **Done (V stream)** | RAM font + 8 UDGs; H-rail fire up/down with 4-phase cells |
 | Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch kill; soft AABB kept for later; mux-load unproven |
+| Score / thin HUD | **Done (thin)** | Hit→point, 6-digit paint; bars/lives still static |
 | Waves / lives / rail damage | Stubs only | Mode hooks exist; nothing drives them from play |
 | High score entry / disk | Stub | Always skip hiscore from game over |
 
@@ -97,9 +98,10 @@ installed; do not require multi-type AI for the slice.
    - HW kill + best-effort char-near bullet consume; Y-arrival still rail backup.  
    - Re-test latch under multi-drone mux pressure before calling design locked.
 
-6. **Score + thin HUD**  
-   - Tick score on kill; show digits (placeholder string → live values).  
-   - Health/lives can stay constants until step 7.
+6. ~~**Score + thin HUD**~~ **done (thin)**  
+   - 1 hit = 1 point (`score::add_hit`); cap 999999; HUD digits 0–5 live.  
+   - HW latch scores only when a nearby bullet is consumed (rail = 0 pts).  
+   - Health/lives still constants until step 7.
 
 7. **Death / session end into existing modes**  
    - Health 0 or “rail destroyed” stub → `MODE_NEXT_LIFE` or `MODE_GAME_OVER`

@@ -18,6 +18,7 @@ play_logic:
     jsr drones::update
     jsr bullets::update
     jsr collision::update
+    jsr score::paint_if_dirty
     rts
 .endproc
 

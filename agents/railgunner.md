@@ -142,6 +142,11 @@ Drones fly in from the screen edges (sides for the horizontal rail, top/bottom f
 - **B (medium)**: 2 hits to destroy.
 - **C (small)**: 1 hit to destroy.
 
+**Scoring:** 1 registered hit = 1 point (not 1 bullet). A kill is therefore
+worth 3/2/1 for A/B/C once multi-HP is live. If one bullet overlaps several
+drones and each takes a hit, each hit scores. Cap **999999** (6-digit HUD).
+Rail arrival does not score.
+
 **Type convention is fixed:** A = large, B = medium, C = small. Preserve this
 mapping in code, data, art names, and future documentation.
 

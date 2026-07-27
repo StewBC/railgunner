@@ -4,10 +4,7 @@
     lda #COL_CYAN
     sta VIC_BORDER
 
-    lda #0
-    sta score0
-    sta score1
-    sta score2
+    jsr score::reset
 
     lda #START_LIVES
     sta lives

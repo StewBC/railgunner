@@ -83,6 +83,7 @@ main_loop:
 .include "frontend/gameover.asm"
 .include "frontend/hiscore.asm"
 .include "game/game_init.asm"
+.include "game/score.asm"
 .include "game/player.asm"
 .include "game/drones.asm"
 .include "game/collision.asm"

@@ -116,6 +116,45 @@ Inside `.if`:
 
 - Relational/equality: `.lt` `.le` `.gt` `.ge` `.eq` `.ne`
 - Existence: `.defined name`
+- Bare symbol: `.if FLAG` is true when `FLAG` is nonzero (works for `C64MASM`)
+
+**CRITICAL — do not use `=` inside `.if`:**
+
+```asm
+MODE = 0
+.if MODE = 0        ; WRONG: this is ASSIGNMENT, not equality
+    lda #$11        ; skipped when MODE was already 0 (assign 0 → false)
+.endif
+.if MODE = 1        ; assigns MODE := 1, condition true → ASSEMBLED
+    lda #$22
+.endif
+.if MODE = 2        ; assigns MODE := 2, condition true → ASSEMBLED
+    lda #$33
+.endif
+; MODE is now 2 (side effect). Both $22 and $33 were emitted.
+```
+
+Verified with `tools/c64masm` (2026-07): `.if X = n` **assigns** `X := n` and treats
+the assigned value as the condition (0 = false, nonzero = true). So a mode switch
+written that way can assemble **multiple** branches and **mutate** the constant for
+later code. RailGunner hit this: `COLLISION_MODE = 0` still built hybrid + soft
+paths (green/blue border dogfood in “HW-only” play).
+
+```asm
+; Correct:
+.if MODE .eq 0
+    jsr mode_hw_only
+.endif
+.if MODE .eq 1
+    jsr mode_hybrid
+.endif
+
+; C-style == is a hard error ("Unexpected primary token"):
+; .if MODE == 0
+```
+
+When changing a compile-time mode flag, **disassemble or check symbols** for the
+expected single `JSR` target — do not trust that only one `.if` body assembled.
 
 ### Predefined define: `C64MASM`
 
@@ -469,6 +508,8 @@ rearm_oneshots = no
 ## 14. Pitfalls checklist (read before shipping code)
 
 1. **Comparisons:** use `.lt` `.le` `.gt` `.ge` `.eq` `.ne` — not C operators `<` `>` `==`.
+1b. **`.if` equality:** always `X .eq n` / `X .ne n`. **`X = n` inside `.if` is
+    assignment with side effects** (mutates `X`, truth = assigned value). See §3.
 2. **Low/high byte:** unary `<` and `>` only: `#<label`, `#>label`.
 3. **Macro commas:** quote addressing modes with commas: `"($fb),y"`.
 4. **`.local` only inside macros** — for loops use anonymous `.scope` or unique names.

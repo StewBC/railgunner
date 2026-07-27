@@ -12,9 +12,13 @@ input_fire_edge:.res 1              ; 1 = fire pressed this frame (edge)
 input_fire_prev:.res 1              ; previous frame fire (edge detect)
 
 ; Session state
-score0:         .res 1              ; BCD or binary digits later; 3 bytes raw for now
+score0:         .res 1              ; 24-bit binary score, lo..hi (cap 999999)
 score1:         .res 1
 score2:         .res 1
+score_dirty:    .res 1              ; nonzero → rewrite HUD score digits
+score_work0:    .res 1              ; paint scratch (not tmp* — put_xy clobbers those)
+score_work1:    .res 1
+score_work2:    .res 1
 lives:          .res 1
 health:         .res 1
 ammo:           .res 1

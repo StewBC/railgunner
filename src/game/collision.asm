@@ -32,13 +32,14 @@ upd_loop:
 
     stx mode_state
 
-    .if COLLISION_MODE = 0
+    ; c64m: conditions need .eq/.ne (not "=") or the wrong modes get assembled in.
+    .if COLLISION_MODE .eq 0
     jsr mode_hw_only
     .endif
-    .if COLLISION_MODE = 1
+    .if COLLISION_MODE .eq 1
     jsr mode_hybrid
     .endif
-    .if COLLISION_MODE = 2
+    .if COLLISION_MODE .eq 2
     jsr mode_soft_only
     .endif
 
@@ -55,66 +56,27 @@ upd_next:
     rts
 .endproc
 
-; Mode 0: trust hardware latch only
+; Mode 0: $D01F latch = candidate only. Disambiguate with software:
+;   soft bullet AABB hit → score, consume that bullet, retire drone
+;   else → rail arrival (retire, no score)
+; Old center-column bullet search missed left-wing half-cell lanes (same
+; char col as center only on the right half of the 24px sprite).
 .proc mode_hw_only
     ldx mode_state
     lda objects::obj_pending_events, x
     and #OBJE_BG
     beq hw_done
-    jsr score_add_kill
+    jsr test_bullets                ; C clear + X = bullet slot
+    bcs hw_rail
+    jsr bullets::destroy
+    jsr score::add_hit
     ldx mode_state
     jsr objects::retire_and_try_free
-    jsr hw_try_consume_bullet
-hw_done:
     rts
-.endproc
-
-; Best-effort remove a nearby bullet so the shot does not keep re-latching.
-.proc hw_try_consume_bullet
+hw_rail:
     ldx mode_state
-    lda objects::obj_x_lo, x
-    clc
-    adc #12
-    sta tmp0
-    lda objects::obj_x_hi, x
-    adc #0
-    sta tmp1
-    jsr px_to_col
-    sta draw_i
-    lda objects::obj_y_int, x
-    clc
-    adc #10
-    sec
-    sbc #50
-    bcc hw_y0
-    lsr a
-    lsr a
-    lsr a
-    jmp hw_ys
-hw_y0:
-    lda #0
-hw_ys:
-    sta draw_j
-    ldx #0
-hw_bloop:
-    lda bullets::bullet_active, x
-    beq hw_bn
-    lda bullets::bullet_col, x
-    cmp draw_i
-    bne hw_bn
-    lda bullets::bullet_row, x
-    sec
-    sbc draw_j
-    clc
-    adc #1
-    cmp #3
-    bcs hw_bn
-    jsr bullets::destroy
-    rts
-hw_bn:
-    inx
-    cpx #BULLET_MAX
-    bne hw_bloop
+    jsr objects::retire_and_try_free
+hw_done:
     rts
 .endproc
 
@@ -177,7 +139,7 @@ es_none:
 as_bullet:
     ldx mux_key_prio
     jsr bullets::destroy
-    jsr score_add_kill
+    jsr score::add_hit
     ldx mode_state
     jsr objects::retire_and_try_free
     rts
@@ -484,21 +446,6 @@ pxok:
     rts
 px0:
     lda #0
-    rts
-.endproc
-
-; ---------------------------------------------------------------------------
-.proc score_add_kill
-    lda score0
-    clc
-    adc #100
-    sta score0
-    lda score1
-    adc #0
-    sta score1
-    lda score2
-    adc #0
-    sta score2
     rts
 .endproc
 

@@ -160,6 +160,13 @@ START_AMMO      = 8
 START_LEVEL     = 1
 WAVES_PER_LEVEL = 20
 
+; Score: 1 registered hit = 1 point (not 1 bullet). Cap for 6-digit HUD.
+; A/B/C kill totals = hit points (3/2/1) once multi-HP is live.
+SCORE_HIT_POINTS = 1
+SCORE_MAX0       = $3F              ; 999999 = $0F423F (lo, mid, hi)
+SCORE_MAX1       = $42
+SCORE_MAX2       = $0F
+
 ; ---------------------------------------------------------------------------
 ; Player (Stage 2 horizontal-arm slice)
 ; VIC sprite top-left. Char col C left edge ≈ 24+C*8.
