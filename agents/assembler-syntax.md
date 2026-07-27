@@ -189,7 +189,7 @@ Standard 6502 mnemonics and addressing modes. Write them in the usual form:
 | `.local name` | Macro-local label (unique per expansion) — **only inside macros** |
 | `.scope [name] [file="f"] [dest="d"]` / `.endscope` | Namespace; optional multi-file output (`c64masm` only) |
 | `.proc name` / `.endproc` | Named procedure (named scope) |
-| `.segdef "n",addr[,noemit]` | Define named segment at `addr` |
+| `.segdef "n",addr[,flags]` | Define named segment at `addr`. Flags are a comma-separated list of `emit`/`noemit` and `locked` |
 | `.segment "n"` | Activate segment; `.segment ""` → native mode |
 | `.6502` | Restrict to 6502 opcodes (**default**) |
 | `.65c02` | Allow 65C02 opcodes |
@@ -332,6 +332,25 @@ table:  .byte $01,$02,$03
 - `noemit`: location counter advances, **no bytes written** — use for ZP variable maps.
 - `.segment ""` returns to native (non-named) mode.
 - Segment names are **quoted strings** in `.segdef` / `.segment`.
+
+### Flags: `noemit` / `locked`
+
+The trailing part of `.segdef` is a comma-separated flag list. Any of `emit` /
+`noemit` (default `emit`) and `locked` may be combined:
+
+```asm
+.segdef "CODE",  $080d
+.segdef "HIRES", $2000, emit, locked   ; VIC bitmap — pinned at $2000
+```
+
+- `locked` marks the segment as an **anchor**: when segment auto-adjust is
+  enabled, its start address is never moved. Use it for regions the hardware
+  reads from a fixed address (bitmap, sprite data, char sets).
+- Auto-adjust still compacts lower segments **around** a locked anchor, but if
+  they grow enough to overrun it, it does **not** try to reshuffle the layout —
+  assembly fails with an error naming the locked segment, leaving the fix to
+  you. Without auto-adjust, `locked` has no effect (an overlap is a plain
+  overlap error, as before).
 
 ---
 
@@ -497,7 +516,7 @@ lda #imm / zp / abs / (zp),y / (zp,x) / abs,x / abs,y
 .if .else .endif   .for .endfor   .repeat .endrepeat
 .macro .endmacro   .local
 .scope .endscope   .proc .endproc
-.segdef "N",addr[,noemit]   .segment "N"
+.segdef "N",addr[,emit|noemit][,locked]   .segment "N"
 
 scope::label              ; cross-scope
 ::rootlabel               ; from root
