@@ -278,7 +278,7 @@ color_row_loop:
     ldy #0
     jsr screen_print
 
-    ; Vertical arms: cols 19–20, rows 1..11 and 14..24
+    ; Vertical rail band: cols 19–21 (quadrants are 0–18 and 22–39)
     ; (use draw_i — screen_put_xy clobbers tmp1/tmp2)
     lda #1
 vloop:
@@ -290,9 +290,13 @@ vloop:
 vdraw:
     ldx #19
     ldy draw_i
-    lda #SC_VBAR                     ; stand-in for vertical rail
+    lda #SC_VBAR
     jsr screen_put_xy
     ldx #20
+    ldy draw_i
+    lda #SC_VBAR
+    jsr screen_put_xy
+    ldx #21
     ldy draw_i
     lda #SC_VBAR
     jsr screen_put_xy
@@ -303,13 +307,13 @@ vnext:
     cmp #25
     bcc vloop
 
-    ; Horizontal arms: rows 12–13, cols 0..18 and 21..39
+    ; Horizontal arms: rows 12–13, cols 0..18 and 22..39 (gap 19–21)
     lda #0
 hloop:
     sta draw_j
     cmp #19
     bcc hdraw
-    cmp #21
+    cmp #22
     bcc hnext
 hdraw:
     ldx draw_j

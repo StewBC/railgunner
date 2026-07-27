@@ -22,6 +22,7 @@
     jsr video::init_sprite_palette
     jsr video::install_sprite_frames
     jsr player::init
+    jsr drones::init                ; Stage 2: one C mover top→rail
     jsr screen_unblank
 
     lda #MODE_PLAY

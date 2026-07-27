@@ -82,6 +82,7 @@ prg: ensure_prg_header $(PRG)
 $(PRG): $(ASSET_BINS) $(ASM_SRC) $(TOOLS)/build-prg.sh $(TOOLS)/c64masm
 	@mkdir -p $(ROOT)/build
 	$(TOOLS)/build-prg.sh
+# build-prg.sh fails on c64masm errors and on CODE growing into CHARSET/sprites.
 
 # Umbrella: force-walk groups (cheap while asset count is tiny).
 assets: screens charset sprites

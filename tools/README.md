@@ -34,6 +34,13 @@ make prg
 # c64masm writes a raw $0801 image; build-prg.sh prepends the 2-byte load
 # address. Pointing c64masm -o at build/railgunner.prg skips the header and
 # breaks --prg/--autorun (RUN does nothing) until `make clean && make`.
+#
+# build-prg.sh is strict:
+#   - non-zero c64masm exit → fail (log in build/assemble.log)
+#   - "Assembly failed" / errors in log → fail even if exit were 0
+#   - parses SEGMENTS from symbols.txt; CODE must end before CHARSET ($2800)
+#     and SPRITE_BLOCK ($3000). Assembler segment-overlap checks do not cover
+#     those runtime regions (they are not .segdef targets).
 
 # Agent debug session
 tools/agent_session.py

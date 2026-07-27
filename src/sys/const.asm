@@ -47,8 +47,10 @@ VIC_CTRL1_TEXT_BLANK   = VIC_CTRL1_TEXT & VIC_DEN_MASK
 VIC_CTRL1_BITMAP_BLANK = VIC_CTRL1_BITMAP & VIC_DEN_MASK
 VIC_CTRL2_HIRES = $08               ; 40 cols, multicolour off
 VIC_MEM_TEXT    = $14               ; screen $0400, charset ROM $1000 (boot only)
-; Text + RAM charset @ $2000 (bank 0). Same $D018 as old bitmap@ $2000; BMM selects.
-VIC_MEM_TEXT_RAM = $18              ; screen $0400, charset RAM $2000
+; Text + RAM charset @ $2800 (bank 0). CODE currently extends past $2000 into
+; the old charset slot — do not put font at $2000 or install will trash IRQ code.
+; $D018: screen $0400 (bits7-4=1), charset $2800 (bits3-1=5) → $1A
+VIC_MEM_TEXT_RAM = $1A
 BITMAP_SIZE     = 8000              ; 320×200 / 8
 BITMAP_COLOR_SIZE = 1000            ; 40×25 colour matrix
 
@@ -65,10 +67,12 @@ VIC_MEM_TITLE   = $38
 
 ; ---------------------------------------------------------------------------
 ; Character set (VIC bank 0) — install once at cold init; all text uses this.
+; $2800–$2FFF: after CODE (~$20E8), before SPRITE_BLOCK $3000.
 ; ---------------------------------------------------------------------------
-CHARSET_RAM     = $2000
+CHARSET_RAM     = $2800
 CHARSET_SIZE    = 2048              ; 256 glyphs × 8 bytes
 CHAR_ROM        = $D000             ; uppercase/graphics set (I/O bank out)
+SPRITE_H_PX             = 21        ; VIC sprite height (lines)
 
 ; Joystick port 2 bits (active low on PRA)
 JOY_UP          = %00000001
@@ -158,19 +162,21 @@ WAVES_PER_LEVEL = 20
 
 ; ---------------------------------------------------------------------------
 ; Player (Stage 2 horizontal-arm slice)
-; VIC sprite top-left. Char col C left edge ≈ 24+C*8; row R top ≈ 50+R*8.
-; H-rail stand-in rows 12–13 (will be top/mid/bottom UDG later); mid path ~
-; row boundary 154. Y nudged so platform covers the middle of that band.
-; Centre (V-rail cross): walk through, never rest (coast on last dir).
+; VIC sprite top-left. Char col C left edge ≈ 24+C*8.
+; Gun aim X = sprite_x + PLAYER_GUN_X_OFF (centre of 24px sprite).
+; 4px steps on a grid so aim hits left 2px or right 2px of a char cell:
+;   (sprite_x + GUN_OFF - 24) mod 8 ∈ {0, 4}  →  OO...... / ....OO..
 ; ---------------------------------------------------------------------------
 PLAYER_MOVE_STEP        = 4
-PLAYER_SWING_MID_FRAMES = 5         ; mid facing (R or L) hold during barrel flip
-PLAYER_Y_HRAIL          = 144       ; was 140; +4 for H-rail middle (+8 overshot)
-PLAYER_X_MIN            = 28        ; left arm end (near col 0)
-PLAYER_X_MAX            = 320       ; right arm end (near col 39)
-PLAYER_ARM_LEFT_MAX     = 160       ; last legal *rest* X left of centre
-PLAYER_ARM_RIGHT_MIN    = 180       ; first legal *rest* X right of centre
-PLAYER_X_START          = 160       ; left of V-rail; barrel up (aim free)
+PLAYER_SWING_MID_FRAMES = 5
+PLAYER_Y_HRAIL          = 144
+PLAYER_GUN_X_OFF        = 12        ; aim point from sprite left
+; Keep all of these ≡ 0 or 4 (mod 8) so aim stays on half-cell lanes
+PLAYER_X_MIN            = 28        ; 28+12-24=16 → col2 left
+PLAYER_X_MAX            = 316       ; stay on 4px grid (< 320)
+PLAYER_ARM_LEFT_MAX     = 156       ; last rest left of centre on grid
+PLAYER_ARM_RIGHT_MIN    = 180
+PLAYER_X_START          = 156       ; left of V-rail, left half-cell lane
 ; player_move_dir values
 PLAYER_DIR_NONE         = 0
 PLAYER_DIR_RIGHT        = 1
@@ -300,33 +306,74 @@ SC_ZERO         = $30
 SC_VBAR         = $5D               ; "|" vertical bar (vertical rail stand-in)
 
 ; ---------------------------------------------------------------------------
-; Bullet UDG screen codes (8 glyphs; see data/charset_bullets.asm)
-; Vertical set: phase 0 = blob at top of cell … phase 3 = bottom.
-;   Fire DOWN → play phases 0,1,2,3 ; fire UP → 3,2,1,0
-; Horizontal set: phase 0 = blob at left … phase 3 = right.
-;   Fire RIGHT → 0,1,2,3 ; fire LEFT → 3,2,1,0
-; High codes: not used by PETSCII HUD strings.
+; Bullet UDG screen codes (16 glyphs; data/charset_bullets.asm)
+;   $F0–$F3  VL  vertical travel, left  half (OO......), phases 0..3
+;   $F4–$F7  VR  vertical travel, right half (....OO..), phases 0..3
+;   $F8–$FB  HT  horizontal travel, top half, phases 0..3
+;   $FC–$FF  HB  horizontal travel, bottom half, phases 0..3
+; DOWN/RIGHT: phase 0→3; UP/LEFT: 3→0
 ; ---------------------------------------------------------------------------
-SC_BULLET_V0    = $F0               ; vertical phase 0 (top)
-SC_BULLET_V1    = $F1
-SC_BULLET_V2    = $F2
-SC_BULLET_V3    = $F3               ; vertical phase 3 (bottom)
-SC_BULLET_H0    = $F4               ; horizontal phase 0 (left)
-SC_BULLET_H1    = $F5
-SC_BULLET_H2    = $F6
-SC_BULLET_H3    = $F7               ; horizontal phase 3 (right)
-SC_BULLET_FIRST = SC_BULLET_V0
-SC_BULLET_COUNT = 8
-BULLET_PHASES   = 4                 ; sub-cell frames per axis
+SC_BULLET_VL0   = $F0
+SC_BULLET_VR0   = $F4
+SC_BULLET_HT0   = $F8
+SC_BULLET_HB0   = $FC
+SC_BULLET_FIRST = SC_BULLET_VL0
+SC_BULLET_COUNT = 16
 
 ; ---------------------------------------------------------------------------
 ; Bullets (character stream; H-rail vertical aim for Stage 2)
 ; ---------------------------------------------------------------------------
-BULLET_MAX              = 12        ; concurrent shots
-BULLET_HOLD             = 2         ; logic ticks per sub-cell phase
-; H-rail stand-in rows 12–13 are a dead zone for bullets
+BULLET_MAX              = 16
+BULLET_HOLD             = 1         ; ticks per sub-cell pose (1 = max cell speed)
+BULLET_PHASES           = 4         ; poses per cell
+; Gun may not fire again until prior shot finishes one full cell (4 phases).
+BULLET_CELL_TICKS       = BULLET_HOLD * BULLET_PHASES
+BULLET_HALF_LEFT        = 0
+BULLET_HALF_RIGHT       = 1
 BULLET_RAIL_ROW_TOP     = 12
 BULLET_RAIL_ROW_BOT     = 13
-BULLET_LAUNCH_ROW_UP    = 11        ; first cell above rail
-BULLET_LAUNCH_ROW_DOWN  = 14        ; first cell below rail
+BULLET_LAUNCH_ROW_UP    = 11
+BULLET_LAUNCH_ROW_DOWN  = 14
+; Top line (row 0) = score/HUD — bullets may use row 1, then die (no row 0).
+BULLET_ROW_MIN          = 1
 BULLET_COLOR            = COL_YELLOW
+
+; ---------------------------------------------------------------------------
+; Playfield rail / quadrant geometry (char cells)
+;   Vertical rail band: cols 19–21  (drones never overlap)
+;   Horizontal rail:    rows 12–13
+;   Left  free cols: 0–18     Right free cols: 22–39
+; Four quadrants (later: 3 drones per quadrant per wave):
+;   UL top-left   UR top-right   LL bot-left   LR bot-right
+; ---------------------------------------------------------------------------
+RAIL_COL_LEFT           = 19
+RAIL_COL_RIGHT          = 21        ; inclusive
+RAIL_ROW_TOP            = 12
+RAIL_ROW_BOT            = 13
+QUAD_LEFT_COL_MAX       = 18
+QUAD_RIGHT_COL_MIN      = 22
+
+; Sprite X so a 24px-wide sprite stays fully left or right of the V-rail band.
+; Col C left edge = 24 + C*8. Band pixels 176..199 (cols 19–21).
+; Left:  X+23 < 176 → X <= 152.  Right: X >= 200.
+DRONE_X_LEFT_MIN        = 28
+DRONE_X_LEFT_MAX        = 152
+DRONE_X_RIGHT_MIN       = 200
+DRONE_X_RIGHT_MAX       = 320
+
+; ---------------------------------------------------------------------------
+; Drones (Stage 2: one mover; later waves of 3 per quadrant)
+; ---------------------------------------------------------------------------
+DRONE_C_SPEED_Y         = 1         ; pixels per logic tick
+; Slice spawn: upper-left quadrant only (inside cols 0–18)
+DRONE_SPAWN_X_LO        = 100       ; within DRONE_X_LEFT_*
+DRONE_SPAWN_X_HI        = 0
+; Below score (row 0 ≈ Y 50–57): row-1 top (58) + full 21-line sprite → no HUD overlap
+DRONE_SPAWN_Y           = 50 + 8 + SPRITE_H_PX   ; 79
+; Arrival: stop before overlapping H-rail (row 12 top ≈ VIC Y 146)
+DRONE_RAIL_ARRIVE_Y     = 140
+; obj_user quadrant ids (for clamp / future waves)
+QUAD_UL                 = 0
+QUAD_UR                 = 1
+QUAD_LL                 = 2
+QUAD_LR                 = 3

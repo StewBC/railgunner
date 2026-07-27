@@ -1,106 +1,56 @@
-; Bullet user-defined characters — 8 glyphs × 8 bytes (hires, 1 bit/pixel).
-; Installed over ROM copy at CHARSET_RAM (screen codes SC_BULLET_V0..H3).
+; Bullet UDGs — 16 glyphs × 8 bytes (hires).
+; Player steps 4px; each char cell is 8px → two aim lanes per cell.
 ;
-; Pixel legend (one row): bit7 = left … bit0 = right.
-;   ...OO...  = %00011000   (2px blob, centred for vertical travel)
+; Vertical travel (up/down fire) — 2px blob, 4 row phases × 2 X halves:
+;   Left  half: OO......  = %11000000
+;   Right half: ....OO..  = %00001100
+;   DOWN: phase 0→3 (top→bottom of cell); UP: 3→0
 ;
-; Vertical: 2 rows tall, walks top→bottom across the cell (phases 0..3).
-; Horizontal: 2 cols wide, walks left→right (phases 0..3), vertically centred.
+; Horizontal travel (left/right fire, later) — 2px blob, 4 col phases × 2 Y halves:
+;   Top half rows 0–1 / bottom rows 4–5; phases walk left→right (RIGHT) or reverse (LEFT).
 ;
-; Playback order (bullets consumer):
-;   DOWN  / RIGHT : phase 0 → 1 → 2 → 3
-;   UP    / LEFT  : phase 3 → 2 → 1 → 0
-;
-; Layout is contiguous from chr_bullet_udg (= chr_bullet_v0) for 64 bytes.
+; Contiguous block chr_bullet_udg for install (SC_BULLET_FIRST.. +15).
 
 chr_bullet_udg:
 
-; --- Vertical phase 0: rows 0–1 (top; first when firing DOWN) ---
-chr_bullet_v0:
-    .byte %00011000
-    .byte %00011000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
+; ===== Vertical LEFT (OO......) phases 0..3 =====
+; VL0 rows 0–1
+    .byte %11000000,%11000000,%00000000,%00000000,%00000000,%00000000,%00000000,%00000000
+; VL1 rows 2–3
+    .byte %00000000,%00000000,%11000000,%11000000,%00000000,%00000000,%00000000,%00000000
+; VL2 rows 4–5
+    .byte %00000000,%00000000,%00000000,%00000000,%11000000,%11000000,%00000000,%00000000
+; VL3 rows 6–7
+    .byte %00000000,%00000000,%00000000,%00000000,%00000000,%00000000,%11000000,%11000000
 
-; phase 1: rows 2–3
-chr_bullet_v1:
-    .byte %00000000
-    .byte %00000000
-    .byte %00011000
-    .byte %00011000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
+; ===== Vertical RIGHT (....OO..) phases 0..3 =====
+; VR0
+    .byte %00001100,%00001100,%00000000,%00000000,%00000000,%00000000,%00000000,%00000000
+; VR1
+    .byte %00000000,%00000000,%00001100,%00001100,%00000000,%00000000,%00000000,%00000000
+; VR2
+    .byte %00000000,%00000000,%00000000,%00000000,%00001100,%00001100,%00000000,%00000000
+; VR3
+    .byte %00000000,%00000000,%00000000,%00000000,%00000000,%00000000,%00001100,%00001100
 
-; phase 2: rows 4–5
-chr_bullet_v2:
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00011000
-    .byte %00011000
-    .byte %00000000
-    .byte %00000000
+; ===== Horizontal TOP (rows 0–1) phases 0..3 cols =====
+; HT0 cols 0–1
+    .byte %11000000,%11000000,%00000000,%00000000,%00000000,%00000000,%00000000,%00000000
+; HT1 cols 2–3
+    .byte %00110000,%00110000,%00000000,%00000000,%00000000,%00000000,%00000000,%00000000
+; HT2 cols 4–5
+    .byte %00001100,%00001100,%00000000,%00000000,%00000000,%00000000,%00000000,%00000000
+; HT3 cols 6–7
+    .byte %00000011,%00000011,%00000000,%00000000,%00000000,%00000000,%00000000,%00000000
 
-; phase 3: rows 6–7 (bottom; first when firing UP)
-chr_bullet_v3:
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00011000
-    .byte %00011000
-
-; --- Horizontal phase 0: cols 0–1 (left; first when firing RIGHT) ---
-chr_bullet_h0:
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %11000000
-    .byte %11000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-
-; phase 1: cols 2–3
-chr_bullet_h1:
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00110000
-    .byte %00110000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-
-; phase 2: cols 4–5
-chr_bullet_h2:
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00001100
-    .byte %00001100
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-
-; phase 3: cols 6–7 (right; first when firing LEFT)
-chr_bullet_h3:
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
-    .byte %00000011
-    .byte %00000011
-    .byte %00000000
-    .byte %00000000
-    .byte %00000000
+; ===== Horizontal BOTTOM (rows 4–5) phases 0..3 =====
+; HB0
+    .byte %00000000,%00000000,%00000000,%00000000,%11000000,%11000000,%00000000,%00000000
+; HB1
+    .byte %00000000,%00000000,%00000000,%00000000,%00110000,%00110000,%00000000,%00000000
+; HB2
+    .byte %00000000,%00000000,%00000000,%00000000,%00001100,%00001100,%00000000,%00000000
+; HB3
+    .byte %00000000,%00000000,%00000000,%00000000,%00000011,%00000011,%00000000,%00000000
 
 CHR_BULLET_UDG_BYTES = SC_BULLET_COUNT * 8

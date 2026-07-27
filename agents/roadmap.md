@@ -46,7 +46,7 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Mode dispatcher | Done | Jump table; modes include story/instructions extras |
 | Frontend attract | Ahead of plan | Hires title ↔ text menu; typewriter; S/I stubs |
 | Game / stage init | Minimal | Session vars reset; playfield draw; player on H-rail |
-| Play | **Player + bullets** | H-rail move/barrel; char bullets up/down; RUN/STOP → game over |
+| Play | **Player + bullets + mover** | H-rail; bullets; one C drone top→rail; RUN/STOP → game over |
 | Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
 | Player sprite / move | **Done (H-arm)** | Slot 0 sprite; 4px steps; U/D barrel via mid frame; V-rail later |
 | Bullets / charset UDGs | **Done (V stream)** | RAM font + 8 UDGs; H-rail fire up/down with 4-phase cells |
@@ -86,11 +86,10 @@ installed; do not require multi-type AI for the slice.
    - 4 sub-cell phases × `BULLET_HOLD`; launch cell occupancy = ROF cap.  
    - Auto-fire while FIRE held and barrel at rest; L/R aim later with H UDGs.
 
-4. **One moving drone**  
-   - Replace the static art harness with **one** spawn: edge → straight line to rail.  
-   - Use any one of A/B/C art; prefer **C (small)** if testing player damage later, or
-     **B** for rail-reach-only. Keep other harness drones out of the slice path.  
-   - Motion can be simple constant velocity into the pool’s reserved vx/vy layout.
+4. ~~**One moving drone**~~ **done (slice mover)**  
+   - `game/drones.asm`: one **C** (small), nose-down, top → H-rail; vy via pool.  
+   - Rail arrival currently **retires** the slot (stub until collision consumer).  
+   - Spawn API ready to grow to 3-per-quadrant waves later.
 
 5. **Collision consumer (the remaining hard unknown)**  
    - Drain `objects::` IRQ events after mux attribution.  

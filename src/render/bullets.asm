@@ -1,24 +1,26 @@
-; Character bullets — UDG stream with sub-cell phases.
+; Character bullets — 4px-aligned with player (half-cell X lanes).
 ;
-; Vertical (H-rail aim): 4 phases SC_BULLET_V0..V3
-;   DOWN: phase 0→1→2→3 then next row down
-;   UP:   phase 3→2→1→0 then next row up
-; Hold BULLET_HOLD ticks per phase. Launch cell must be free (structural ROF).
-; Fire only when player barrel is at rest and FIRE held.
+; Vertical aim (H-rail): VL*/VR* glyphs (left OO...... / right ....OO..)
+;   DOWN: phase 0→1→2→3 then row++; UP: 3→2→1→0 then row--
+; Rate of fire: gun locked for BULLET_CELL_TICKS (= 4 phases × hold) after each
+; shot so the previous bullet has fully left its first character cell.
 
 .scope bullets
 
 bullet_active:  .res BULLET_MAX
 bullet_col:     .res BULLET_MAX
 bullet_row:     .res BULLET_MAX
-bullet_dir:     .res BULLET_MAX     ; SPR_DIR_UP or SPR_DIR_DOWN
-bullet_phase:   .res BULLET_MAX     ; 0..3
+bullet_half:    .res BULLET_MAX     ; 0=left OO......  1=right ....OO..
+bullet_dir:     .res BULLET_MAX
+bullet_phase:   .res BULLET_MAX
 bullet_hold:    .res BULLET_MAX
+fire_lock:      .res 1              ; ticks until gun may fire again
 
 ; ---------------------------------------------------------------------------
 .proc init
     ldx #0
     lda #0
+    sta fire_lock
 clear:
     sta bullet_active, x
     inx
@@ -29,6 +31,10 @@ clear:
 
 ; ---------------------------------------------------------------------------
 .proc update
+    lda fire_lock
+    beq lock_zero
+    dec fire_lock
+lock_zero:
     jsr advance_all
     jsr try_fire
     rts
@@ -48,7 +54,6 @@ adv_loop:
     cmp #SPR_DIR_UP
     beq adv_up
 
-    ; DOWN: 0→1→2→3 then row++
     lda bullet_phase, x
     cmp #3
     bcs down_next_cell
@@ -65,15 +70,17 @@ down_next_cell:
     jmp adv_draw
 
 adv_up:
-    ; UP: 3→2→1→0 then row--
     lda bullet_phase, x
     beq up_next_cell
     dec bullet_phase, x
     jmp adv_draw
 up_next_cell:
     jsr erase_slot
+    ; Finished a cell: leave if already on min row (score is row 0 above)
     lda bullet_row, x
+    cmp #BULLET_ROW_MIN
     beq adv_kill
+    bcc adv_kill
     dec bullet_row, x
     lda #3
     sta bullet_phase, x
@@ -94,8 +101,6 @@ adv_next:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Erase glyph at slot X. Preserves X.
-; ---------------------------------------------------------------------------
 .proc erase_slot
     txa
     pha
@@ -112,14 +117,18 @@ adv_next:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Draw glyph + colour for slot X. Preserves X.
+; Glyph = SC_BULLET_VL0 + half*4 + phase
 ; ---------------------------------------------------------------------------
 .proc draw_slot
     txa
     pha
-    lda bullet_phase, x
+    lda bullet_half, x
+    asl a
+    asl a                           ; *4
     clc
-    adc #SC_BULLET_V0
+    adc bullet_phase, x
+    clc
+    adc #SC_BULLET_VL0
     sta tmp0
     lda bullet_col, x
     pha
@@ -146,11 +155,18 @@ adv_next:
 
 ; ---------------------------------------------------------------------------
 .proc try_fire
+    lda fire_lock
+    beq fire_unlocked
+    rts                             ; prior shot still finishing first cell
+fire_unlocked:
     lda player_swing_t
-    bne fire_done
+    beq fire_swing_ok
+    rts
+fire_swing_ok:
     lda input_fire
-    beq fire_done
-
+    bne fire_held
+    rts
+fire_held:
     lda player_rest_dir
     cmp #SPR_DIR_UP
     beq aim_up
@@ -159,43 +175,25 @@ adv_next:
     rts
 
 aim_up:
-    jsr player_launch_col
-    sta draw_i                      ; col
+    jsr player_launch_lane          ; draw_i=col, tmp0=half
     lda #BULLET_LAUNCH_ROW_UP
-    sta draw_j                      ; row
+    sta draw_j
     lda #SPR_DIR_UP
-    sta tmp1                        ; dir
-    lda #3                          ; start phase (bottom)
+    sta tmp1
+    lda #3
     sta tmp2
     jmp fire_common
 
 aim_down:
-    jsr player_launch_col
-    sta draw_i
+    jsr player_launch_lane
     lda #BULLET_LAUNCH_ROW_DOWN
     sta draw_j
     lda #SPR_DIR_DOWN
     sta tmp1
-    lda #0                          ; start phase (top)
+    lda #0
     sta tmp2
 
 fire_common:
-    ; Occupancy: launch cell free?
-    ldx #0
-occ_loop:
-    lda bullet_active, x
-    beq occ_next
-    lda bullet_col, x
-    cmp draw_i
-    bne occ_next
-    lda bullet_row, x
-    cmp draw_j
-    beq fire_done
-occ_next:
-    inx
-    cpx #BULLET_MAX
-    bne occ_loop
-
     ldx #0
 slot_loop:
     lda bullet_active, x
@@ -212,37 +210,56 @@ slot_found:
     sta bullet_col, x
     lda draw_j
     sta bullet_row, x
+    lda tmp0                        ; half from player_launch_lane
+    sta bullet_half, x
     lda tmp1
     sta bullet_dir, x
     lda tmp2
     sta bullet_phase, x
     lda #BULLET_HOLD
     sta bullet_hold, x
+    ; Lock gun for one full cell lifetime (4 phases × hold)
+    lda #BULLET_CELL_TICKS
+    sta fire_lock
     jsr draw_slot
-fire_done:
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; A ← column of player sprite centre (0..39)
+; Aim point → char col + half-cell lane.
+;   draw_i = col (0..39)
+;   tmp0   = BULLET_HALF_LEFT (0) or RIGHT (1)
+; Gun pixel X = sprite_x + PLAYER_GUN_X_OFF; cell = (gunX - 24).
 ; ---------------------------------------------------------------------------
-.proc player_launch_col
+.proc player_launch_lane
     ldx #0
     lda objects::obj_x_lo, x
     clc
-    adc #12
+    adc #PLAYER_GUN_X_OFF
     sta tmp0
     lda objects::obj_x_hi, x
     adc #0
     sta tmp1
-    ; x_center - 24
     lda tmp0
     sec
     sbc #24
     sta tmp0
     lda tmp1
     sbc #0
-    ; / 8
+    sta tmp1
+    ; tmp0/tmp1 = gun pixel X relative to left of char col 0
+    ; col = pixel / 8, half = 0 if (pixel & 4) == 0 else 1
+    lda tmp0
+    and #4
+    beq half_left
+    lda #BULLET_HALF_RIGHT
+    bne half_store
+half_left:
+    lda #BULLET_HALF_LEFT
+half_store:
+    sta mode_state                  ; temp half
+    ; col = pixel >> 3 (16-bit)
+    lda tmp1
     lsr a
     ror tmp0
     lsr a
@@ -254,6 +271,9 @@ fire_done:
     bcc col_ok
     lda #39
 col_ok:
+    sta draw_i
+    lda mode_state
+    sta tmp0                        ; half out
     rts
 .endproc
 

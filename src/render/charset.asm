@@ -1,5 +1,5 @@
 ; Character set: copy C64 char ROM → RAM once, install bullet UDGs.
-; All text modes use this font (VIC bank 0, CHARSET_RAM @ $2000).
+; All text modes use this font (VIC bank 0, CHARSET_RAM @ $2800).
 
 ; ---------------------------------------------------------------------------
 ; charset_install — cold init (once). Clobbers A,X,Y,ptr_*,print_ptr_*,tmp0

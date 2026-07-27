@@ -11,7 +11,7 @@
 ;
 ; VIC bank 0 runtime (not PRG-resident source):
 ;   SCREEN_RAM    $0400   text screen
-;   CHARSET_RAM   $2000   2K RAM font (after cold init)
+;   CHARSET_RAM   $2800   2K RAM font (after cold init; not $2000 — CODE lives there)
 ;   COLOR_RAM     $D800
 ;
 ; Launch: tools/agent_session.py assembles, fixes BASIC pointers, pastes RUN
@@ -24,7 +24,8 @@
 ;   Sprite ptrs   $07F8–$07FF (when sprites used)
 
 ; VIC bank 0 ($0000–$3FFF) — play + all text UI:
-;   CHARSET_RAM   = $2000   ; 2K font (ROM copy + UDGs); install once at cold init
+;   CODE          ~$080D–$20E8+  (must NOT be overwritten by charset install)
+;   CHARSET_RAM   = $2800   ; 2K font (ROM copy + UDGs); cold init once
 ;   SPRITE_BLOCK  = $3000   ; drone frames (reinstall each stage enter)
 ;   PLAYER_BUF_0  = $3E00   ; sprite pointer $F8
 ;   PLAYER_BUF_1  = $3E40   ; sprite pointer $F9
@@ -38,7 +39,7 @@
 ; tst/ demos place their own frames in a SPRITES segment at $3000 instead.
 ;
 ; After cold init + stage sprite install:
-;   $2000–$27FF  character set ($F0–$F7 = bullet UDGs)
+;   $2800–$2FFF  character set ($F0–$FF = 16 bullet UDGs)
 ;   $3000–$30FF  drone C   ptr $C0–$C3
 ;   $3100–$31FF  drone B   ptr $C4–$C7
 ;   $3200–$32FF  drone A   ptr $C8–$CB

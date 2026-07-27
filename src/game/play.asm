@@ -15,6 +15,7 @@
 
 play_logic:
     jsr player::update
+    jsr drones::update
     jsr bullets::update
     rts
 .endproc
