@@ -19,8 +19,13 @@ CIA1_DDRB       = $DC03
 CIA2_PRA        = $DD00             ; VIC bank select (bits 0–1 inverted)
 
 ; VIC defaults / modes
+VIC_DEN         = %00010000         ; $D011 bit 4 — display enable
+VIC_DEN_MASK    = %11101111         ; AND mask to clear DEN (avoid unary ~ width)
 VIC_CTRL1_TEXT  = $1b               ; text, DEN, 25 rows, yscroll 3
 VIC_CTRL1_BITMAP = $3b              ; bitmap (BMM), DEN, 25 rows, yscroll 3
+; Same as above with DEN clear (mode switch while blanked)
+VIC_CTRL1_TEXT_BLANK   = VIC_CTRL1_TEXT & VIC_DEN_MASK
+VIC_CTRL1_BITMAP_BLANK = VIC_CTRL1_BITMAP & VIC_DEN_MASK
 VIC_CTRL2_HIRES = $08               ; 40 cols, multicolour off
 VIC_MEM_TEXT    = $14               ; screen $0400, charset ROM $1000
 VIC_MEM_BITMAP  = $18               ; screen $0400, bitmap $2000

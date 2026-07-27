@@ -1,13 +1,14 @@
 ; Instructions — typewriter reveal of instructions_text. FIRE skips / returns.
 
 .proc instructions_enter
-    jsr vic_text_mode
+    jsr vic_text_mode               ; blank + text mode + clear
 
     lda #<instructions_text
     sta type_src_lo
     lda #>instructions_text
     sta type_src_hi
     jsr typewriter_init
+    jsr screen_unblank
     rts
 .endproc
 

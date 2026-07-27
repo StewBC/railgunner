@@ -2,11 +2,29 @@
 ; Real rail/HUD character art comes later.
 
 ; ---------------------------------------------------------------------------
+; Blank / unblank via $D011 DEN (simplest transition hide).
+; ---------------------------------------------------------------------------
+.proc screen_blank
+    lda VIC_CTRL1
+    and #VIC_DEN_MASK
+    sta VIC_CTRL1
+    rts
+.endproc
+
+.proc screen_unblank
+    lda VIC_CTRL1
+    ora #VIC_DEN
+    sta VIC_CTRL1
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
 ; Restore stock VIC text mode (screen $0400, charset ROM) and clear.
-; Call when leaving bitmap title (or any non-text mode) before printing.
+; Leaves the display blanked — caller draws, then jsr screen_unblank.
 ; ---------------------------------------------------------------------------
 .proc vic_text_mode
-    lda #VIC_CTRL1_TEXT
+    jsr screen_blank
+    lda #VIC_CTRL1_TEXT_BLANK       ; text mode, DEN still off
     sta VIC_CTRL1
     lda #VIC_CTRL2_HIRES            ; multicolour off, 40 cols
     sta VIC_CTRL2
@@ -15,7 +33,7 @@
     lda #COL_BLACK
     sta VIC_BORDER
     sta VIC_BG0
-    jmp screen_clear                ; tail-call
+    jmp screen_clear                ; tail-call (still blanked)
 .endproc
 
 ; ---------------------------------------------------------------------------

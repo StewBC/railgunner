@@ -39,6 +39,8 @@ attract_expired:
 ; ===========================================================================
 
 .proc title_gfx_enter
+    jsr screen_blank                ; hide whatever mode we left
+
     lda #COL_BLACK
     sta VIC_BORDER
     sta VIC_BG0
@@ -52,12 +54,14 @@ attract_expired:
     jsr title_copy_bitmap
     jsr title_copy_colors
 
-    lda #VIC_CTRL1_BITMAP
+    ; Bitmap mode still blanked, then reveal
+    lda #VIC_CTRL1_BITMAP_BLANK
     sta VIC_CTRL1
     lda #VIC_CTRL2_HIRES
     sta VIC_CTRL2
     lda #VIC_MEM_BITMAP
     sta VIC_MEM
+    jsr screen_unblank
 
     jsr attract_reset_timer
     lda #MENU_FIRE_GUARD
@@ -74,14 +78,12 @@ attract_expired:
 gfx_fire_ok:
     lda input_fire_edge
     beq gfx_attract
-    jsr vic_text_mode
-    lda #MODE_TITLE_TEXT
+    lda #MODE_TITLE_TEXT            ; enter blanks, draws, unblanks
     jsr mode_set
     rts
 gfx_attract:
     jsr attract_tick
     bcc gfx_done
-    jsr vic_text_mode
     lda #MODE_TITLE_TEXT
     jsr mode_set
 gfx_done:
@@ -319,6 +321,7 @@ tt_score_draw:
     jsr attract_reset_timer
     lda #MENU_FIRE_GUARD
     sta mode_timer
+    jsr screen_unblank              ; reveal fully drawn menu
     rts
 .endproc
 
