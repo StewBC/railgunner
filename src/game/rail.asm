@@ -25,11 +25,11 @@ clr:
 .endproc
 
 ; X = drone slot → two columns under the body (not geometric centre+1).
-; Sprite left + 4px lines up with visible art; +12 was ~1 cell too far right.
+; Sprite left + DRONE_IMPACT_X_OFF lines up with visible art (was +12).
 .proc apply_ab_hit
     lda objects::obj_x_lo, x
     clc
-    adc #4
+    adc #DRONE_IMPACT_X_OFF
     sta tmp0
     lda objects::obj_x_hi, x
     adc #0

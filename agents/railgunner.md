@@ -160,7 +160,7 @@ Speed is constant within a given wave; later waves within a level, and later lev
 
 ### What each type attacks
 
-- **C (small) drones** attack the **player only**. On reaching the rail they explode with a radial blast: player within ~8px of the blast origin takes a **direct hit**, player within ~8-16px takes a **half hit** (exact radii tunable). The blast does not damage the rail and does not chain into other drones.
+- **C (small) drones** attack the **player only**. On reaching the rail they explode: Stage‑2 uses a **2 char-cell** footprint under the drone (same cols as an A/B rail strike). Player body centre in that zone takes a **full hit** (−2 HP). A wider half-hit ring is reserved for later. The blast does not damage the rail and does not chain into other drones.
 - **A (large) and B (medium) drones** attack the **rail only**. On reaching the rail they explode, causing rail damage. They do not harm the player directly.
 
 Since a C drone's explosion origin is always at the rail edge, the player is in some degree of blast range any time they are occupying the rail arm a C reaches — this is the core risk/reward of choosing which arm to defend, not an oversight.

@@ -160,9 +160,13 @@ START_AMMO      = 8
 START_LEVEL     = 1
 WAVES_PER_LEVEL = 20
 
-; C blast (player only). Full hit for slice; half-range later.
+; C blast (player only). Damage only if player body col is in the impact
+; footprint (same 2 char cells as A/B rail strike — almost a direct hit).
 C_BLAST_FULL    = 2
-C_BLAST_HALF    = 1
+C_BLAST_HALF    = 1                 ; reserved for outer ring later
+C_BLAST_COLS    = 2                 ; width of kill zone in char cells
+; Pixel inset for drone→col (matches rail::apply_ab_hit body align)
+DRONE_IMPACT_X_OFF = 4
 
 ; Score: 1 registered hit = 1 point (not 1 bullet). Cap for 6-digit HUD.
 ; A/B/C kill totals = hit points (3/2/1) once multi-HP is live.

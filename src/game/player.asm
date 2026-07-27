@@ -299,12 +299,52 @@ copy_loop:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; C drone rail blast — full hit (slice: no range check).
-; Health 0 → pending_mode = NEXT_LIFE (applied at end of play tick — never
-; mode_set here; re-entering stage mid-drones/mux corrupts the object pool).
-; Clobbers A. Preserves X,Y.
+; C drone rail blast — full hit only if player is in the 2-cell impact zone
+; under the drone (same cols as rail::apply_ab_hit). X = C object slot.
+; Health 0 → pending_mode = NEXT_LIFE (end of play tick only).
+; Clobbers A,tmp0-2,draw_i. Preserves X,Y.
 ; ---------------------------------------------------------------------------
 .proc apply_c_blast_full
+    ; --- blast col0 from drone (body-aligned, 2 cells: col0 and col0+1) ---
+    lda objects::obj_x_lo, x
+    clc
+    adc #DRONE_IMPACT_X_OFF
+    sta tmp0
+    lda objects::obj_x_hi, x
+    adc #0
+    sta tmp1
+    jsr px_to_col                   ; A = col0
+    sta draw_i
+
+    ; --- player body centre → char col ---
+    stx tmp2                        ; save drone slot
+    ldx #0
+    lda objects::obj_x_lo, x
+    clc
+    adc #12                         ; mid of 24px player
+    sta tmp0
+    lda objects::obj_x_hi, x
+    adc #0
+    sta tmp1
+    jsr px_to_col                   ; A = player col
+    ldx tmp2                        ; restore drone
+
+    ; in zone if player_col == col0 or col0+1
+    cmp draw_i
+    beq blast_hit
+    tax
+    lda draw_i
+    clc
+    adc #1
+    sta tmp0
+    cpx tmp0
+    beq blast_hit_restore_x
+    ldx tmp2
+    rts                             ; out of blast radius — no damage
+
+blast_hit_restore_x:
+    ldx tmp2
+blast_hit:
     lda health
     beq blast_done                  ; already dead this life
     sec
@@ -320,6 +360,32 @@ blast_store:
     lda #MODE_NEXT_LIFE
     sta pending_mode
 blast_done:
+    rts
+.endproc
+
+; tmp0/tmp1 = 16-bit VIC X → A = char col 0..39. Clobbers tmp0/tmp1.
+.proc px_to_col
+    lda tmp0
+    sec
+    sbc #24
+    sta tmp0
+    lda tmp1
+    sbc #0
+    bcc ptc0
+    lsr a
+    ror tmp0
+    lsr a
+    ror tmp0
+    lsr a
+    ror tmp0
+    lda tmp0
+    cmp #40
+    bcc ptc_ok
+    lda #39
+ptc_ok:
+    rts
+ptc0:
+    lda #0
     rts
 .endproc
 
