@@ -1,13 +1,9 @@
-; Stage init / re-init — player on H-rail left of centre, clear field, play.
+; Stage init — first enter only (new game / rare re-init). Level-ups do not reset.
 
 .proc stage_init_enter
     lda #COL_LT_BLUE
     sta VIC_BORDER
 
-    lda #0
-    sta wave
-
-    ; Bank 0 + RAM font already installed at cold init
     jsr screen_blank
     jsr vic_select_bank0
     lda #VIC_CTRL1_TEXT_BLANK
@@ -18,22 +14,18 @@
     sta VIC_MEM
 
     jsr screen_draw_playfield
-    ; Rail damage persists across levels; only game_init / next_life call
-    ; rail::reset. Re-stamp scars after the pristine playfield draw.
     jsr rail::redraw_from_state
     jsr bullets::init
     jsr video::init_sprite_palette
     jsr video::install_sprite_frames
     jsr player::init
     jsr drones::init
+    jsr cargo::init
     jsr parcels::init
-    jsr waves::load                 ; wave 0 (or current) params + spawn reset
-    ; Template HUD — paint live session score / health / level / lives.
-    lda #1
-    sta hud_status_dirty
-    sta score_dirty
-    jsr score::paint_if_dirty
-    jsr hud::paint_status_if_dirty
+    jsr waves::load
+
+    jsr hud::paint_full_line
+    jsr hud_color_static
     jsr screen_unblank
 
     lda #MODE_PLAY

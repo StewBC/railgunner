@@ -75,13 +75,12 @@ instructions_text:
     .byte $0A
     .byte "A  LARGE. 3 HITS. ATTACKS RAIL.", $0A
     .byte "B  MEDIUM. 2 HITS. ATTACKS RAIL.", $0A
-    .byte "C  SMALL. 1 HIT. ATTACKS YOU.", $0A
-    .byte "   C BLASTS THE GUNNER, NOT", $0A
-    .byte "   THE RAIL.", $0A
+    .byte "C  SMALL. 1 HIT. DROPS CARGO.", $0A
+    .byte "   CARGO ARMS MINES AT THE HUB.", $0A
     .byte $0A
     .byte "STOP A AND B BEFORE THEY HIT", $0A
-    .byte "THE RAIL. STOP C BEFORE IT", $0A
-    .byte "DETONATES ON YOUR POSITION.", $0A
+    .byte "THE RAIL. STOP C BEFORE CARGO", $0A
+    .byte "ARMS THE CENTRE MINES.", $0A
     .byte $0A
     .byte "WATCH FOR POWERUP PARCELS.", $0A
     .byte "THEY RIDE THE OPPOSITE ARM.", $0A
@@ -106,15 +105,38 @@ str_hiscore:
 ; # / A stand in for future UDG bar and life icons.
 ; Lives right-aligned: 3 start lives → " AAA" (last life always col 39).
 str_hud:
-    .byte "000000  H:######## A:######## L:01   AAA", 0
-; Alias for older call sites
+    .byte "000000 - LVL 01 - ######## - PILOTS:AAAA", 0
 str_hud_placeholder = str_hud
 
-str_wave_clear:
-    .byte "WAVE CLEAR", 0
+; Rank banners (cleared level 1..15 → index 0..14). Short for top line.
+str_rank_01: .byte "NICE WORK, PRIVATE", 0
+str_rank_02: .byte "GOOD WORK, L-CPL", 0
+str_rank_03: .byte "GREAT WORK, CPL", 0
+str_rank_04: .byte "WELL DONE, SGT", 0
+str_rank_05: .byte "NICE WORK, S-SGT", 0
+str_rank_06: .byte "SOLID WORK, WO2", 0
+str_rank_07: .byte "EXCELLENT, WO1", 0
+str_rank_08: .byte "OUTSTANDING, LT", 0
+str_rank_09: .byte "FINE WORK, CAPT", 0
+str_rank_10: .byte "SUPERB, MAJOR", 0
+str_rank_11: .byte "REMARKABLE, LT COL", 0
+str_rank_12: .byte "EXCEPTIONAL, COL", 0
+str_rank_13: .byte "BRILLIANT, BRIG", 0
+str_rank_14: .byte "OUTSTANDING, MAJ GEN", 0
+str_rank_15: .byte "LEGENDARY, GENERAL", 0
 
-str_level_clear:
-    .byte "LEVEL CLEAR", 0
+rank_msg_lo:
+    .byte <str_rank_01, <str_rank_02, <str_rank_03, <str_rank_04, <str_rank_05
+    .byte <str_rank_06, <str_rank_07, <str_rank_08, <str_rank_09, <str_rank_10
+    .byte <str_rank_11, <str_rank_12, <str_rank_13, <str_rank_14, <str_rank_15
+rank_msg_hi:
+    .byte >str_rank_01, >str_rank_02, >str_rank_03, >str_rank_04, >str_rank_05
+    .byte >str_rank_06, >str_rank_07, >str_rank_08, >str_rank_09, >str_rank_10
+    .byte >str_rank_11, >str_rank_12, >str_rank_13, >str_rank_14, >str_rank_15
+
+; Level kill quotas L1..L15
+level_kill_quota_tbl:
+    .byte 16, 16, 20, 20, 24, 24, 24, 28, 28, 28, 32, 32, 32, 32, 32
 
 ; ---------------------------------------------------------------------------
 ; Past Heroes table — 18 chars + NUL each.

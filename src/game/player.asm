@@ -792,20 +792,7 @@ blast_compare:
 blast_hit_restore_x:
     ldx tmp2
 blast_hit:
-    lda health
-    beq blast_done
-    sec
-    sbc #C_BLAST_FULL
-    bcs blast_store
-    lda #0
-blast_store:
-    sta health
-    lda #1
-    sta hud_status_dirty
-    lda health
-    bne blast_done
-    lda #MODE_NEXT_LIFE
-    sta pending_mode
+    ; Health removed (rework R2). C impact is cargo/mines, not HP.
 blast_done:
     rts
 .endproc

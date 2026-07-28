@@ -9,9 +9,10 @@ docs; this file only keeps the map coherent.
 [`repo-layout.md`](repo-layout.md) (where code lives), [`README.md`](README.md)
 (index). Optional post-stage reviews: [`reviews/`](reviews/) (not a work queue).
 
-**Current phase:** **Step 9** features. **9.1 in** (parcel delivery + score-only
-payload). Next: **9.2** message system (or 9.3 ammo after). Open design debt:
-**C threat too weak** — revisit mid–late Step 9. Post–step-7 hygiene:
+**Current phase:** **Level-centric rework R1–R8 landed** (no player-facing waves;
+HUD progress; rank banner; health/ammo removed; C cargo→GHIJ mines; lives).
+**Next:** fun tune (R10), then fairness/sets (R9), victory/boss hooks (R11).
+Ammo scarcity (old 9.3) **deferred** (ammo removed). Post–step-7 hygiene:
 [`reviews/2026-07-27-clade-post-step7.md`](reviews/2026-07-27-clade-post-step7.md).
 
 ---
@@ -155,7 +156,7 @@ that sets extra-life thresholds. Still no requirement for full audio or bosses.
 | ID | Work | Notes |
 |----|------|--------|
 | ~~**9.1**~~ | ~~**Bonus drop mechanism only**~~ **done** | Opposite arm + global flip; **2 parcels per level** at ~⅓/⅔ of level kill debt; one live + `parcel_due`; hires disc; soft collect; score `5*level` table; wave-end auto-award. |
-| **9.2** | **Message system** | Between-level (or between-wave) player-facing text. Vehicle for story snippets **and** the ammo-scarcity radio beat. Keep presentation thin (reuse typewriter or a short playfield banner). |
+| ~~**9.2**~~ | ~~**Message system**~~ **done (thin)** | Playfield banner WAVE/LEVEL CLEAR; hold ~1.8s + FIRE skip; restore field on wave continue. Radio/ammo copy can reuse `message::` later. |
 | **9.3** | **Ammo scarcity + ammo packs** | Message unlocks rationing; ammo bar becomes live; fire consumes; ammo bonus is first real drop type. **Mini fun pass after this** — scarcity can ruin the game if wrong; do not march through 9.4–9.7 blind. |
 | **9.4** | **Repair bonus** | Orbiting repair; stand still on damaged segment. |
 | **9.5** | **Shield bonus** | Pool absorbs C-blast damage; tiers 6/4/2; ring art when ready (stub colour OK first). |

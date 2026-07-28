@@ -154,38 +154,35 @@ MODE_TITLE      = MODE_TITLE_TEXT
 ; ---------------------------------------------------------------------------
 ; Session defaults (roadmap placeholders)
 ; ---------------------------------------------------------------------------
-START_LIVES     = 3                 ; total lives; max show HUD_LIVES_MAX_SHOW (4)
-START_HEALTH    = 32                ; 8 bar chars × 4 steps (2px each)
-START_AMMO      = 8
+START_LIVES     = 3                 ; PILOTS; max HUD_LIVES_MAX_SHOW (4)
 START_LEVEL     = 1
-; Difficulty curve clamps here (speed caps ~L10; tables index 0..MAX_LEVEL-1).
-; Beyond MAX_LEVEL, params stay at the L15 intensity (endless playtest).
 MAX_LEVEL       = 15
-WAVES_PER_LEVEL = 4
-; Playfield quadrants (around the cross)
-;   Q1 upper-right  Q2 lower-right  Q3 lower-left  Q4 upper-left
+LEVEL_BANNER_FRAMES = 50            ; ~1s rank banner (no skip)
+LEVEL_BAR_CELLS     = 8
+LEVEL_BAR_STEPS     = 32            ; 8 cells × 4 UDG steps
+
+; Spawn quadrants / flags (level-driven; no player-facing waves)
 WAVE_Q1         = %00000001
 WAVE_Q2         = %00000010
 WAVE_Q3         = %00000100
 WAVE_Q4         = %00001000
 WAVE_Q_TOP      = WAVE_Q1 | WAVE_Q4
 WAVE_Q_ALL      = WAVE_Q1 | WAVE_Q2 | WAVE_Q3 | WAVE_Q4
-; Wave shape is computed in waves::load from base + level knobs (not fixed rows).
-WAVE_F_PIGGY_C  = %00000001         ; schedule C near each A/B launch
-WAVE_F_MAIN_C   = %00000010         ; main dice may roll C (teach / open waves)
-WAVE_AB_MAX     = 1                 ; at most one A/B live
-WAVE_PIGGY_MIN  = 6                 ; ticks after A/B before piggy C
-WAVE_PIGGY_SPAN = 36                ; + random 0..35
-; Density floors (after level shrink)
+WAVE_F_PIGGY_C  = %00000001
+WAVE_F_MAIN_C   = %00000010
+WAVE_AB_MAX     = 1
+WAVE_PIGGY_MIN  = 6
+WAVE_PIGGY_SPAN = 36
 WAVE_CD_MIN_FLOOR = 12
-WAVE_CD_SPAN_MIN  = 10              ; cd_max always >= cd_min + this
-WAVE_MAX_ACTIVE_CAP = 10            ; player + 9 drones → mux territory
+WAVE_CD_SPAN_MIN  = 10
+WAVE_MAX_ACTIVE_CAP = 10
 
-; C blast (player only). Damage only if player body col is in the impact
-; footprint (same 2 char cells as A/B rail strike — almost a direct hit).
-C_BLAST_FULL    = 2
-C_BLAST_HALF    = 1                 ; reserved for outer ring later
-C_BLAST_COLS    = 2                 ; width of kill zone in char cells
+; C cargo → GHIJ mines. K stacks on each of G,H,I,J to arm (total cargo 4K).
+CARGO_STEP_FRAMES = 4
+MINE_STACK_K      = 1
+SC_CARGO_DOT      = $2E
+SC_MINE           = $2A
+
 ; Pixel inset for drone→col (matches rail::apply_ab_hit body align)
 DRONE_IMPACT_X_OFF = 4
 
@@ -405,20 +402,17 @@ SC_RAIL_J       = $0A
 SC_RAIL_FIRST   = SC_RAIL_A
 SC_RAIL_LAST    = SC_RAIL_J
 
-; HUD row 0 layout (must match str_hud in data/strings.asm — 40 columns)
+; HUD: 000000 - LVL 01 - ######## - PILOTS:AAAA  (40 columns)
 HUD_ROW                 = 0
-HUD_SCORE_COL           = 0         ; 6 digits
+HUD_SCORE_COL           = 0
 HUD_SCORE_LEN           = 6
-HUD_HEALTH_LABEL_COL    = 8         ; "H:"
-HUD_HEALTH_BAR_COL      = 10        ; 8 × #
-HUD_HEALTH_BAR_LEN      = 8
-HUD_AMMO_LABEL_COL      = 19        ; "A:"
-HUD_AMMO_BAR_COL        = 21        ; 8 × #
-HUD_AMMO_BAR_LEN        = 8
-HUD_LEVEL_LABEL_COL     = 30        ; "L:"
-HUD_LEVEL_COL           = 32        ; 2 digits
+HUD_LVL_LABEL_COL       = 9         ; "LVL"
+HUD_LEVEL_COL           = 13        ; 2 digits
 HUD_LEVEL_LEN           = 2
-HUD_LIVES_COL           = 36        ; up to 4 life icons
+HUD_PROGRESS_COL        = 18        ; 8 bar cells full→empty
+HUD_PROGRESS_LEN        = 8
+HUD_PILOTS_LABEL_COL    = 29        ; "PILOTS:"
+HUD_LIVES_COL           = 36
 HUD_LIVES_MAX_SHOW      = 4
 
 ; ---------------------------------------------------------------------------

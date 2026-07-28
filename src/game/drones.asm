@@ -122,59 +122,51 @@ stm_done:
     rts
 .endproc
 
-; A = 0 if all kill debts 0, else nonzero
+; A = 0 if level quota met or banner/spawn pause, else nonzero
 .proc kills_remaining
-    lda wave_kills_c
-    cmp wave_quota
-    bcc kr_yes
-    lda wave_kills_b
-    cmp wave_b_quota
-    bcc kr_yes
-    lda wave_kills_a
-    cmp wave_a_quota
-    bcc kr_yes
-    lda #0
-    rts
-kr_yes:
+    lda level_banner_t
+    bne kr_no
+    lda level_kills
+    cmp level_quota
+    bcs kr_no
     lda #1
+    rts
+kr_no:
+    lda #0
     rts
 .endproc
 
-; Weighted among types with remaining kill debt.
-; C only if WAVE_F_MAIN_C or no A/B debt.
-; A = kind or 0
+; Weighted C/B/A by level progress (no per-type wave debt).
 .proc roll_type
     lda #0
     sta mux_i                       ; weight C
     sta mux_j                       ; weight B
     sta mux_k                       ; weight A
 
-    lda wave_kills_c
-    cmp wave_quota
-    bcs rt_b
+    ; Always some C if MAIN_C
     lda wave_flags
     and #WAVE_F_MAIN_C
-    bne rt_c_ok
-    ; C only if no A/B debt left to prefer main A/B
-    lda wave_kills_b
-    cmp wave_b_quota
-    bcc rt_b
-    lda wave_kills_a
-    cmp wave_a_quota
-    bcc rt_b
-rt_c_ok:
+    beq rt_ab
     lda #4
     sta mux_i
-rt_b:
-    lda wave_kills_b
-    cmp wave_b_quota
-    bcs rt_a
-    lda #5
+rt_ab:
+    ; B after first third of level (or always if piggy-only path)
+    lda level_quota
+    lsr a
+    lsr a                           ; ~quota/4
+    sta tmp0
+    lda level_kills
+    cmp tmp0
+    bcc rt_sum
+    lda #4
     sta mux_j
-rt_a:
-    lda wave_kills_a
-    cmp wave_a_quota
-    bcs rt_sum
+    ; A after half
+    lda level_quota
+    lsr a
+    sta tmp0
+    lda level_kills
+    cmp tmp0
+    bcc rt_sum
     lda #3
     sta mux_k
 rt_sum:
@@ -183,7 +175,7 @@ rt_sum:
     adc mux_j
     adc mux_k
     beq rt_none
-    jsr rng_mod                     ; 0..sum-1
+    jsr rng_mod
     cmp mux_i
     bcc rt_pick_c
     sbc mux_i
@@ -845,7 +837,7 @@ arr_hit:
 arr_c:
     txa
     pha
-    jsr player::apply_c_blast_full
+    jsr cargo::on_c_impact          ; no HP; cargo toward hub mines
     pla
     tax
     jmp arr_retire

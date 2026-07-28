@@ -19,12 +19,12 @@ score_dirty:    .res 1              ; nonzero → rewrite HUD score digits
 score_work0:    .res 1              ; paint scratch (not tmp* — put_xy clobbers those)
 score_work1:    .res 1
 score_work2:    .res 1
-hud_status_dirty: .res 1            ; nonzero → rewrite health / level / lives
+hud_status_dirty: .res 1            ; nonzero → rewrite level / progress / lives
 lives:          .res 1
-health:         .res 1
-ammo:           .res 1
 level:          .res 1
-wave:           .res 1
+level_kills:    .res 1              ; kills this level toward level_quota
+level_quota:    .res 1              ; kills required to complete level
+level_banner_t: .res 1              ; 0=play; >0 rank banner frames left (spawn paused)
 
 ; Player (logical slot 0; position also in objects:: SoA)
 player_rail:    .res 1              ; PLAYER_RAIL_H or PLAYER_RAIL_V
@@ -34,15 +34,9 @@ player_swing_to:.res 1              ; rest facing after mid frame expires
 player_move_dir:.res 1              ; PLAYER_DIR_*; last travel (coast through centre)
 player_cross_decided: .res 1        ; 1 = centre eval done this rail-walk; clear off intersection
 
-; Launcher v2 — dice composer (kill targets + random cooldown)
+; Launcher — dice composer (level quota + random cooldown)
 rng_state:         .res 1           ; 8-bit LFSR seed (never leave 0 long)
 drone_spawn_timer: .res 1           ; ticks until next main launch attempt
-wave_quota:        .res 1           ; C kills required
-wave_kills_c:      .res 1
-wave_b_quota:      .res 1
-wave_a_quota:      .res 1
-wave_kills_b:      .res 1
-wave_kills_a:      .res 1
 wave_cd_min:       .res 1
 wave_cd_max:       .res 1
 wave_max_active:   .res 1
@@ -59,14 +53,21 @@ piggy_quad:        .res 1
 piggy_approach:    .res 1
 spawn_quad_list:   .res 4           ; scratch for roll_quad candidates
 
-; Bonus parcel (9.1) — at most one live; 2 drops per *level* (not per wave)
+; Bonus parcel — at most one live; 2 drops per level
 parcel_slot:       .res 1           ; object index, or $FF = none
 parcel_due:        .res 1           ; sticky bit: spawn when free
 parcel_flip:       .res 1           ; global end flip-flop (0/1)
 parcel_drop_mask:  .res 1           ; PARCEL_DROP_T1/T2 already fired this level
 parcel_dir:        .res 1           ; SPR_DIR_* travel for active parcel
-parcel_level_kills:.res 1           ; cumulative kills this level
-parcel_level_total:.res 1           ; total kill debt for whole level
+
+; C cargo in transit (char cell); GHIJ stacks in rail_data
+cargo_active:      .res 1           ; 0 = none
+cargo_col:         .res 1
+cargo_row:         .res 1
+cargo_timer:       .res 1           ; steps countdown
+cargo_approach:    .res 1           ; DRONE_APPROACH_* toward centre
+ghij_rr:           .res 1           ; 0..3 next stack tile
+mine_armed:        .res 1           ; 1 = centre is lethal
 
 ; Mode-local timers / scratch
 mode_timer:     .res 1

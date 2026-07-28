@@ -413,42 +413,23 @@ rail_col_rows:
     rts
 .endproc
 
-; Colour HUD segments: score white, health blue, ammo red, level/lives white.
+; Colour HUD: score white, progress cyan, rest white.
 .proc hud_color_static
-    ldx #HUD_SCORE_COL
-hud_sc:
+    ldx #0
+hud_all:
+    cpx #HUD_PROGRESS_COL
+    bcc hud_white
+    cpx #HUD_PROGRESS_COL + HUD_PROGRESS_LEN
+    bcs hud_white
+    lda #COL_CYAN
+    jmp hud_put
+hud_white:
     lda #COL_WHITE
-    ldy #HUD_ROW
-    jsr screen_color_xy
-    inx
-    cpx #HUD_SCORE_COL + HUD_SCORE_LEN
-    bcc hud_sc
-
-    ldx #HUD_HEALTH_LABEL_COL
-hud_h:
-    lda #COL_LT_BLUE
-    ldy #HUD_ROW
-    jsr screen_color_xy
-    inx
-    cpx #HUD_AMMO_LABEL_COL
-    bcc hud_h
-
-    ldx #HUD_AMMO_LABEL_COL
-hud_a:
-    lda #COL_RED
-    ldy #HUD_ROW
-    jsr screen_color_xy
-    inx
-    cpx #HUD_LEVEL_LABEL_COL
-    bcc hud_a
-
-    ldx #HUD_LEVEL_LABEL_COL
-hud_l:
-    lda #COL_WHITE
+hud_put:
     ldy #HUD_ROW
     jsr screen_color_xy
     inx
     cpx #40
-    bcc hud_l
+    bcc hud_all
     rts
 .endproc

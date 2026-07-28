@@ -16,131 +16,29 @@
     sta parcel_flip
     sta parcel_drop_mask
     sta parcel_dir
-    sta parcel_level_kills
-    jsr compute_level_total
     rts
 .endproc
 
-; Wave boundary: award leftover parcel; do NOT reset drop marks / level kills.
-.proc wave_reset
+; New level: reset drop marks only (parcels in flight keep running).
+.proc level_reset
     lda #0
     sta parcel_due
-    lda parcel_slot
-    cmp #$FF
-    beq wr_done
-    jsr award_payload
-    ldx parcel_slot
-    jsr objects::retire_and_try_free
-    lda #$FF
-    sta parcel_slot
-wr_done:
-    rts
-.endproc
-
-; Sum kill debt for all waves this level (base + grow*L0). Clobbers mux_*/tmp*.
-.proc compute_level_total
-    ; L0 = min(level, MAX_LEVEL) - 1
-    lda level
-    bne clt_nz
-    lda #1
-clt_nz:
-    cmp #MAX_LEVEL + 1
-    bcc clt_cap
-    lda #MAX_LEVEL
-clt_cap:
-    sec
-    sbc #1
-    sta mux_j                       ; L0
-
-    lda #0
-    sta parcel_level_total
-    sta mux_i                       ; wave index
-clt_wave:
-    ldy mux_i
-    ; C
-    lda wave_grow_c, y
-    ldx mux_j
-    jsr mul_gx                      ; A = grow * L0
-    clc
-    adc wave_base_c, y
-    jsr add_to_level_total
-    ; B
-    ldy mux_i
-    lda wave_grow_b, y
-    ldx mux_j
-    jsr mul_gx
-    clc
-    adc wave_base_b, y
-    jsr add_to_level_total
-    ; A
-    ldy mux_i
-    lda wave_grow_a, y
-    ldx mux_j
-    jsr mul_gx
-    clc
-    adc wave_base_a, y
-    jsr add_to_level_total
-
-    inc mux_i
-    lda mux_i
-    cmp #WAVES_PER_LEVEL
-    bcc clt_wave
-    rts
-.endproc
-
-; A = amount to add into parcel_level_total (saturate 255)
-.proc add_to_level_total
-    clc
-    adc parcel_level_total
-    bcc alt_ok
-    lda #255
-alt_ok:
-    sta parcel_level_total
-    rts
-.endproc
-
-; A * X → A (low 8). Same as waves mul; local to avoid cross-scope.
-.proc mul_gx
-    sta tmp0
-    stx tmp1
-    lda #0
-    ldx #8
-mg_loop:
-    lsr tmp1
-    bcc mg_no
-    clc
-    adc tmp0
-mg_no:
-    asl tmp0
-    dex
-    bne mg_loop
+    sta parcel_drop_mask
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; After a kill: mark due / spawn at ~1/3 and ~2/3 of *level* kill debt.
-; Exactly two marks per level (parcel_drop_mask).
-;   t1 = ceil(total/3)   = (total+2)/3
-;   t2 = ceil(2*total/3) = (2*total+2)/3
-; L1 total ≈ 25 → t1=9, t2=17.
+; After a kill: 2 drops per level at ~⅓ and ~⅔ of level_quota (uses level_kills).
 ; ---------------------------------------------------------------------------
 .proc on_kill
-    ; cumulative level progress
-    lda parcel_level_kills
-    cmp #255
-    beq ok_have
-    inc parcel_level_kills
-ok_have:
-    lda parcel_level_total
+    lda level_quota
     cmp #3
     bcc ok_done
-
-    lda parcel_level_kills
-    sta mux_i                       ; progress
-    lda parcel_level_total
+    lda level_kills
+    sta mux_i
+    lda level_quota
     sta mux_k
 
-    ; t1 = (total + 2) / 3
     lda mux_k
     clc
     adc #2
@@ -161,7 +59,6 @@ t1_div:
     jsr request_drop
 
 try_t2:
-    ; t2 = (2*total + 2) / 3
     lda mux_k
     asl a
     bcc t2_sum

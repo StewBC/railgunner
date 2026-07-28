@@ -27,6 +27,8 @@ dmg_f:  .res SCREEN_W              ; bottom edge F
 dmg_va: .res SCREEN_H              ; left outer A  (col RAIL_COL_LEFT)
 dmg_vb: .res SCREEN_H              ; mid core B   (col RAIL_COL_MID)
 dmg_vc: .res SCREEN_H              ; right outer C (col RAIL_COL_RIGHT)
+; G/H/I/J cargo stacks (0=G,1=H,2=I,3=J)
+ghij_stack: .res 4
 .endscope
 
 .segment "CODE_HI"
@@ -309,6 +311,7 @@ deh_destroy:
     lda #3
     sta rail_data::dmg_e, x
     jsr draw_e
+    ; Full core collapse → game over (lives reserved for centre mines)
     lda #MODE_GAME_OVER
     sta pending_mode
 deh_rts:
