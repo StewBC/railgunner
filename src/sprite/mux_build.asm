@@ -3,6 +3,12 @@
 .segment "OBJECTS"
 .scope sprite_mux_data
 
+; Plan 0 / plan 1 are forced to an exact 2-page stride by the .align 256s.
+; mux_irq::select_front_plan patches every command-load high byte with a
+; single irq_plan_delta of 0 or 2 pages — that only works while field order
+; is byte-identical and plan1_* == plan0_* + 512. Guards after plan1 fail
+; the assemble if a future field insertion breaks the layout.
+;
 ; Plan 0: $C300-$C4FF.
 plan0_cmd_line:       .res MUX_MAX_COMMANDS
 plan0_cmd_lane:       .res MUX_MAX_COMMANDS
@@ -50,6 +56,18 @@ plan1_ref1:           .res 1
 plan1_ref2:           .res 1
 plan1_sequence:       .res 1
 .align 256
+
+; Build-time guard: plan1 must sit exactly 2 pages after plan0 (irq_plan_delta=2).
+; c64m has no .error — reference an undefined symbol so assemble fails loudly.
+.if (plan1_cmd_line - plan0_cmd_line) .ne 512
+    .byte ERR_mux_plan_stride_must_be_512
+.endif
+.if (plan1_cmd_lane - plan0_cmd_lane) .ne 512
+    .byte ERR_mux_plan_lane_field_offset
+.endif
+.if (plan1_cmd_bgprio - plan0_cmd_bgprio) .ne 512
+    .byte ERR_mux_plan_bgprio_field_offset
+.endif
 
 ; $C700 scratch. build_slots is sorted order; other arrays use object slot.
 build_slots:          .res OBJECT_CAPACITY
