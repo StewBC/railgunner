@@ -27,8 +27,6 @@ level:          .res 1
 wave:           .res 1
 
 ; Player (logical slot 0; position also in objects:: SoA)
-player_col:     .res 1              ; char approx (future bullets / HUD)
-player_row:     .res 1
 player_rest_dir:.res 1              ; SPR_DIR_UP or SPR_DIR_DOWN (H-rail rest aim)
 player_swing_t: .res 1              ; 0 = at rest; else mid-swing frames remaining
 player_swing_to:.res 1              ; rest facing after mid frame expires

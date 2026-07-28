@@ -44,7 +44,6 @@
     sta objects::obj_flags, x
 
     jsr install_frame_for_rest
-    jsr sync_char_approx
     jsr objects::mark_dirty
     rts
 .endproc
@@ -210,7 +209,6 @@ store_x:
     sta objects::obj_x_lo, x
     lda tmp1
     sta objects::obj_x_hi, x
-    jsr sync_char_approx
     jsr objects::mark_dirty
     rts
 .endproc
@@ -269,35 +267,6 @@ copy_loop:
     rts
 .endproc
 
-; Rough char cell from sprite top-left (for future bullets / debug)
-.proc sync_char_approx
-    ldx #0
-    ; col ≈ (x_lo + 256*x_hi - 24) / 8
-    lda objects::obj_x_lo, x
-    sec
-    sbc #24
-    sta tmp0
-    lda objects::obj_x_hi, x
-    sbc #0
-    lsr a
-    ror tmp0
-    lsr a
-    ror tmp0
-    lsr a
-    ror tmp0
-    lda tmp0
-    sta player_col
-    ; row ≈ (y - 50) / 8
-    lda objects::obj_y_int, x
-    sec
-    sbc #50
-    lsr a
-    lsr a
-    lsr a
-    sta player_row
-    rts
-.endproc
-
 ; ---------------------------------------------------------------------------
 ; C drone rail blast — full hit only if player is in the 2-cell impact zone
 ; under the drone (same cols as rail::apply_ab_hit). X = C object slot.
@@ -316,7 +285,7 @@ copy_loop:
     jsr px_to_col                   ; A = col0
     sta draw_i
 
-    ; --- player body centre → char col ---
+    ; --- player body centre → char col (recomputed; no cached player_col) ---
     stx tmp2                        ; save drone slot
     ldx #0
     lda objects::obj_x_lo, x
@@ -326,10 +295,10 @@ copy_loop:
     lda objects::obj_x_hi, x
     adc #0
     sta tmp1
-    jsr px_to_col                   ; A = player col
+    jsr px_to_col                   ; A = player centre col
     ldx tmp2                        ; restore drone
 
-    ; in zone if player_col == col0 or col0+1
+    ; in zone if player col == col0 or col0+1
     cmp draw_i
     beq blast_hit
     tax
