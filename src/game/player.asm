@@ -6,10 +6,17 @@
 ; H-stream fire is Step 8.2 (L/R aim); V-stream still only for U/D rest.
 ;
 ; Controls (design brief):
-;   H-rail: L/R move, U/D barrel (arm only); at centre U/D mounts V.
-;   V-rail: U/D move, L/R barrel (8.1b); at centre L/R mounts H.
+;   H-rail: L/R move, U/D barrel (arm only).
+;   V-rail: U/D move, L/R barrel (8.1b).
 ;   Remap: UP↔LEFT, DOWN↔RIGHT on every rail switch.
-;   Intersection: no barrel flip; perpendicular input mounts immediately.
+;   Intersection: no barrel flip.
+;
+; Rail-walk / centre decision (anti-ping-pong):
+;   Travel dir is locked while crossing the gap (parallel stick may update
+;   only before the centre decision). When the step *crosses* the mid point
+;   (GAP_MID / Y_HRAIL), evaluate input once: prefer perpendicular non-coincident
+;   dirs (mount other rail), else reverse-parallel, else keep travel. After that
+;   decision, ignore stick until the player leaves the intersection.
 
 .scope player
 
@@ -25,6 +32,7 @@
     sta player_swing_t
     sta player_swing_to
     sta player_move_dir             ; PLAYER_DIR_NONE until first travel
+    sta player_cross_decided
 
     ldx #0
     lda #OBJ_PLAYER
@@ -119,7 +127,7 @@ barrel_done:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Move on current rail; mount at centre on perpendicular input.
+; Move on current rail; centre mid-crossing decides mount/turn once per walk.
 ; ---------------------------------------------------------------------------
 .proc update_move
     lda player_rail
@@ -132,55 +140,83 @@ move_h:
 
 ; --- Horizontal rail -------------------------------------------------------
 .proc move_on_h
-    ; Perpendicular at intersection → mount V (takes priority this tick)
-    jsr at_intersection
-    bcc h_no_mount
-    lda input_dirs
-    and #JOY_UP
-    beq h_try_down
-    jmp mount_v_up
-h_try_down:
-    lda input_dirs
-    and #JOY_DOWN
-    beq h_no_mount
-    jmp mount_v_down
-
-h_no_mount:
-    ; Parallel: L/R move / coast through centre
-    lda input_dirs
-    and #JOY_RIGHT
-    beq h_check_left
-    lda #PLAYER_DIR_RIGHT
-    sta player_move_dir
-    jmp h_apply
-h_check_left:
-    lda input_dirs
-    and #JOY_LEFT
-    beq h_no_stick
-    lda #PLAYER_DIR_LEFT
-    sta player_move_dir
-    jmp h_apply
-
-h_no_stick:
     jsr load_x_to_tmp
     jsr in_centre_gap_x
-    bcc h_idle
+    bcs h_in_gap
+
+    ; On an arm: clear centre decision; stick fully drives L/R
+    lda #0
+    sta player_cross_decided
+    lda input_dirs
+    and #JOY_RIGHT
+    beq h_arm_left
+    lda #PLAYER_DIR_RIGHT
+    sta player_move_dir
+    jmp step_h
+h_arm_left:
+    lda input_dirs
+    and #JOY_LEFT
+    beq h_idle
+    lda #PLAYER_DIR_LEFT
+    sta player_move_dir
+    jmp step_h
+h_idle:
+    rts
+
+h_in_gap:
+    ; Before centre decision: parallel stick may update travel only
+    lda player_cross_decided
+    bne h_gap_step
+    lda input_dirs
+    and #JOY_RIGHT
+    beq h_gap_left
+    lda #PLAYER_DIR_RIGHT
+    sta player_move_dir
+    jmp h_gap_have_dir
+h_gap_left:
+    lda input_dirs
+    and #JOY_LEFT
+    beq h_gap_coast
+    lda #PLAYER_DIR_LEFT
+    sta player_move_dir
+    jmp h_gap_have_dir
+h_gap_coast:
     lda player_move_dir
-    bne h_apply
+    bne h_gap_have_dir
+    ; No last dir: pick nearer exit
+    jsr load_x_to_tmp
     lda tmp0
     cmp #PLAYER_GAP_MID
     bcc h_force_left
     lda #PLAYER_DIR_RIGHT
     sta player_move_dir
-    jmp h_apply
+    jmp h_gap_have_dir
 h_force_left:
     lda #PLAYER_DIR_LEFT
     sta player_move_dir
 
-h_apply:
-    jmp step_h
-h_idle:
+h_gap_have_dir:
+    jsr side_of_mid_h               ; A = 0 left / 1 right-of-mid
+    sta tmp2
+    jsr step_h
+    lda player_cross_decided
+    bne h_done
+    jsr side_of_mid_h
+    cmp tmp2
+    beq h_done                      ; did not cross mid this step
+    jsr eval_center_h               ; one-shot turn / mount
+    lda #1
+    sta player_cross_decided
+h_done:
     rts
+
+h_gap_step:
+    ; Decision already made — coast locked travel until off intersection
+    lda player_move_dir
+    bne h_gap_step_go
+    rts
+h_gap_step_go:
+    jmp step_h
 .endproc
 
 ; One H-rail step from player_move_dir (LEFT/RIGHT). Also used after mount.
@@ -251,54 +287,78 @@ h_store_x:
 
 ; --- Vertical rail ---------------------------------------------------------
 .proc move_on_v
-    jsr at_intersection
-    bcc v_no_mount
-    lda input_dirs
-    and #JOY_RIGHT
-    beq v_try_left
-    jmp mount_h_right
-v_try_left:
-    lda input_dirs
-    and #JOY_LEFT
-    beq v_no_mount
-    jmp mount_h_left
+    jsr load_y_to_a
+    jsr in_centre_gap_y
+    bcs v_in_gap
 
-v_no_mount:
+    lda #0
+    sta player_cross_decided
     lda input_dirs
     and #JOY_UP
-    beq v_check_down
+    beq v_arm_down
     lda #PLAYER_DIR_UP
     sta player_move_dir
-    jmp v_apply
-v_check_down:
+    jmp step_v
+v_arm_down:
     lda input_dirs
     and #JOY_DOWN
-    beq v_no_stick
+    beq v_idle
     lda #PLAYER_DIR_DOWN
     sta player_move_dir
-    jmp v_apply
+    jmp step_v
+v_idle:
+    rts
 
-v_no_stick:
-    jsr load_y_to_a
-    sta tmp0                        ; save Y for nearer-arm pick
-    jsr in_centre_gap_y
-    bcc v_idle
+v_in_gap:
+    lda player_cross_decided
+    bne v_gap_step
+    lda input_dirs
+    and #JOY_UP
+    beq v_gap_down
+    lda #PLAYER_DIR_UP
+    sta player_move_dir
+    jmp v_gap_have_dir
+v_gap_down:
+    lda input_dirs
+    and #JOY_DOWN
+    beq v_gap_coast
+    lda #PLAYER_DIR_DOWN
+    sta player_move_dir
+    jmp v_gap_have_dir
+v_gap_coast:
     lda player_move_dir
-    bne v_apply
-    lda tmp0
+    bne v_gap_have_dir
+    jsr load_y_to_a
     cmp #PLAYER_Y_HRAIL
     bcc v_force_up
     lda #PLAYER_DIR_DOWN
     sta player_move_dir
-    jmp v_apply
+    jmp v_gap_have_dir
 v_force_up:
     lda #PLAYER_DIR_UP
     sta player_move_dir
 
-v_apply:
-    jmp step_v
-v_idle:
+v_gap_have_dir:
+    jsr side_of_mid_v               ; A = 0 above mid / 1 below-or-eq
+    sta tmp2
+    jsr step_v
+    lda player_cross_decided
+    bne v_done
+    jsr side_of_mid_v
+    cmp tmp2
+    beq v_done
+    jsr eval_center_v
+    lda #1
+    sta player_cross_decided
+v_done:
     rts
+
+v_gap_step:
+    lda player_move_dir
+    bne v_gap_step_go
+    rts
+v_gap_step_go:
+    jmp step_v
 .endproc
 
 ; One V-rail step from player_move_dir (UP/DOWN). Also used after mount.
@@ -346,36 +406,88 @@ v_store_y:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Mount helpers — cancel swing, remap barrel, snap axis, set rail + move_dir,
-; then take one step on the new rail (design: mount begins motion immediately).
+; Centre evaluation — one shot when a step crosses the mid line.
+; Prefer perpendicular (mount), then reverse-parallel; order U,D,L,R in ties.
 ; ---------------------------------------------------------------------------
-.proc mount_v_up
+.proc eval_center_h
+    ; Perpendicular first: UP then DOWN
+    lda input_dirs
+    and #JOY_UP
+    beq ech_down
     lda #PLAYER_DIR_UP
     sta player_move_dir
     jsr do_mount_v
     jmp step_v
-.endproc
-
-.proc mount_v_down
+ech_down:
+    lda input_dirs
+    and #JOY_DOWN
+    beq ech_rev
     lda #PLAYER_DIR_DOWN
     sta player_move_dir
     jsr do_mount_v
     jmp step_v
+ech_rev:
+    ; Reverse parallel if held and not current travel
+    lda player_move_dir
+    cmp #PLAYER_DIR_RIGHT
+    bne ech_was_left
+    lda input_dirs
+    and #JOY_LEFT
+    beq ech_keep
+    lda #PLAYER_DIR_LEFT
+    sta player_move_dir
+ech_keep:
+    rts
+ech_was_left:
+    lda input_dirs
+    and #JOY_RIGHT
+    beq ech_keep
+    lda #PLAYER_DIR_RIGHT
+    sta player_move_dir
+    rts
 .endproc
 
-.proc mount_h_left
+.proc eval_center_v
+    ; Perpendicular first: LEFT then RIGHT (U,D,L,R priority → L before R)
+    lda input_dirs
+    and #JOY_LEFT
+    beq ecv_right
     lda #PLAYER_DIR_LEFT
     sta player_move_dir
     jsr do_mount_h
     jmp step_h
-.endproc
-
-.proc mount_h_right
+ecv_right:
+    lda input_dirs
+    and #JOY_RIGHT
+    beq ecv_rev
     lda #PLAYER_DIR_RIGHT
     sta player_move_dir
     jsr do_mount_h
     jmp step_h
+ecv_rev:
+    lda player_move_dir
+    cmp #PLAYER_DIR_UP
+    bne ecv_was_down
+    lda input_dirs
+    and #JOY_DOWN
+    beq ecv_keep
+    lda #PLAYER_DIR_DOWN
+    sta player_move_dir
+ecv_keep:
+    rts
+ecv_was_down:
+    lda input_dirs
+    and #JOY_UP
+    beq ecv_keep
+    lda #PLAYER_DIR_UP
+    sta player_move_dir
+    rts
 .endproc
+
+; ---------------------------------------------------------------------------
+; Mount: cancel swing, remap barrel, snap to intersection, set rail.
+; Caller sets player_move_dir and steps on the new rail.
+; ---------------------------------------------------------------------------
 
 .proc do_mount_v
     lda #0
@@ -461,6 +573,34 @@ r2h_done:
 at_int_v:
     jsr load_y_to_a
     jmp in_centre_gap_y
+.endproc
+
+; A = 0 if X < GAP_MID, 1 if X >= GAP_MID (right arm / past mid).
+.proc side_of_mid_h
+    jsr load_x_to_tmp
+    lda tmp1
+    bne side_h_hi
+    lda tmp0
+    cmp #PLAYER_GAP_MID
+    bcc side_h_lo
+side_h_hi:
+    lda #1
+    rts
+side_h_lo:
+    lda #0
+    rts
+.endproc
+
+; A = 0 if Y < Y_HRAIL (toward top), 1 if Y >= Y_HRAIL.
+.proc side_of_mid_v
+    jsr load_y_to_a
+    cmp #PLAYER_Y_HRAIL
+    bcc side_v_up
+    lda #1
+    rts
+side_v_up:
+    lda #0
+    rts
 .endproc
 
 ; Load slot-0 X into tmp0/tmp1.

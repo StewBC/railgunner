@@ -32,6 +32,7 @@ player_rest_dir:.res 1              ; SPR_DIR_* rest aim (U/D on H, L/R on V)
 player_swing_t: .res 1              ; 0 = at rest; else mid-swing frames remaining
 player_swing_to:.res 1              ; rest facing after mid frame expires
 player_move_dir:.res 1              ; PLAYER_DIR_*; last travel (coast through centre)
+player_cross_decided: .res 1        ; 1 = centre eval done this rail-walk; clear off intersection
 
 ; Mode-local timers / scratch
 mode_timer:     .res 1
