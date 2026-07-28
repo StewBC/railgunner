@@ -256,10 +256,14 @@ tb_loop:
     beq tb_vert
     cmp #SPR_DIR_DOWN
     beq tb_vert
+    cmp #SPR_DIR_LEFT
+    beq tb_horiz
+    cmp #SPR_DIR_RIGHT
+    beq tb_horiz
     jmp tb_next
 
 tb_vert:
-    ; Bullet 2×2 top-left: X = 24 + col*8 + half*4, Y = 50 + row*8 + phase*2
+    ; X = 24 + col*8 + half*4, Y = 50 + row*8 + phase*2
     lda bullets::bullet_col, x
     sta tmp0
     lda #0
@@ -278,7 +282,7 @@ tb_vert:
     adc #0
     sta tmp1
     lda bullets::bullet_half, x
-    beq tb_half0
+    beq tb_v_half0
     lda tmp0
     clc
     adc #4
@@ -286,9 +290,7 @@ tb_vert:
     lda tmp1
     adc #0
     sta tmp1
-tb_half0:
-    ; tmp0/1 = bullet x0; bullet x1 = x0+1 (2px wide)
-
+tb_v_half0:
     lda bullets::bullet_row, x
     asl a
     asl a
@@ -300,10 +302,54 @@ tb_half0:
     asl a
     clc
     adc tmp2
-    sta tmp2                        ; bullet y0; y1 = y0+1
+    sta tmp2
+    jmp tb_aabb
 
+tb_horiz:
+    ; X = 24 + col*8 + phase*2, Y = 50 + row*8 + half*4
+    lda bullets::bullet_col, x
+    sta tmp0
+    lda #0
+    sta tmp1
+    asl tmp0
+    rol tmp1
+    asl tmp0
+    rol tmp1
+    asl tmp0
+    rol tmp1                        ; col*8
+    lda tmp0
+    clc
+    adc #24
+    sta tmp0
+    lda tmp1
+    adc #0
+    sta tmp1
+    lda bullets::bullet_phase, x
+    asl a
+    clc
+    adc tmp0
+    sta tmp0
+    lda tmp1
+    adc #0
+    sta tmp1
+
+    lda bullets::bullet_row, x
+    asl a
+    asl a
+    asl a
+    clc
+    adc #50
+    sta tmp2
+    lda bullets::bullet_half, x
+    beq tb_h_half0
+    lda tmp2
+    clc
+    adc #4
+    sta tmp2
+tb_h_half0:
+
+tb_aabb:
     ; Rect overlap: bx0<=hit_x1 && bx1>=hit_x0 && by0<=hit_y1 && by1>=hit_y0
-    ; bx0 <= hit_x1
     lda mux_cursor
     cmp tmp1
     bcc tb_next_j
@@ -312,8 +358,6 @@ tb_half0:
     cmp tmp0
     bcc tb_next_j
 tb_bx1:
-    ; bx1 = bx0+1 >= hit_x0  =>  bx0+1 >= hit_x0  => bx0 >= hit_x0-1
-    ; simpler: bx0+1 >= hit_x0
     lda tmp0
     clc
     adc #1
@@ -329,13 +373,11 @@ tb_bx1:
     cmp mux_i
     bcc tb_next_j
 tb_by:
-    ; by0 <= hit_y1
     lda tmp2
     cmp draw_j
     beq tb_by1
     bcs tb_next_j
 tb_by1:
-    ; by1 = by0+1 >= hit_y0
     lda tmp2
     clc
     adc #1

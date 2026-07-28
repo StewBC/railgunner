@@ -1,7 +1,9 @@
-; Character bullets — 4px-aligned with player (half-cell X lanes).
+; Character bullets — 4px-aligned with player (half-cell lanes).
 ;
 ; Vertical aim (H-rail): VL*/VR* glyphs (left OO...... / right ....OO..)
 ;   DOWN: phase 0→1→2→3 then row++; UP: 3→2→1→0 then row--
+; Horizontal aim (V-rail): HT*/HB* glyphs (top / bottom Y half)
+;   RIGHT: phase 0→3 then col++; LEFT: 3→0 then col--
 ; Rate of fire: gun locked for BULLET_CELL_TICKS (= 4 phases × hold) after each
 ; shot so the previous bullet has fully left its first character cell.
 
@@ -10,7 +12,7 @@
 bullet_active:  .res BULLET_MAX
 bullet_col:     .res BULLET_MAX
 bullet_row:     .res BULLET_MAX
-bullet_half:    .res BULLET_MAX     ; 0=left OO......  1=right ....OO..
+bullet_half:    .res BULLET_MAX     ; V: 0=left/1=right  H: 0=top/1=bot
 bullet_dir:     .res BULLET_MAX
 bullet_phase:   .res BULLET_MAX
 bullet_hold:    .res BULLET_MAX
@@ -45,15 +47,31 @@ lock_zero:
     ldx #0
 adv_loop:
     lda bullet_active, x
-    beq adv_next
+    bne adv_active
+    jmp adv_next
+adv_active:
     dec bullet_hold, x
-    bne adv_draw
+    beq adv_tick
+    jmp adv_draw
+adv_tick:
     lda #BULLET_HOLD
     sta bullet_hold, x
     lda bullet_dir, x
     cmp #SPR_DIR_UP
-    beq adv_up
+    bne adv_not_up
+    jmp adv_up
+adv_not_up:
+    cmp #SPR_DIR_DOWN
+    bne adv_not_down
+    jmp adv_down
+adv_not_down:
+    cmp #SPR_DIR_LEFT
+    bne adv_go_right
+    jmp adv_left
+adv_go_right:
+    jmp adv_right
 
+adv_down:
     lda bullet_phase, x
     cmp #3
     bcs down_next_cell
@@ -76,12 +94,43 @@ adv_up:
     jmp adv_draw
 up_next_cell:
     jsr erase_slot
-    ; Finished a cell: leave if already on min row (score is row 0 above)
     lda bullet_row, x
     cmp #BULLET_ROW_MIN
     beq adv_kill
     bcc adv_kill
     dec bullet_row, x
+    lda #3
+    sta bullet_phase, x
+    jmp adv_draw
+
+adv_right:
+    lda bullet_phase, x
+    cmp #3
+    bcs right_next_cell
+    inc bullet_phase, x
+    jmp adv_draw
+right_next_cell:
+    jsr erase_slot
+    inc bullet_col, x
+    lda bullet_col, x
+    cmp #BULLET_COL_MAX + 1
+    bcs adv_kill
+    lda #0
+    sta bullet_phase, x
+    jmp adv_draw
+
+adv_left:
+    lda bullet_phase, x
+    beq left_next_cell
+    dec bullet_phase, x
+    jmp adv_draw
+left_next_cell:
+    jsr erase_slot
+    lda bullet_col, x
+    cmp #BULLET_COL_MIN
+    beq adv_kill
+    bcc adv_kill
+    dec bullet_col, x
     lda #3
     sta bullet_phase, x
     jmp adv_draw
@@ -96,7 +145,9 @@ adv_draw:
 adv_next:
     inx
     cpx #BULLET_MAX
-    bne adv_loop
+    beq adv_done
+    jmp adv_loop
+adv_done:
     rts
 .endproc
 
@@ -117,18 +168,30 @@ adv_next:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Glyph = SC_BULLET_VL0 + half*4 + phase
+; Vertical: SC_BULLET_VL0 + half*4 + phase
+; Horizontal: SC_BULLET_HT0 + half*4 + phase
 ; ---------------------------------------------------------------------------
 .proc draw_slot
     txa
     pha
+    lda bullet_dir, x
+    cmp #SPR_DIR_LEFT
+    beq draw_h
+    cmp #SPR_DIR_RIGHT
+    beq draw_h
+    lda #SC_BULLET_VL0
+    jmp draw_base
+draw_h:
+    lda #SC_BULLET_HT0
+draw_base:
+    sta tmp1                        ; base glyph
     lda bullet_half, x
     asl a
     asl a                           ; *4
     clc
     adc bullet_phase, x
     clc
-    adc #SC_BULLET_VL0
+    adc tmp1
     sta tmp0
     lda bullet_col, x
     pha
@@ -157,13 +220,12 @@ adv_next:
 .proc try_fire
     lda fire_lock
     beq fire_unlocked
-    rts                             ; prior shot still finishing first cell
+    rts
 fire_unlocked:
     lda player_swing_t
     beq fire_swing_ok
-    rts                             ; mid barrel swing
+    rts
 fire_swing_ok:
-    ; No fire in the centre intersection (either rail)
     jsr player::at_intersection
     bcc fire_on_arm
     rts
@@ -172,16 +234,19 @@ fire_on_arm:
     bne fire_held
     rts
 fire_held:
-    ; 8.1a: vertical stream only (U/D rest). L/R stream = Step 8.2.
     lda player_rest_dir
     cmp #SPR_DIR_UP
     beq aim_up
     cmp #SPR_DIR_DOWN
     beq aim_down
+    cmp #SPR_DIR_LEFT
+    beq aim_left
+    cmp #SPR_DIR_RIGHT
+    beq aim_right
     rts
 
 aim_up:
-    jsr player_launch_lane          ; draw_i=col, tmp0=half
+    jsr player_launch_lane          ; draw_i=col, tmp0=half X
     lda #BULLET_LAUNCH_ROW_UP
     sta draw_j
     lda #SPR_DIR_UP
@@ -198,6 +263,27 @@ aim_down:
     sta tmp1
     lda #0
     sta tmp2
+    jmp fire_common
+
+aim_left:
+    jsr player_launch_row           ; draw_j=row, tmp0=half Y
+    lda #BULLET_LAUNCH_COL_LEFT
+    sta draw_i
+    lda #SPR_DIR_LEFT
+    sta tmp1
+    lda #3
+    sta tmp2
+    jmp fire_common
+
+aim_right:
+    jsr player_launch_row
+    lda #BULLET_LAUNCH_COL_RIGHT
+    sta draw_i
+    lda #SPR_DIR_RIGHT
+    sta tmp1
+    lda #0
+    sta tmp2
+    ; fall through
 
 fire_common:
     ldx #0
@@ -216,7 +302,7 @@ slot_found:
     sta bullet_col, x
     lda draw_j
     sta bullet_row, x
-    lda tmp0                        ; half from player_launch_lane
+    lda tmp0
     sta bullet_half, x
     lda tmp1
     sta bullet_dir, x
@@ -224,7 +310,6 @@ slot_found:
     sta bullet_phase, x
     lda #BULLET_HOLD
     sta bullet_hold, x
-    ; Lock gun for one full cell lifetime (4 phases × hold)
     lda #BULLET_CELL_TICKS
     sta fire_lock
     jsr draw_slot
@@ -232,10 +317,9 @@ slot_found:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Aim point → char col + half-cell lane.
+; Aim point → char col + half-cell X lane (vertical stream).
 ;   draw_i = col (0..39)
-;   tmp0   = BULLET_HALF_LEFT (0) or RIGHT (1)
-; Gun pixel X = sprite_x + PLAYER_GUN_X_OFF; cell = (gunX - 24).
+;   tmp0   = BULLET_HALF_LEFT / RIGHT
 ; ---------------------------------------------------------------------------
 .proc player_launch_lane
     ldx #0
@@ -253,8 +337,6 @@ slot_found:
     lda tmp1
     sbc #0
     sta tmp1
-    ; tmp0/tmp1 = gun pixel X relative to left of char col 0
-    ; col = pixel / 8, half = 0 if (pixel & 4) == 0 else 1
     lda tmp0
     and #4
     beq half_left
@@ -263,8 +345,7 @@ slot_found:
 half_left:
     lda #BULLET_HALF_LEFT
 half_store:
-    sta mode_state                  ; temp half
-    ; col = pixel >> 3 (16-bit)
+    sta mode_state
     lda tmp1
     lsr a
     ror tmp0
@@ -279,7 +360,43 @@ half_store:
 col_ok:
     sta draw_i
     lda mode_state
-    sta tmp0                        ; half out
+    sta tmp0
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Aim point → char row + half-cell Y lane (horizontal stream).
+;   draw_j = row (0..24)
+;   tmp0   = BULLET_HALF_TOP / BOT
+; Gun pixel Y = sprite_y + PLAYER_GUN_Y_OFF; cell = (gunY - 50).
+; ---------------------------------------------------------------------------
+.proc player_launch_row
+    ldx #0
+    lda objects::obj_y_int, x
+    clc
+    adc #PLAYER_GUN_Y_OFF
+    sec
+    sbc #50
+    sta tmp0                        ; pixel Y relative to char row 0
+    and #4
+    beq half_top
+    lda #BULLET_HALF_BOT
+    bne half_y_store
+half_top:
+    lda #BULLET_HALF_TOP
+half_y_store:
+    sta mode_state
+    lda tmp0
+    lsr a
+    lsr a
+    lsr a                           ; row
+    cmp #SCREEN_H
+    bcc row_ok
+    lda #SCREEN_H - 1
+row_ok:
+    sta draw_j
+    lda mode_state
+    sta tmp0
     rts
 .endproc
 
@@ -312,8 +429,6 @@ find_next:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Destroy bullet slot X: erase glyph, free slot. Preserves Y; clobbers A.
-; ---------------------------------------------------------------------------
 .proc destroy
     lda bullet_active, x
     beq destroy_done
@@ -330,9 +445,9 @@ destroy_done:
 .proc half_from_glyph
     cmp #SC_BULLET_VL0
     bcc not_v
-    cmp #SC_BULLET_HT0              ; $F8 — first horizontal glyph
+    cmp #SC_BULLET_HT0
     bcs not_v
-    cmp #SC_BULLET_VR0              ; $F4
+    cmp #SC_BULLET_VR0
     bcc half_l
     lda #BULLET_HALF_RIGHT
     sta tmp0

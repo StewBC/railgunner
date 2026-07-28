@@ -420,20 +420,30 @@ SC_UDG_BAR_COUNT = 4
 SC_UDG_COUNT    = 43                ; life+rails+dmg+bars+bullets
 
 ; ---------------------------------------------------------------------------
-; Bullets (character stream; H-rail vertical aim for Stage 2)
+; Bullets (character stream; V and H axes, 4px half-lanes)
 ; ---------------------------------------------------------------------------
 BULLET_MAX              = 16
 BULLET_HOLD             = 1
 BULLET_PHASES           = 4
 BULLET_CELL_TICKS       = BULLET_HOLD * BULLET_PHASES
+; Vertical stream: half = X lane; horizontal: half = Y lane (same 0/1)
 BULLET_HALF_LEFT        = 0
 BULLET_HALF_RIGHT       = 1
-; 3-row H-rail at rows 12–14 (d/e/f); fire from adjacent cells
+BULLET_HALF_TOP         = 0
+BULLET_HALF_BOT         = 1
+; 3-row H-rail at rows 12–14; fire from adjacent cells
 BULLET_RAIL_ROW_TOP     = 12
 BULLET_RAIL_ROW_BOT     = 14
 BULLET_LAUNCH_ROW_UP    = 11
 BULLET_LAUNCH_ROW_DOWN  = 15
 BULLET_ROW_MIN          = 1
+; 3-col V-rail at cols 18–20; fire from adjacent cells
+BULLET_LAUNCH_COL_LEFT  = 17
+BULLET_LAUNCH_COL_RIGHT = 21
+BULLET_COL_MIN          = 0
+BULLET_COL_MAX          = 39
+; Gun Y offset for V-arm aim (sprite top → tip); keeps (y+off-50) on 4px grid
+PLAYER_GUN_Y_OFF        = 10
 BULLET_COLOR            = COL_YELLOW
 
 ; ---------------------------------------------------------------------------
