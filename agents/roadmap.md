@@ -10,8 +10,8 @@ docs; this file only keeps the map coherent.
 (index). Optional post-stage reviews: [`reviews/`](reviews/) (not a work queue).
 
 **Current phase:** Stage 2 (Vertical slice) **done** (steps **1–7**). Active
-work is **Step 8 — full player + session / spawn** (“make it a game”); **8.0–8.1a
-done**, next **8.1b** (V-arm free travel polish + L/R barrel mid-swing). Do not
+work is **Step 8 — full player + session / spawn** (“make it a game”); **8.0–8.1b
+done**, next **8.2** (horizontal bullet stream / full player fire). Do not
 start bonuses, ammo scarcity, disk high scores, or audio until the Step 8 exit
 criteria hold (see below). Post–step-7 code hygiene is archived under
 [`reviews/2026-07-27-clade-post-step7.md`](reviews/2026-07-27-clade-post-step7.md).
@@ -48,7 +48,7 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Game / stage init | Minimal | Session vars reset; playfield draw; player on H-rail |
 | Play | **Combat slice** | Player H-arm, V bullets, C top→H-rail, collision; death → next life / game over |
 | Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
-| Player sprite / move | **Both rails (8.1a)** | Mount both ways + 90° remap; V travel works; **L/R mid-swing = 8.1b** |
+| Player sprite / move | **Full cross (8.1)** | Mount both ways, 90° remap, V travel, L/R + U/D barrel mid-swing |
 | Bullets / charset UDGs | **V stream only** | H-rail fire up/down; H-stream UDGs reserved; **L/R fire = Step 8.2** |
 | Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch; re-prove under multi-drone mux load |
 | Score / thin HUD | **Done (thin)** | Hit→point; health/lives/level live; ammo template still static |
@@ -135,7 +135,7 @@ playtest pass says “this is fun enough to build on.”
 |----|------|--------|
 | ~~**8.0**~~ | ~~**Stop auto-spawning**~~ **done** | `drones::init` empty; no ensure on update/collision. `spawn_*` / `ensure_*` kept for 8.3+. |
 | ~~**8.1a**~~ | ~~**V-arm mount + barrel remap**~~ **done** | `player_rail`; centre mount H↔V; remap UP↔LEFT / DOWN↔RIGHT; no barrel flip in intersection; U/D step on V after mount. |
-| **8.1b** | **V-arm free travel + L/R barrel** | L/R barrel rest with mid-swing on V-arm (mirror of H U/D flip). V travel already works from 8.1a — polish clamps/feel if needed. |
+| ~~**8.1b**~~ | ~~**V-arm L/R barrel mid-swing**~~ **done** | Clockwise L→U→R / R→D→L; same mid-frame timing as H. |
 | **8.2** | **Shooting on the other arm** | Horizontal bullet stream + launch when barrel L/R at rest on V-arm. Same occupancy ROF. **Checkpoint:** full player experience (move + fire both arms) with manual/test spawns. |
 | **8.3** | **Multi-direction C pressure** | Edges → V-rail and keep top/bottom → H-rail. **C-only first.** Light multi-C under a dumb fixed cadence / one-or-two-quadrant spawner is enough — prove feel + mux load. Full tables later. |
 | **8.4** | **Levels / waves as data** | First tables: **3–5 waves / level**, short level-1 only. Drones-per-wave or clear condition; counters drive content. Mode hooks leave stub land. Expand count only when 8.7 asks for more. |

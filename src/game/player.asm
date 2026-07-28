@@ -1,6 +1,6 @@
 ; Player — logical object slot 0.
 ; Step 8.1a: H + V rails, centre mount both ways, 90° barrel remap.
-; Step 8.1b will add L/R mid-swing on V-arm (remap already leaves L/R facing).
+; Step 8.1b: L/R mid-swing on V-arm (mirror of H U/D flip).
 ;
 ; Fire: bullets::try_fire when barrel at rest and on an arm (not intersection).
 ; H-stream fire is Step 8.2 (L/R aim); V-stream still only for U/D rest.
@@ -74,7 +74,8 @@
 
 ; ---------------------------------------------------------------------------
 ; Barrel: mid-swing advance, or arm-only opposite flip. Never at intersection.
-; 8.1a: H-rail U/D flip only; V-rail flips deferred to 8.1b.
+; Clockwise cycle U→R→D→L→U: H uses U/D rest (U→R→D, D→L→U);
+; V uses L/R rest (L→U→R, R→D→L).
 ; ---------------------------------------------------------------------------
 .proc update_barrel
     lda player_swing_t
@@ -92,8 +93,8 @@ barrel_rest:
     bcs barrel_done                 ; C set = in intersection → no flip
 
     lda player_rail
-    cmp #PLAYER_RAIL_H
-    bne barrel_done                 ; V-arm barrel = 8.1b
+    cmp #PLAYER_RAIL_V
+    beq barrel_v
 
     ; H-rail: flip only on opposite of rest aim
     lda player_rest_dir
@@ -102,14 +103,11 @@ barrel_rest:
     lda input_dirs
     and #JOY_DOWN
     beq barrel_done
-    lda #SPR_DIR_RIGHT
-    jsr install_frame_a
-    lda #PLAYER_SWING_MID_FRAMES
-    sta player_swing_t
+    ; U → mid R → D
     lda #SPR_DIR_DOWN
     sta player_swing_to
-    jsr objects::mark_dirty
-    rts
+    lda #SPR_DIR_RIGHT
+    jmp start_swing_mid_a
 
 rest_is_down:
     cmp #SPR_DIR_DOWN
@@ -117,14 +115,48 @@ rest_is_down:
     lda input_dirs
     and #JOY_UP
     beq barrel_done
+    ; D → mid L → U
+    lda #SPR_DIR_UP
+    sta player_swing_to
     lda #SPR_DIR_LEFT
+    jmp start_swing_mid_a
+
+barrel_v:
+    ; V-rail: L/R rest, opposite stick starts mid-swing
+    lda player_rest_dir
+    cmp #SPR_DIR_LEFT
+    bne rest_is_right
+    lda input_dirs
+    and #JOY_RIGHT
+    beq barrel_done
+    ; L → mid U → R
+    lda #SPR_DIR_RIGHT
+    sta player_swing_to
+    lda #SPR_DIR_UP
+    jmp start_swing_mid_a
+
+rest_is_right:
+    cmp #SPR_DIR_RIGHT
+    bne barrel_done
+    lda input_dirs
+    and #JOY_LEFT
+    beq barrel_done
+    ; R → mid D → L
+    lda #SPR_DIR_LEFT
+    sta player_swing_to
+    lda #SPR_DIR_DOWN
+    jmp start_swing_mid_a
+
+barrel_done:
+    rts
+.endproc
+
+; A = mid-frame SPR_DIR_*; player_swing_to already set to settle facing.
+.proc start_swing_mid_a
     jsr install_frame_a
     lda #PLAYER_SWING_MID_FRAMES
     sta player_swing_t
-    lda #SPR_DIR_UP
-    sta player_swing_to
     jsr objects::mark_dirty
-barrel_done:
     rts
 .endproc
 
