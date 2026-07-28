@@ -163,9 +163,8 @@ fire_unlocked:
     beq fire_swing_ok
     rts                             ; mid barrel swing
 fire_swing_ok:
-    ; No fire while crossing the V-rail (centre gap between arm rests)
-    jsr player::load_x_to_tmp
-    jsr player::in_centre_gap
+    ; No fire in the centre intersection (either rail)
+    jsr player::at_intersection
     bcc fire_on_arm
     rts
 fire_on_arm:
@@ -173,6 +172,7 @@ fire_on_arm:
     bne fire_held
     rts
 fire_held:
+    ; 8.1a: vertical stream only (U/D rest). L/R stream = Step 8.2.
     lda player_rest_dir
     cmp #SPR_DIR_UP
     beq aim_up

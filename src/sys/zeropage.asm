@@ -27,10 +27,11 @@ level:          .res 1
 wave:           .res 1
 
 ; Player (logical slot 0; position also in objects:: SoA)
-player_rest_dir:.res 1              ; SPR_DIR_UP or SPR_DIR_DOWN (H-rail rest aim)
+player_rail:    .res 1              ; PLAYER_RAIL_H or PLAYER_RAIL_V
+player_rest_dir:.res 1              ; SPR_DIR_* rest aim (U/D on H, L/R on V)
 player_swing_t: .res 1              ; 0 = at rest; else mid-swing frames remaining
 player_swing_to:.res 1              ; rest facing after mid frame expires
-player_move_dir:.res 1              ; PLAYER_DIR_*; last H travel (coast through centre)
+player_move_dir:.res 1              ; PLAYER_DIR_*; last travel (coast through centre)
 
 ; Mode-local timers / scratch
 mode_timer:     .res 1

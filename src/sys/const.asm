@@ -176,7 +176,7 @@ SCORE_MAX1       = $42
 SCORE_MAX2       = $0F
 
 ; ---------------------------------------------------------------------------
-; Player (Stage 2 horizontal-arm slice)
+; Player (full cross — Step 8.1+)
 ; VIC sprite top-left. Char col C left edge ≈ 24+C*8.
 ; Gun aim X = sprite_x + PLAYER_GUN_X_OFF (centre of 24px sprite).
 ; 4px steps on a grid so aim hits left 2px or right 2px of a char cell:
@@ -186,23 +186,34 @@ PLAYER_MOVE_STEP        = 4
 PLAYER_SWING_MID_FRAMES = 5
 ; H-rail mid (layout): sit on the E row band.
 PLAYER_Y_HRAIL          = 146
+; V-rail centerline X (4px grid; gun ≈ col 19). In H centre gap for mount.
+PLAYER_X_VRAIL          = 169
 ; Aim X = sprite_x + GUN_OFF. One coordinate for move, clamp, fire, and draw.
 ; GUN_OFF 11: barrel tip (~px 10–11) meets half-cell bullet lanes on the 4px grid.
 PLAYER_GUN_X_OFF        = 11
 ;
-; Rail stops (4px grid from X_MIN). Left good; mid-L / mid-R / full-R each +4
-; from prior, then +1 so ship sits on the bullet stream (same gun world X as
-; the old 12/152/180/328 + GUN 12 setup).
+; H-rail stops (4px grid from X_MIN). Centre gap (LEFT_MAX, RIGHT_MIN) is the
+; intersection in X — walk-through on H, mount zone for V.
 PLAYER_X_MIN            = 13
 PLAYER_X_MAX            = 329
 PLAYER_ARM_LEFT_MAX     = 153
 PLAYER_ARM_RIGHT_MIN    = 181
 PLAYER_X_START          = 153
 PLAYER_GAP_MID          = 167
+; V-rail stops (4px grid ≡ 2 mod 4, matching Y_HRAIL). Centre gap in Y.
+PLAYER_Y_MIN            = 58
+PLAYER_Y_MAX            = 234
+PLAYER_ARM_TOP_MAX      = 130
+PLAYER_ARM_BOT_MIN      = 162
+; player_rail
+PLAYER_RAIL_H           = 0
+PLAYER_RAIL_V           = 1
 ; player_move_dir values
 PLAYER_DIR_NONE         = 0
 PLAYER_DIR_RIGHT        = 1
 PLAYER_DIR_LEFT         = 2
+PLAYER_DIR_UP           = 3
+PLAYER_DIR_DOWN         = 4
 SPR_COLOR_PLAYER        = COL_GREEN
 
 ; Attract loop: text ↔ graphics (PAL 50Hz × 15s)
