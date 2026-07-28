@@ -15,3 +15,6 @@ assets/sprites/*.bin
 *~
 .idea/
 .vscode/
+
+# Tester log
+TODO.txt
