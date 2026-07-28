@@ -18,7 +18,9 @@
     sta VIC_MEM
 
     jsr screen_draw_playfield
-    jsr rail::reset                 ; fresh H-rail damage map
+    ; Rail damage persists across levels; only game_init / next_life call
+    ; rail::reset. Re-stamp scars after the pristine playfield draw.
+    jsr rail::redraw_from_state
     jsr bullets::init
     jsr video::init_sprite_palette
     jsr video::install_sprite_frames

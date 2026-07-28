@@ -14,9 +14,10 @@
     lda lives
     beq life_to_gameover
 
-    ; Another life: full health, re-enter stage (score kept)
+    ; Another life: full health, repaired rails, re-enter stage (score kept)
     lda #START_HEALTH
     sta health
+    jsr rail::reset
     lda #MODE_STAGE_INIT
     jsr mode_set
     rts

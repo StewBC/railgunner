@@ -23,6 +23,7 @@
     ; Fresh object pool each session (slot 0 = player; rest free)
     jsr objects::init
     jsr video::init_sprite_palette
+    jsr rail::reset                 ; new game: pristine rails
 
     ; Fall through immediately to stage init (no multi-frame work yet)
     lda #MODE_STAGE_INIT

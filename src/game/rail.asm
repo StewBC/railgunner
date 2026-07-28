@@ -3,6 +3,9 @@
 ;   From bottom (UP): F (outer) → E (core)
 ;   E destroyed → game over (rail destroyed)
 ; One strike damages two independent columns (ship wider than 8px).
+;
+; IMPORTANT: screen_put_xy clobbers tmp0–tmp2. Approach is kept in draw_j
+; (not tmp*) for the whole strike.
 
 .segment "OBJECTS"
 .scope rail_data
@@ -27,10 +30,37 @@ clr:
     rts
 .endproc
 
+; Re-paint damage glyphs after a full playfield redraw (e.g. next level).
+; Undamaged cells (0) stay as draw_playfield left them.
+.proc redraw_from_state
+    ldx #0
+rfs_loop:
+    stx draw_i
+    lda rail_data::dmg_d, x
+    beq rfs_e
+    jsr draw_d
+    ldx draw_i
+rfs_e:
+    lda rail_data::dmg_e, x
+    beq rfs_f
+    jsr draw_e
+    ldx draw_i
+rfs_f:
+    lda rail_data::dmg_f, x
+    beq rfs_next
+    jsr draw_f
+    ldx draw_i
+rfs_next:
+    inx
+    cpx #SCREEN_W
+    bne rfs_loop
+    rts
+.endproc
+
 ; X = drone slot → two columns under body; outer edge from approach dir.
 .proc apply_ab_hit
     lda objects::obj_user, x
-    sta tmp2                        ; approach (DOWN vs UP)
+    sta draw_j                      ; approach — safe across put_xy
     lda objects::obj_x_lo, x
     clc
     adc #DRONE_IMPACT_X_OFF
@@ -76,15 +106,14 @@ ab0:
     jmp damage_col
 .endproc
 
-; Outer edge from approach in tmp2, then E. draw_i = col.
+; Outer edge from draw_j approach, then E. draw_i = col.
 .proc damage_col
-    lda tmp2
+    lda draw_j
     cmp #DRONE_APPROACH_UP
     beq dmg_from_bot
     jmp dmg_from_top
 .endproc
 
-; From top: D then E (original path).
 .proc dmg_from_top
     ldx draw_i
     lda rail_data::dmg_d, x
@@ -114,7 +143,6 @@ dft_e_step:
     jmp damage_e
 .endproc
 
-; From bottom: F then E (hit lands on underside of H-rail).
 .proc dmg_from_bot
     ldx draw_i
     lda rail_data::dmg_f, x
