@@ -1,16 +1,12 @@
 ; Drone spawn + motion.
-; Step 8.3: dumb multi-direction C cadence (not the full spawn engine).
-; C only; A/B + wave tables later. spawn_c_approach is the main API.
+; Step 8.3–8.4: multi-direction C driven by wave table (quota/cadence/mask).
+; C only; A/B later. spawn_c_approach is the main spawn API.
 
 .scope drones
 
 ; ---------------------------------------------------------------------------
 .proc init
-    lda #1
-    sta drone_spawn_timer           ; first spawn soon after stage enter
-    lda #0
-    sta drone_spawn_seq
-    sta drone_spawn_lane
+    ; waves::load sets timer/seq/lane from the current wave row
     rts
 .endproc
 
@@ -43,7 +39,8 @@ upd_next:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Cadence: every DRONE_SPAWN_CADENCE ticks, try one C if under cap.
+; Cadence from wave_cadence; stop when wave_spawned >= wave_quota.
+; Approach chosen from wave_approach_mask (seq walks 0..3).
 ; ---------------------------------------------------------------------------
 .proc spawn_tick
     lda drone_spawn_timer
@@ -51,19 +48,53 @@ upd_next:
     dec drone_spawn_timer
     rts
 spawn_try:
-    lda #DRONE_SPAWN_CADENCE
+    lda wave_cadence
     sta drone_spawn_timer
+    lda wave_spawned
+    cmp wave_quota
+    bcs spawn_tick_done             ; quota full — wait for clear
     jsr count_active_c
-    cmp #DRONE_C_MAX_ACTIVE
+    cmp wave_max_active
     bcs spawn_tick_done
-    lda drone_spawn_seq
-    and #3
+    jsr pick_approach_from_mask     ; A = DRONE_APPROACH_*
     jsr spawn_c_approach
+    bcs spawn_tick_done             ; alloc fail
+    inc wave_spawned
     inc drone_spawn_seq
-    inc drone_spawn_lane            ; alternate lane next time
+    inc drone_spawn_lane
 spawn_tick_done:
     rts
 .endproc
+
+; A = approach dir allowed by wave_approach_mask (fallback DOWN).
+.proc pick_approach_from_mask
+    lda drone_spawn_seq
+    and #3
+    sta tmp0                        ; start index
+    lda #4
+    sta tmp1                        ; tries
+pam_loop:
+    lda tmp0
+    and #3
+    tax
+    lda approach_bit, x
+    and wave_approach_mask
+    bne pam_found
+    inc tmp0
+    dec tmp1
+    bne pam_loop
+    lda #DRONE_APPROACH_DOWN
+    rts
+pam_found:
+    txa                             ; X = approach index 0..3
+    rts
+.endproc
+
+approach_bit:
+    .byte WAVE_EDGE_DOWN
+    .byte WAVE_EDGE_UP
+    .byte WAVE_EDGE_RIGHT
+    .byte WAVE_EDGE_LEFT
 
 ; A = number of active C drones (not retiring).
 .proc count_active_c

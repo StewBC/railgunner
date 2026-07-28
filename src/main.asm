@@ -94,6 +94,7 @@ mux_build_failed:
 .include "game/rail.asm"
 .include "game/player.asm"
 .include "game/drones.asm"
+.include "game/waves.asm"
 .include "game/collision.asm"
 .include "game/stage.asm"
 .include "game/play.asm"
@@ -116,3 +117,4 @@ mux_build_failed:
 .include "data/sprites.asm"
 .include "data/charset_bullets.asm"
 .include "data/charset_bars.asm"
+.include "data/waves.asm"

@@ -22,9 +22,14 @@ play_logic:
     jsr drones::update
     jsr bullets::update
     jsr collision::update
+    ; Wave clear only if combat did not already request death / rail-loss
+    lda pending_mode
+    bne play_hud
+    jsr waves::check_clear
+play_hud:
     jsr score::paint_if_dirty
     jsr hud::paint_status_if_dirty
-    ; Apply deferred death / rail-destroy after combat + mux-safe window
+    ; Apply deferred mode after combat + mux-safe window
     lda pending_mode
     beq play_done
     jsr mode_set
@@ -35,12 +40,12 @@ play_done:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Next wave / next level stubs (roadmap hooks; not reached in scaffold path)
+; Next wave / next level (driven by wave quota clear)
 ; ---------------------------------------------------------------------------
 .proc next_wave_enter
     lda #COL_LT_GREEN
     sta VIC_BORDER
-    ; TODO: "WAVE CLEAR" message + pause
+    ; TODO: "WAVE CLEAR" message + pause (Polish / 9.2)
     inc wave
     lda wave
     cmp #WAVES_PER_LEVEL
@@ -49,6 +54,7 @@ play_done:
     jsr mode_set
     rts
 next_wave_more:
+    jsr waves::load
     lda #MODE_PLAY
     jsr mode_set
     rts

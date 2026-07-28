@@ -158,7 +158,17 @@ START_LIVES     = 3                 ; total lives; max show HUD_LIVES_MAX_SHOW (
 START_HEALTH    = 32                ; 8 bar chars × 4 steps (2px each)
 START_AMMO      = 8
 START_LEVEL     = 1
-WAVES_PER_LEVEL = 20
+; Level-1 table length (Step 8.4). Grow in 8.7 — do not pad empty waves.
+WAVES_PER_LEVEL = 4
+; approach_mask bits for wave rows
+WAVE_EDGE_DOWN  = %00000001
+WAVE_EDGE_UP    = %00000010
+WAVE_EDGE_RIGHT = %00000100         ; from left
+WAVE_EDGE_LEFT  = %00001000         ; from right
+WAVE_EDGE_TB    = WAVE_EDGE_DOWN | WAVE_EDGE_UP
+WAVE_EDGE_ALL   = WAVE_EDGE_TB | WAVE_EDGE_RIGHT | WAVE_EDGE_LEFT
+; wave table row: quota, cadence, max_active, approach_mask
+WAVE_ROW_BYTES  = 4
 
 ; C blast (player only). Damage only if player body col is in the impact
 ; footprint (same 2 char cells as A/B rail strike — almost a direct hit).
