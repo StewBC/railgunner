@@ -40,8 +40,9 @@ upd_next:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; C cadence from wave_cadence; stop when wave_spawned >= wave_quota.
+; C cadence from wave_cadence; spawn while kills_c < quota.
 ; ---------------------------------------------------------------------------
+; Spawn C until kill target met (replacements if some rail-suicide).
 .proc spawn_tick_c
     lda drone_spawn_timer
     beq stc_try
@@ -50,16 +51,15 @@ upd_next:
 stc_try:
     lda wave_cadence
     sta drone_spawn_timer
-    lda wave_spawned
+    lda wave_kills_c
     cmp wave_quota
-    bcs stc_done
+    bcs stc_done                    ; enough C kills already
     jsr count_active_c
     cmp wave_max_active
     bcs stc_done
     jsr pick_approach_from_mask
     jsr spawn_c_approach
     bcs stc_done
-    inc wave_spawned
     inc drone_spawn_seq
     inc drone_spawn_lane
 stc_done:
@@ -67,8 +67,8 @@ stc_done:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; A/B: slower cadence, max WAVE_AB_MAX live, top/bottom only (H-rail).
-; Prefer finishing B quota before A (chaff hunt vs structure).
+; A/B: spawn until kill targets met; max WAVE_AB_MAX live; top/bottom only.
+; Prefer B kills before introducing A.
 ; ---------------------------------------------------------------------------
 .proc spawn_tick_ab
     lda wave_ab_timer
@@ -78,19 +78,18 @@ stc_done:
 stab_try:
     lda #WAVE_AB_CADENCE
     sta wave_ab_timer
-    ; any A/B left to spawn?
-    lda wave_b_spawned
+    lda wave_kills_b
     cmp wave_b_quota
     bcc stab_have
-    lda wave_a_spawned
+    lda wave_kills_a
     cmp wave_a_quota
     bcs stab_done
 stab_have:
     jsr count_active_ab
     cmp #WAVE_AB_MAX
     bcs stab_done
-    ; kind: B until b_quota done, else A
-    lda wave_b_spawned
+    ; kind: B until b kill quota done, else A
+    lda wave_kills_b
     cmp wave_b_quota
     bcc stab_b
     lda #OBJ_DRONE_A
@@ -98,9 +97,8 @@ stab_have:
 stab_b:
     lda #OBJ_DRONE_B
 stab_spawn:
-    sta tmp0                        ; kind for spawn_ab
-    sta tmp1                        ; keep for counters (tmp0 may clobber)
-    ; approach: alternate top/bottom only
+    sta tmp0
+    sta tmp1
     lda drone_spawn_lane
     and #1
     beq stab_down
@@ -109,16 +107,8 @@ stab_spawn:
 stab_down:
     lda #DRONE_APPROACH_DOWN
 stab_go:
-    jsr spawn_ab_approach           ; A=approach, tmp0=kind
+    jsr spawn_ab_approach
     bcs stab_done
-    lda tmp1
-    cmp #OBJ_DRONE_A
-    beq stab_inc_a
-    inc wave_b_spawned
-    jmp stab_lane
-stab_inc_a:
-    inc wave_a_spawned
-stab_lane:
     inc drone_spawn_lane
 stab_done:
     rts
@@ -418,6 +408,8 @@ sab_flags:
     beq abh_kill
     rts                             ; still alive
 abh_kill:
+    ldx mode_state
+    jsr waves::note_kill            ; wave clear counts kills only
     ldx mode_state
     jsr objects::retire_and_try_free
     rts

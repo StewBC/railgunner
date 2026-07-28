@@ -1,7 +1,7 @@
 ; Wave / level tables (Step 8.4–8.5).
-; Row: c_quota, c_cadence, max_c, approach_mask, b_quota, a_quota
-; Level 1: teach C → open cross → introduce slow B → A + denser C.
-; A/B only approach top/bottom (H-rail). Tune in 8.7.
+; Row: c_kills, c_cadence, max_c, approach_mask, b_kills, a_kills
+; Quotas are *kills required* (rail-suicides do not count; spawner replaces).
+; Level 1: teach C → open cross → B → A. A/B top/bottom only. Tune in 8.7.
 
 level1_wave_table:
     ; W0: C top only, single-file — learn

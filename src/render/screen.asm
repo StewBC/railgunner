@@ -397,13 +397,17 @@ h14_put:
     cmp #40
     bcc h14
 
-    ; Colour whole rail structure mid-gray for now
-    lda #COL_GRAY
-    ldy #1
+    ; Colour whole rail structure mid-gray (screen_color_row clobbers Y —
+    ; row index must live in draw_i, not Y).
+    lda #1
+    sta draw_i
 rail_col_rows:
+    ldy draw_i
+    lda #COL_GRAY
     jsr screen_color_row
-    iny
-    cpy #25
+    inc draw_i
+    lda draw_i
+    cmp #25
     bcc rail_col_rows
     jsr hud_color_static            ; restore HUD colours after full-row paints
     rts

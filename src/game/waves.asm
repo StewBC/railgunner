@@ -1,4 +1,5 @@
-; Wave state — load table row into ZP; detect wave clear → next wave.
+; Wave state — load table row; clear on *kills*, not rail-suicides.
+; Quotas = kills required. Spawn until kill targets met (replacements OK).
 
 .scope waves
 
@@ -9,7 +10,6 @@
     bcc load_idx
     lda #WAVES_PER_LEVEL - 1
 load_idx:
-    ; index * 6 = *4 + *2
     sta tmp0
     asl a
     sta tmp1                        ; *2
@@ -43,31 +43,31 @@ load_idx:
     sta wave_a_quota
 
     lda #0
-    sta wave_spawned
-    sta wave_b_spawned
-    sta wave_a_spawned
+    sta wave_kills_c
+    sta wave_kills_b
+    sta wave_kills_a
     sta drone_spawn_seq
     sta drone_spawn_lane
     lda #1
     sta drone_spawn_timer
-    lda #WAVE_AB_CADENCE / 2        ; first A/B a bit after C starts
+    lda #WAVE_AB_CADENCE / 2
     sta wave_ab_timer
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Clear when all quotas spawned and no A/B/C remain.
+; Clear when kill targets met and field empty. Suicides do not count.
 ; ---------------------------------------------------------------------------
 .proc check_clear
     lda pending_mode
     bne cc_done
-    lda wave_spawned
+    lda wave_kills_c
     cmp wave_quota
     bcc cc_done
-    lda wave_b_spawned
+    lda wave_kills_b
     cmp wave_b_quota
     bcc cc_done
-    lda wave_a_spawned
+    lda wave_kills_a
     cmp wave_a_quota
     bcc cc_done
     jsr drones::count_active_drones
@@ -76,6 +76,29 @@ load_idx:
     lda #MODE_NEXT_WAVE
     sta pending_mode
 cc_done:
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Register a bullet kill for drone slot X (kind from obj_kind).
+; ---------------------------------------------------------------------------
+.proc note_kill
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_C
+    beq nk_c
+    cmp #OBJ_DRONE_B
+    beq nk_b
+    cmp #OBJ_DRONE_A
+    beq nk_a
+    rts
+nk_c:
+    inc wave_kills_c
+    rts
+nk_b:
+    inc wave_kills_b
+    rts
+nk_a:
+    inc wave_kills_a
     rts
 .endproc
 

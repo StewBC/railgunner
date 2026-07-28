@@ -38,15 +38,15 @@ player_cross_decided: .res 1        ; 1 = centre eval done this rail-walk; clear
 drone_spawn_timer: .res 1           ; ticks until next spawn attempt
 drone_spawn_seq:   .res 1           ; 0..3 approach rotation
 drone_spawn_lane:  .res 1           ; alternate left/right or top/bot lane
-wave_quota:        .res 1           ; C to spawn this wave
-wave_spawned:      .res 1           ; C spawned so far this wave
+wave_quota:        .res 1           ; C *kills* required to clear
+wave_kills_c:      .res 1           ; C kills this wave (bullet only)
 wave_cadence:      .res 1           ; C ticks between spawn attempts
 wave_max_active:   .res 1           ; concurrent C cap
 wave_approach_mask:.res 1           ; WAVE_EDGE_* bits (C)
-wave_b_quota:      .res 1           ; B (medium) to spawn
-wave_a_quota:      .res 1           ; A (large) to spawn
-wave_b_spawned:    .res 1
-wave_a_spawned:    .res 1
+wave_b_quota:      .res 1           ; B *kills* required
+wave_a_quota:      .res 1           ; A *kills* required
+wave_kills_b:      .res 1
+wave_kills_a:      .res 1
 wave_ab_timer:     .res 1           ; separate slower cadence for A/B
 
 ; Mode-local timers / scratch
