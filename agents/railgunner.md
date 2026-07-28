@@ -233,9 +233,10 @@ The following should be table-driven per wave, to be filled in during tuning:
 
 Given the sprite multiplexer and the bullet/rail/collision-disambiguation pipeline are the parts with the most technical unknowns, a first vertical slice should target: one rail arm, one drone type, no bonuses — just enough to prove out sprite multiplexing, hardware-slot collision attribution, and bullet-vs-rail resolution before layering in damage tiers, bonuses, and the full wave table.
 
-**Status:** the multiplexer and object pool are already implemented (see
-[`sprite-mux-status.md`](sprite-mux-status.md)). The remaining slice work is
-player, bullets, one mover, and a gameplay collision consumer.
+**Status:** vertical slice (one arm, one C, bullets, collision, death) is **done**.
+Mux/object pool remain as implemented ([`sprite-mux-status.md`](sprite-mux-status.md)).
+Active build order is **Step 8+** in [`roadmap.md`](roadmap.md) (full player,
+spawn engine, then features).
 
 **Full stage plan, ordered Next steps, and game-mode flow:** see
 [`roadmap.md`](roadmap.md). This brief remains the source of truth for

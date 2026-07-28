@@ -7,14 +7,13 @@ docs; this file only keeps the map coherent.
 
 **Companions:** [`railgunner.md`](railgunner.md) (mechanics / design truth),
 [`repo-layout.md`](repo-layout.md) (where code lives), [`README.md`](README.md)
-(index).
+(index). Optional post-stage reviews: [`reviews/`](reviews/) (not a work queue).
 
-**Current phase:** Stage 1 (Scaffold) **done**. Object-pool / sprite-mux
-foundation **done** early (Stage 4 tech). Frontend shell richer than scaffold
-expected. **Stage 2 (Vertical slice) is the active work** — steps **1–2 done**
-(player sprite + H-rail move / barrel); see **Next steps**. Do not expand
-Features (bonuses, ammo unlock, disk HS, music) until the slice can kill a
-drone and die cleanly.
+**Current phase:** Stage 2 (Vertical slice) **done** (steps **1–7**). Active
+work is **Step 8 — full player + session / spawn** (“make it a game”). Do not
+start bonuses, ammo scarcity, disk high scores, or audio until the Step 8 exit
+criteria hold (see below). Post–step-7 code hygiene is archived under
+[`reviews/2026-07-27-clade-post-step7.md`](reviews/2026-07-27-clade-post-step7.md).
 
 ---
 
@@ -46,15 +45,18 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Mode dispatcher | Done | Jump table; modes include story/instructions extras |
 | Frontend attract | Ahead of plan | Hires title ↔ text menu; typewriter; S/I stubs |
 | Game / stage init | Minimal | Session vars reset; playfield draw; player on H-rail |
-| Play | **Combat slice** | Player, bullets, C mover, bullet/rail collision; RUN/STOP → game over |
+| Play | **Combat slice** | Player H-arm, V bullets, C top→H-rail, collision; death → next life / game over |
 | Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
-| Player sprite / move | **Done (H-arm)** | Slot 0 sprite; 4px steps; U/D barrel via mid frame; V-rail later |
-| Bullets / charset UDGs | **Done (V stream)** | RAM font + 8 UDGs; H-rail fire up/down with 4-phase cells |
-| Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch kill; soft AABB kept for later; mux-load unproven |
-| Score / thin HUD | **Done (thin)** | Hit→point, 6-digit paint; health/lives live coarse fill |
-| Death / session end | **Done (slice)** | C rail blast → health; 0 → next life / game over → title |
-| Waves / rail damage | Stubs only | Mode hooks exist; A/B rail damage later |
+| Player sprite / move | **H-arm only** | Slot 0; 4px steps; U/D barrel mid-swing; **V-arm = Step 8.1** |
+| Bullets / charset UDGs | **V stream only** | H-rail fire up/down; H-stream UDGs reserved; **L/R fire = Step 8.2** |
+| Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch; re-prove under multi-drone mux load |
+| Score / thin HUD | **Done (thin)** | Hit→point; health/lives/level live; ammo template still static |
+| Death / session end | **Done (slice)** | C blast → health; 0 → next life / game over → title |
+| Waves / spawn | Slice harness | One auto C mover; wave/level modes stub; **Step 8.0+** |
+| Rail damage A/B | Partial | A/B rail path exists; multi-type waves later |
 | High score entry / disk | Stub | Always skip hiscore from game over |
+| Bonuses / ammo unlock | Not started | Step 9 |
+| Audio | Not started | Steps 13–15 |
 
 **Intentional early work (keep):** mux foundation, title art, drone art (all
 sizes/facings), mode skeleton, full-cross placeholder playfield.
@@ -63,62 +65,173 @@ sizes/facings), mode skeleton, full-cross placeholder playfield.
 
 ## Next steps (do these in order)
 
-Active checklist for **Stage 2 — Vertical slice**. Exit criteria: one moving
-drone can be shot for score, can reach the rail (or kill the player path), and
-a death or “session end” reaches existing game-over → title. Full four arms,
-wave tables, and bonuses are **out of scope** here.
+### Stage 2 — Vertical slice (done)
 
-Prefer **one rail arm** and **one drone type** for combat logic even though all
-three drone arts and the full cross are already drawn. Extra art can stay
-installed; do not require multi-type AI for the slice.
+Exit criteria met: one moving drone can be shot for score, can reach the rail
+(and hurt the player), and death / session end reaches game-over → title.
 
-1. ~~**Player as graphical object (slot 0)**~~ **done**  
-   - Frames in `assets/sprites/player_{up,right,down,left}.*`; copied to `$3E00`.  
-   - `*` stand-in removed; demo drone harness removed.  
-   - Starts left of V-rail, barrel up (not parked in centre).
+1. ~~**Player as graphical object (slot 0)**~~ **done**
+2. ~~**Player movement on rails (H-arm)**~~ **done**
+3. ~~**Character bullets (H-rail vertical)**~~ **done**
+4. ~~**One moving drone (C, top → H-rail)**~~ **done**
+5. ~~**Collision consumer**~~ **slice working** (re-test under mux load in Step 8)
+6. ~~**Score + thin HUD**~~ **done (thin)**
+7. ~~**Death / session end into existing modes**~~ **done (slice)**
 
-2. ~~**Player movement on rails (H-arm)**~~ **done**  
-   - Horizontal arm, **4px** steps; centre gap crossed to far legal rest.  
-   - Barrel rest up/down only; opposite stick → mid swing (R or L, ~5 frames).  
-   - RUN/STOP → game over (FIRE reserved for shooting).  
-   - Vertical rail mount / full intersection rules still later.
+---
 
-3. ~~**Character bullets**~~ **done (H-rail vertical)**  
-   - RAM charset + 8 bullet UDGs; `render/bullets.asm` stream.  
-   - 4 sub-cell phases × `BULLET_HOLD`; launch cell occupancy = ROF cap.  
-   - Auto-fire while FIRE held and barrel at rest; L/R aim later with H UDGs.
+### Step 8 — Full player + session / spawn (“make it a game”)
 
-4. ~~**One moving drone**~~ **done (slice mover)**  
-   - `game/drones.asm`: one **C** (small), nose-down, top → H-rail; vy via pool.  
-   - Rail arrival currently **retires** the slot (stub until collision consumer).  
-   - Spawn API ready to grow to 3-per-quadrant waves later.
+**Intent:** Expand the slice into a real session without features (bonuses,
+ammo scarcity, HS disk, audio). End state: player can use the **full cross**,
+drones come from a **spawn engine** driven by **level/wave data**, and a short
+playtest pass says “this is fun enough to build on.”
 
-5. ~~**Collision consumer**~~ **slice working, not locked under mux load**  
-   - `COLLISION_MODE`: 0=HW only (current), 1=hybrid+borders, 2=soft always.  
-   - Soft bullet AABB / rail peek code retained for when latch needs help.  
-   - HW kill + best-effort char-near bullet consume; Y-arrival still rail backup.  
-   - Re-test latch under multi-drone mux pressure before calling design locked.
+**Exit criteria:**
 
-6. ~~**Score + thin HUD**~~ **done (thin)**  
-   - 1 hit = 1 point (`score::add_hit`); cap 999999; HUD digits 0–5 live.  
-   - HW latch scores only when a nearby bullet is consumed (rail = 0 pts).  
-   - Health/lives still constants until step 7.
+- Full player locomotion + fire on both arms (8.1–8.2).
+- Multi-direction drones under a real spawn policy (8.3–8.6).
+- A basic level/wave shape exists and has been **playtested for fun** (8.7).
+- Still **no** bonuses, ammo rationing, disk HS, or music.
 
-7. ~~**Death / session end into existing modes**~~ **done (slice)**  
-   - `START_HEALTH=32` (8×4); C rail arrival = full blast (−2); half-range later.  
-   - Health 0 → `MODE_NEXT_LIFE` (lives--, restage) or `MODE_GAME_OVER` → title.  
-   - Lives HUD right-aligned cols 36–39; RUN/STOP still emergency quit.  
-   - Rail destroyed / A/B damage not in this slice.
+**Notes / decisions while doing Step 8:**
 
-8. **Only after 1–7:** expand to multi-wave (`MODE_NEXT_WAVE`), multi-arm, A/B/C
-   AI, rail damage levels, real HUD bars — **Stage 3 / 4**. Do not start bonuses,
-   ammo rationing, disk HS, or music before the slice exit criteria hold.
+- **8.0 first** — the auto rail-attack C is great for the slice and terrible for
+  free player testing. Kill auto-spawn (or gate it behind a debug flag) before
+  investing in V-arm work.
+- **V-arm is the hard player piece.** Design brief rules
+  ([`railgunner.md`](railgunner.md)): mount at the centre intersection, 90°
+  barrel remap when changing rails, no barrel flip in the dead centre, diagonal
+  input = parallel = move / perpendicular = mount or aim. Implement the
+  *minimum correct* mount/remap; polish edge cases in 8.7 if needed.
+- **Fire follows facing** — 8.2 is the horizontal bullet stream (UDGs already
+  reserved `$F8–$FF`) with the same cell-occupancy ROF rule as the vertical
+  stream. Prefer one shared launch path parameterized by direction.
+- **Insert 8.5 (A/B + rail damage as content)** — without A/B the “rail fully
+  destroyed” loss path never matters and the spawn engine has nothing interesting
+  to compose. Put multi-hit A/B (3/2 HP) and visible rail damage *before* or
+  *inside* the first real spawn tables, not after the fun pass.
+- **Collision under load** — Step 5 was never locked under multi-drone mux
+  pressure. When 8.3+ puts several sprites on screen, re-smoke latch attribution
+  before calling the consumer done.
+- **Wave vs continuous spawn** — design brief is wave-based; the “spawn engine”
+  (8.6) is the *runtime* that *consumes* wave/level data (8.4). Do not invent a
+  second competing system. 8.4 = data shape + counters; 8.6 = who/when/where/speed.
+- **8.7 is a first-class step**, not optional polish. Be willing to change
+  speeds, spawn density, C blast feel, or ROF if the game is not fun. Document
+  knobs in code constants or a tiny table, not only in chat.
 
-**File ownership (new work):** see vertical-slice list in
+| ID | Work | Notes |
+|----|------|--------|
+| **8.0** | **Stop auto-spawning the rail-attack drone** | Removes constant pressure so H→V player work is testable. Keep `drones::` spawn *API*; disable stage-init / ensure-slice auto spawn (or `#if` debug only). |
+| **8.1** | **Locomotion on the other arm (V-rail)** | Mount at intersection; move U/D on V-arm; L/R barrel rest with mid-swing; 90° remap on rail change per design brief. |
+| **8.2** | **Shooting on the other arm** | Horizontal bullet stream + launch when barrel L/R at rest on V-arm. Same occupancy ROF. **Checkpoint:** full player experience (move + fire both arms) with manual/test spawns. |
+| **8.3** | **Spawn vertical-approach drones** | Edges → V-rail (and keep top/bottom → H-rail). C still player-threat; start with C-only if simpler. |
+| **8.4** | **Levels / waves as data** | How many waves per level (placeholder **20** until tuned); drones-per-wave or clear condition; level & wave counters already exist — make them *drive* content. Mode hooks `MODE_NEXT_WAVE` / `MODE_NEXT_LEVEL` leave stub land. |
+| **8.5** | **A/B content + rail damage in play** | A/B multi-HP, rail segment damage on arrival, rail-destroyed → game over already stubbed — make it reachable in normal play. Overlap priority C&lt;B&lt;A already in mux. |
+| **8.6** | **Spawn engine** | Master controller: when/where to spawn, type mix, speed from level/wave data, respect pool capacity and mux “≤7 jobs / line” budget. Single owner of spawn policy. |
+| **8.7** | **Tune basic spawn / gameplay; evaluate fun** | Playtest session. Adjust speeds, density, mix, damage, ROF. Behaviour changes allowed if the game is not fun. Exit = “worth building Step 9 on.” |
+
+**Out of scope until Step 8 exit:** bonuses, ammo rationing, message-between-levels
+fiction, disk HS, music, boss scripts, explosion polish (logic explosions may be
+stubs).
+
+---
+
+### Step 9 — Features (bonuses, messages, ammo, score meta)
+
+**Intent:** Survival depth and scoring systems on top of a fun core loop.
+**Exit criteria:** All listed bonus types + ammo scarcity path + a balance pass
+that sets extra-life thresholds. Still no requirement for full audio or bosses.
+
+| ID | Work | Notes |
+|----|------|--------|
+| **9.1** | **Bonus drop mechanism only** | Timing/placement owned by (or scheduled through) the spawn engine. No bonus *types* yet — parcel motion, “opposite arm,” intercept, one active parcel. |
+| **9.2** | **Message system** | Between-level (or between-wave) player-facing text. Vehicle for story snippets **and** the ammo-scarcity radio beat. Keep presentation thin (reuse typewriter or a short playfield banner). |
+| **9.3** | **Ammo scarcity + ammo packs** | Message unlocks rationing; ammo bar becomes live; fire consumes; ammo bonus is first real drop type. |
+| **9.4** | **Repair bonus** | Orbiting repair; stand still on damaged segment. |
+| **9.5** | **Shield bonus** | Pool absorbs C-blast damage; tiers 6/4/2; ring art when ready (stub colour OK first). |
+| **9.6** | **Damage multiplier bonus** | 2× / 3× with degrade; bullet colour hint when art allows. |
+| **9.7** | **Pure score bonus** | Consolation when other types already held (per design brief). |
+| **9.8** | **Score / gameplay balance pass** | Points, drop rates, durations, scarcity feel. |
+| **9.9** | **Extra life** | Life-up from score thresholds that fall out of 9.8 (and/or a rare drop if design wants — prefer thresholds first). |
+
+---
+
+### Step 10 — Gameplay polish (visual)
+
+| ID | Work | Notes |
+|----|------|--------|
+| **10.1** | Explosions | Player, drone, rail-arrival feedback. |
+| **10.2** | More animations | As needed (repair orbit, shield ring, barrel polish). |
+| **10.3** | Graphical refinements | Font / UDG pass, HUD icons, rail damage readability. |
+
+---
+
+### Step 11 — Game over / high scores
+
+| ID | Work | Notes |
+|----|------|--------|
+| **11.1** | High-score entry if qualified | 3 initials; wire from game over (today always skips). |
+| **11.2** | Load high-score table | Cold init / frontend; RAM defaults if no disk. |
+| **11.3** | Save high-score table | After entry confirm/timeout. |
+
+Disk format = detail doc when 11.2 starts. Failure path: keep playing with RAM table.
+
+---
+
+### Step 12 — Bosses (optional exploration)
+
+| ID | Work | Notes |
+|----|------|--------|
+| **12.1** | **Decide if bosses belong** | Scripted pattern enemies; e.g. every N levels. Only build if Step 8–9 fun still has a “set-piece” gap. If no, skip without guilt — the game can ship on wave pressure alone. |
+
+If yes, spin a short boss design note (HP, patterns, telegraph, reward) before
+coding.
+
+---
+
+### Step 13 — Audio SFX (gameplay)
+
+| ID | Work | Notes |
+|----|------|--------|
+| **13.1** | Explosion, shoot, alarms | Alarm e.g. pre-boss or critical rail/health. Channel budget TBD with c64m/SID reality. |
+
+---
+
+### Step 14 — UI SFX
+
+Menu confirms, mode transitions, hiscore entry blips — keep short and quiet vs 13.
+
+---
+
+### Step 15 — Music
+
+Stage / danger / game over / celebrate hooks. Do not block 11 on music.
+
+---
+
+### Step 16 — Final polish
+
+Loose ends: stuck transitions, message timing, edge-case mounts, last balance,
+smoke full path title → play → death → HS → title. Ship checklist lives here.
+
+---
+
+**File ownership (new work):** see vertical-slice / game lists in
 [`repo-layout.md`](repo-layout.md). Wire every new `.asm` through `src/main.asm`.
 
-**Out of scope until Stage 2 exit:** richer story/instructions, more title polish,
-mux rewrites, extra drone showcase layouts, high-score entry UX.
+**Mapping to maturity stages (guide, not a second queue):**
+
+| Steps | Stage label |
+|-------|-------------|
+| 1–7 | **2. Vertical slice** (done) |
+| 8.0–8.7 | **3. Core loop** + **4. Systems** (full arms, waves, spawn, A/B/rail) |
+| 9, 11 | **5. Features** |
+| 10, 16 | **6. Polish** |
+| 12 | Optional systems/features |
+| 13–15 | Audio (late Features / Polish) |
+| Ship smoke | **7. Ship** |
 
 ---
 
@@ -154,9 +267,11 @@ optional or later content.
            │   │       │     │                │               │
            │   │       │     │ wave cleared   │               │
            │   │       │     ├─► Next Wave ───┘  (same stage) │
+           │   │       │     │     (+ optional message)       │
            │   │       │     │                                │
            │   │       │     │ all waves done                 │
            │   │       │     └─► Next Level ──► Stage Init    │
+           │   │       │           (+ message system)         │
            │   │       │                                      │
            │   │       │ player dies                          │
            │   │       ▼                                      │
@@ -184,21 +299,22 @@ See [`railgunner.md`](railgunner.md).
 ## Stages
 
 Names are maturity labels, not commit tags. Work can advance one element ahead
-of another; the table is a *guide*.
+of another; the table is a *guide*. Prefer the **Next steps** IDs for day-to-day
+order.
 
 | Stage | Intent | Exit criteria (rough) |
 |-------|--------|------------------------|
 | **1. Scaffold** | Boot, mode stubs, transitions without real combat | Cold init → title → FIRE → empty playfield → stub game over → title; can assemble/run under c64m |
-| **2. Vertical slice** | Prove hard tech on a minimal playable path | One rail arm, one drone type, character bullets, collision disambiguation (bullet vs rail), basic score/HUD; death ends the run (lives optional) |
-| **3. Core loop** | Full session shape with thin content | Multi-wave play, next wave / next level stubs, lives + next life + stage re-init, game over; ~N waves/level (placeholder **20**) |
-| **4. Systems** | Mechanics from the design brief | All rail arms, A/B/C drones, health/rail damage, layering priority, wave table structure, sprite mux as needed |
-| **5. Features** | Content and meta systems | Bonuses, ammo unlock + rationing, high-score table load/save, music hooks (stage / game over / celebrate), richer frontend |
-| **6. Polish** | Feel, readability, edge cases | Wave/level clear messaging and timing, explosions, HS entry UX/timeout, balance knobs, no-stuck transitions |
-| **7. Ship** | Release readiness | Final tables, disk layout, smoke of full path on target hardware/emulator |
+| **2. Vertical slice** | Prove hard tech on a minimal playable path | **Done.** One rail arm, one drone type, bullets, collision, score/HUD, death → game over |
+| **3. Core loop** | Full session shape with real pressure | Full cross player (8.1–8.2), multi-wave / next level, lives, spawn-driven play (8.3–8.7) |
+| **4. Systems** | Mechanics from the design brief | A/B/C mix, rail damage, wave tables, spawn engine, mux load proven |
+| **5. Features** | Content and meta systems | Bonuses, ammo unlock + rationing, messages, disk high scores |
+| **6. Polish** | Feel, readability, edge cases | Explosions, art/UDG pass, balance, transitions, optional bosses decision |
+| **7. Ship** | Release readiness | Audio as desired, final tables, disk layout, smoke of full path |
 
-**Relation to design brief:** Stage 2 is the same bet as the “suggested build
-order” in [`railgunner.md`](railgunner.md) — one arm, one drone type, no
-bonuses — so mux and collision are proven before the full game piles on.
+**Relation to design brief:** Stage 2 matched the “one arm, one drone, no
+bonuses” bet in [`railgunner.md`](railgunner.md). Steps 8–9 expand to the full
+design without reopening mux architecture.
 
 ---
 
@@ -237,10 +353,10 @@ Per-session reset (new game from title).
   exact starting number tunable — treat **3** as the working default until set).
 - Health → full (bar-driven; design ties pool to bar granularity — not a magic
   “8” forever).
-- Ammo → full *or* inactive/grayed until ammo mechanic unlocks (Features).
+- Ammo → full *or* inactive/grayed until ammo mechanic unlocks (Features / 9.3).
 - Level counter → 1 (or 0-based internal — pick one and stick to it in code).
 - Draw game screen: HUD top line, rails, player at default pose.
-- Start stage/session music when audio exists (Features/Polish).
+- Start stage/session music when audio exists (Step 15).
 - Transition → **Stage Init**.
 
 ### Stage Init / re-init (2 → 3)
@@ -248,7 +364,8 @@ Per-session reset (new game from title).
 Per-stage or post-death re-entry into play.
 
 - Enemy wave counter → 0 (or “next wave to spawn = 1”).
-- Player position → centre of the cross (intersection).
+- Player position — early slice used left of V-rail; full game may prefer centre
+  intersection once V-arm works (decide in 8.1 and stick to it).
 - Clear transient play state: active bullets, drones, messages; later also
   active bonuses, shield, repair orbiters as those systems exist.
 - Rail damage: policy TBD in detail docs — full repair on stage re-init vs
@@ -260,15 +377,16 @@ Per-stage or post-death re-entry into play.
 
 Main loop until an exit condition.
 
-**Today:** art harness only (static demo drones + facing cycle; FIRE ends
-session). Not combat. Replace harness as Stage 2 items land (see **Next steps**).
+**Today:** H-arm combat slice — player, vertical bullets, one C mover (until 8.0),
+collision, score, death. Expand via **Step 8+**.
 
-Loop body (grows by stage):
+Loop body (grows by step):
 
-- Spawn / advance waves from wave data (stub constants early; tables at Systems).
+- Spawn engine advances waves from level/wave data (8.4–8.6).
 - Move drones; move player; advance bullets.
 - Handle collisions (sprite–background register + char peek for bullet vs rail).
 - Score, kill drones, apply rail/player damage as systems exist.
+- Bonus parcels when Features land (9.x).
 - HUD updates.
 
 Exit conditions:
@@ -277,7 +395,7 @@ Exit conditions:
 2. **Rail fully destroyed** → **Game Over** (same player-facing outcome as no lives).
 3. **Waves for this level cleared** → **Next Wave** / **Next Level** as below.
 
-**Placeholder content knobs** (replace with tables later):
+**Placeholder content knobs** (replace with tables in 8.4+):
 
 - Waves per level: **20** (assumption until tuning).
 - Wave speed, composition, quadrants: see wave data in design brief.
@@ -286,8 +404,7 @@ Lots of subsystems live under Play (mux, collision, bonuses, ammo). Those get
 their own detail docs; this element only owns the loop and its exits. The
 graphical-object pool, mux frame contract, and hardware collision attribution
 are implemented ([`objects-sprites.md`](objects-sprites.md),
-[`sprite-mux-status.md`](sprite-mux-status.md)). Motion/AI and the **gameplay
-collision consumer** remain Stage 2+ work.
+[`sprite-mux-status.md`](sprite-mux-status.md)).
 
 ### Next Wave (3)
 
@@ -299,7 +416,7 @@ collision consumer** remain Stage 2+ work.
 
 ### Next Level (3 → 5)
 
-- Level clear messaging + pause (richer in Polish).
+- Level clear messaging + pause (message system in 9.2; richer in Polish).
 - Increment level counter; reset wave counter.
 - Difficulty levers (speed, multi-quadrant, composition) from tables when ready.
 - → **Stage Init** (or a thinner “level init” if we split later).
@@ -308,19 +425,19 @@ collision consumer** remain Stage 2+ work.
 
 On player death:
 
-- Player explosion (visual polish can lag the logic).
+- Player explosion (visual polish can lag the logic — 10.1).
 - Decrement lives (reserve count).
 - If lives remain → **Stage Init** (re-init).
 - If no lives left → **Game Over**.
 
-### Game Over (1 stub → 3)
+### Game Over (1 stub → 3 → 11)
 
 - Show Game Over on the playfield (or dedicated screen).
 - Pause for readability; wait for fire or timeout (policy later).
-- If score qualifies for top 10 → **High Score Entry**.
+- If score qualifies for top 10 → **High Score Entry** (11.x).
 - Else → **Frontend** (title).
 
-### High Score Achieved / Entry (5 → 6)
+### High Score Achieved / Entry (5 → 6 / Step 11)
 
 - Celebratory music when audio exists.
 - Show top-10 table; highlight the new row (score already placed).
@@ -333,42 +450,40 @@ On player death:
 
 | Element | Scaffold | Vertical slice | Core loop | Systems | Features | Polish | Ship |
 |---------|:--------:|:--------------:|:---------:|:-------:|:--------:|:------:|:----:|
-| Cold Init | ✓ | ● | ● | ● | ● | ○ | ○ |
-| Frontend | ✓+ | ○ | ○ | ○ | ● | ● | ○ |
-| Game Init | ✓◐ | ● | ● | ○ | ○ | ○ | ○ |
-| Stage Init | ✓◐ harness | ● | ● | ○ | ○ | ○ | ○ |
-| Play | ✓◐ art only | **← here** | ● multi-wave | ● full mech | ● bonuses/ammo | ● feel | ○ |
-| Object/mux support | — | ○ use | ○ | ✓ early | ○ | ○ | ○ |
-| Next Wave | — | — | ● | ○ | ○ | ● | ○ |
-| Next Level | — | — | ● | ○ | ● tables | ● | ○ |
-| Next Life | ✓ stub | ○ | ● | ○ | ○ | ● FX | ○ |
-| Game Over | ✓ stub | ○ | ● | ○ | ○ | ● | ○ |
-| High Score | — | — | — | — | ● | ● | ○ |
+| Cold Init | ✓ | ✓ | ● | ○ | ○ | ○ | ○ |
+| Frontend | ✓+ | ✓ | ○ | ○ | ● | ● | ○ |
+| Game Init | ✓◐ | ✓ | ● | ○ | ○ | ○ | ○ |
+| Stage Init | ✓◐ | ✓ | ● | ○ | ○ | ○ | ○ |
+| Play | ✓◐ | **✓ slice** | **← Step 8** | ● full mech | ● bonuses/ammo | ● feel | ○ |
+| Object/mux support | — | ✓ use | ○ load | ○ | ○ | ○ | ○ |
+| Next Wave | — | stub | ● | ○ | ○ | ● | ○ |
+| Next Level | — | stub | ● | ○ | ● tables | ● msg | ○ |
+| Next Life | ✓ stub | ✓ | ● | ○ | ○ | ● FX | ○ |
+| Game Over | ✓ stub | ✓ | ● | ○ | ○ | ● | ○ |
+| High Score | — | — | — | — | ● Step 11 | ● | ○ |
 
 ✓ = done (for that column’s intent) · ✓+ = done beyond scaffold scope · ✓◐ = stub/minimal done  
-● = primary work for that stage · ◐ = stub / minimal · ○ = improve as needed · — = not yet  
+● = primary work for that stage · ◐ = stub / minimal · ○ = improve as needed · — = not yet
 
 **Object/mux support** is not a flow mode; it is listed so agents do not re-implement
-the pool/mux during Stage 2 — **consume** it for player/drone sprites and events.
+the pool/mux — **consume** it for player/drone sprites and events.
 
 ---
 
 ## Suggested build sequence (narrative)
 
-1. **Scaffold** — **done.** Boot, modes, title attract, stub game over, assemble
-   → play via [`build-debug.md`](build-debug.md). Mux foundation landed here early.
-2. **Vertical slice** — **active** (see **Next steps**). Player sprite + move,
-   bullets, one moving drone, collision consumer, score, death → game over.
-   One arm / one combat type is enough; full cross art may stay on screen.
-3. **Core loop** — wrap the slice in real session flow: waves, lives, re-init,
-   game over back to title. Placeholder wave count (20). Second/third rail arms
-   if the slice is solid.
-4. **Systems** — remaining A/B/C behaviour, health bar and rail damage levels,
-   wave tables; gameplay fully driven through the existing pool/mux.
-5. **Features** — bonuses, ammo unlock fiction + bar, disk high scores, music
-   hooks. Frontend is already partly here — do not deepen it until Stage 2 exits.
-6. **Polish / Ship** — messages, timing, explosions, entry UX, balance, final
-   disk and smoke path.
+1. **Scaffold** — **done.** Boot, modes, title attract, stub game over.
+2. **Vertical slice** — **done** (steps 1–7). H-arm, V bullets, one C, collision,
+   score, death.
+3. **Full player + spawn (Step 8)** — **active.** Kill auto-spawn → V-arm move →
+   H-stream fire → multi-direction drones → wave data → A/B/rail → spawn engine →
+   fun pass.
+4. **Features (Step 9 + 11)** — Bonus mechanism, messages, ammo scarcity, bonus
+   types, balance, extra life; then high-score load/save/entry.
+5. **Visual polish (Step 10)** — Explosions, animation, UDG/font pass.
+6. **Optional bosses (Step 12)** — Only if set-pieces still missing after fun pass.
+7. **Audio (Steps 13–15)** — Gameplay SFX → UI SFX → music.
+8. **Ship polish (Step 16 + Stage 7)** — Loose ends, disk, full-path smoke.
 
 ---
 
@@ -378,15 +493,17 @@ Record decisions here when made; do not block early stages on them.
 
 | Topic | Default for now | Later |
 |-------|-----------------|--------|
-| Waves per level | 20 | Wave/level tables |
-| Starting lives | 3 | Tuning |
-| Starting health | Full bar (design formula) | Tuning with C-blast costs |
+| Waves per level | 20 | Wave/level tables (8.4) + fun pass (8.7) |
+| Starting lives | 3 | Tuning / 9.8–9.9 |
+| Starting health | 32 (8×4 bar steps) | Tuning with C-blast costs |
 | Rail/health on next life | Reset full | Confirm vs carry damage |
-| High scores without disk | RAM zeros / no persist | Load/save file format |
-| Wave-clear vs level-clear UI | Short pause + text | Art / SFX |
-| Ammo inactive early | Grayed bar present | Radio-message unlock stage |
+| High scores without disk | RAM zeros / no persist | Load/save file format (11.x) |
+| Wave-clear vs level-clear UI | Short pause + text | Message system 9.2; art / SFX |
+| Ammo inactive early | Grayed bar present | Radio message unlock (9.2–9.3) |
 | Mode implementation | **Done:** jump table in `frontend/mode.asm` | — |
-| Play content during Stage 2 | Replace art harness; full-cross draw OK | Multi-wave / multi-type AI |
+| Bosses | Undecided — evaluate in 12.1 | Scripted patterns if yes |
+| Player start position | Left of V-rail (slice) | Centre once V-arm works? Decide in 8.1 |
+| Auto-spawn during dev | On (slice) → **off for 8.0** | Debug flag if useful later |
 
 ---
 
@@ -403,16 +520,18 @@ Present:
   verification, remaining stress tests.
 - [`sprite-mux-issues.md`](sprite-mux-issues.md) — review findings / integration
   hazards for the mux (read before relying on collision).
+- [`reviews/`](reviews/) — optional post-stage code reviews + dispositions.
 
 Future candidates:
 
 - Play loop & frame timing (IRQ vs main, update order) — main already drains
   events and builds plans; formalize when play grows
-- Collision disambiguation (sprite–bg + char peek) — **Stage 2 step 5**
-- Wave / level data format
-- Bonus spawn and parcel motion
-- High-score file format and disk I/O
-- Audio / music triggers per mode
+- Wave / level data format + spawn engine contract (Step 8.4–8.6)
+- Bonus spawn and parcel motion (Step 9.1)
+- Message system (Step 9.2)
+- High-score file format and disk I/O (Step 11)
+- Audio / music triggers per mode (Steps 13–15)
+- Boss patterns (only if 12.1 is yes)
 - HUD character set (health/ammo bars, lives icons)
 
 ---
@@ -425,3 +544,5 @@ Future candidates:
   in [`repo-layout.md`](repo-layout.md).
 - Prefer a short matrix/flow edit over long prose when the only change is
   “this element moved earlier/later.”
+- Numbered steps (8.0, 9.3, …) are the day-to-day queue; stage names are the
+  maturity summary only.
