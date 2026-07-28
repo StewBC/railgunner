@@ -1,4 +1,4 @@
-; Thin play HUD — health bar (H: bar UDGs) and lives (right-aligned A's).
+; Thin play HUD — health bar, level digits, lives (right-aligned A's).
 ; Score digits live in score.asm. screen_put_xy clobbers tmp0–2 — use score_work*.
 
 .scope hud
@@ -17,6 +17,7 @@ do_paint:
     lda #0
     sta hud_status_dirty
     jsr paint_health
+    jsr paint_level
     jsr paint_lives
     rts
 .endproc
@@ -80,6 +81,44 @@ health_put:
     inx
     cpx #HUD_HEALTH_BAR_LEN
     bcc health_cell
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Level: 2 decimal digits at HUD_LEVEL_COL (template ships L:01).
+; Displays 00–99 (values ≥100 wrap the tens count; fine for the thin HUD).
+; ---------------------------------------------------------------------------
+.proc paint_level
+    lda level
+    ldx #0                          ; tens
+tens_loop:
+    cmp #10
+    bcc tens_done
+    sec
+    sbc #10
+    inx
+    jmp tens_loop
+tens_done:
+    sta score_work0                 ; ones 0..9
+    stx score_work1                 ; tens
+    ; tens glyph
+    lda score_work1
+    clc
+    adc #SC_ZERO
+    sta score_work2
+    ldx #HUD_LEVEL_COL
+    ldy #HUD_ROW
+    lda score_work2
+    jsr screen_put_xy
+    ; ones glyph
+    lda score_work0
+    clc
+    adc #SC_ZERO
+    sta score_work2
+    ldx #HUD_LEVEL_COL + 1
+    ldy #HUD_ROW
+    lda score_work2
+    jsr screen_put_xy
     rts
 .endproc
 

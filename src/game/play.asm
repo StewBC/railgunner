@@ -63,6 +63,8 @@ next_wave_more:
     sta VIC_BORDER
     ; TODO: "LEVEL CLEAR" message + pause
     inc level
+    lda #1
+    sta hud_status_dirty            ; stage_init will paint_status (incl. level)
     lda #0
     sta wave
     lda #MODE_STAGE_INIT

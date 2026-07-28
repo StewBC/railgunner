@@ -104,32 +104,27 @@ save_runstop_prev:
 .endproc
 
 ; Scan WASD + Space + I + RUN/STOP; OR into dirs/fire; set menu keys.
-; PRA = select (0-bit), PRB = data (0 = down). Clobbers A.
+; PRA = select (0-bit), PRB = data (0 = down). Clobbers A,X.
 .proc input_scan_keyboard
-    ; W → up
-    lda #KEY_SEL_W
+    ; W/A/S share select row 1 — one strobe, one PRB read (same idiom as Space/RUNSTOP)
+    lda #KEY_SEL_W                  ; == KEY_SEL_A == KEY_SEL_S
     sta CIA1_PRA
     lda CIA1_PRB
+    tax
     and #KEY_BIT_W
     bne not_w
     lda input_dirs
     ora #JOY_UP
     sta input_dirs
 not_w:
-    ; A → left
-    lda #KEY_SEL_A
-    sta CIA1_PRA
-    lda CIA1_PRB
+    txa
     and #KEY_BIT_A
     bne not_a
     lda input_dirs
     ora #JOY_LEFT
     sta input_dirs
 not_a:
-    ; S → down + menu key
-    lda #KEY_SEL_S
-    sta CIA1_PRA
-    lda CIA1_PRB
+    txa
     and #KEY_BIT_S
     bne not_s
     lda input_dirs
@@ -138,7 +133,7 @@ not_a:
     lda #1
     sta input_key_s
 not_s:
-    ; D → right
+    ; D → right (own row)
     lda #KEY_SEL_D
     sta CIA1_PRA
     lda CIA1_PRB

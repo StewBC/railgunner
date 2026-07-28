@@ -24,7 +24,7 @@
     jsr video::install_sprite_frames
     jsr player::init
     jsr drones::init                ; C (player) + B (rail), vertical
-    ; Template HUD — paint live session score / health / lives.
+    ; Template HUD — paint live session score / health / level / lives.
     lda #1
     sta hud_status_dirty
     sta score_dirty
