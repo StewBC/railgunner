@@ -34,6 +34,11 @@ player_swing_to:.res 1              ; rest facing after mid frame expires
 player_move_dir:.res 1              ; PLAYER_DIR_*; last travel (coast through centre)
 player_cross_decided: .res 1        ; 1 = centre eval done this rail-walk; clear off intersection
 
+; Dumb multi-C spawner (Step 8.3 — not full wave engine)
+drone_spawn_timer: .res 1           ; ticks until next spawn attempt
+drone_spawn_seq:   .res 1           ; 0..3 approach rotation
+drone_spawn_lane:  .res 1           ; alternate left/right or top/bot lane
+
 ; Mode-local timers / scratch
 mode_timer:     .res 1
 mode_state:     .res 1

@@ -469,21 +469,42 @@ DRONE_X_RIGHT_MIN       = 192
 DRONE_X_RIGHT_MAX       = 320
 
 ; ---------------------------------------------------------------------------
-; Drones (Stage 2: C player-threat + B rail-threat; later waves of 3/quad)
+; Drones (Step 8.3: multi-direction C; A/B later)
+; obj_user = DRONE_APPROACH_* (not only legacy QUAD_*)
 ; ---------------------------------------------------------------------------
-DRONE_C_SPEED_Y         = 1         ; pixels per logic tick
+DRONE_C_SPEED           = 1         ; pixels per logic tick (all axes)
 DRONE_B_SPEED_Y         = 1
-; Slice C: upper-left
-DRONE_SPAWN_X_LO        = 100       ; within DRONE_X_LEFT_*
+DRONE_C_MAX_ACTIVE      = 3         ; dumb multi-C cap (mux-friendly)
+DRONE_SPAWN_CADENCE     = 72        ; logic ticks between spawn attempts (~1.4s PAL)
+; Approach stored in obj_user
+DRONE_APPROACH_DOWN     = 0         ; from top → H-rail
+DRONE_APPROACH_UP       = 1         ; from bottom → H-rail
+DRONE_APPROACH_RIGHT    = 2         ; from left → V-rail
+DRONE_APPROACH_LEFT     = 3         ; from right → V-rail
+; Vertical approach lanes (top/bottom spawn X)
+DRONE_SPAWN_X_LO        = 100
 DRONE_SPAWN_X_HI        = 0
-; Slice B rail attacker: upper-right (vertical only)
-DRONE_B_SPAWN_X_LO      = 220       ; within DRONE_X_RIGHT_*
+DRONE_SPAWN_X_RIGHT_LO  = 220
+DRONE_SPAWN_X_RIGHT_HI  = 0
+; Horizontal approach lanes (left/right spawn Y)
+DRONE_SPAWN_Y_TOP       = 50 + 8 + SPRITE_H_PX   ; 79 (below HUD)
+DRONE_SPAWN_Y_BOT       = 220
+DRONE_SPAWN_Y           = DRONE_SPAWN_Y_TOP       ; alias (legacy B spawn)
+; Side spawn X (screen edges)
+DRONE_SPAWN_X_EDGE_L_LO = 28
+DRONE_SPAWN_X_EDGE_L_HI = 0
+DRONE_SPAWN_X_EDGE_R_LO = $40       ; 320
+DRONE_SPAWN_X_EDGE_R_HI = 1
+; Slice B (legacy ensure_rail_attacker)
+DRONE_B_SPAWN_X_LO      = 220
 DRONE_B_SPAWN_X_HI      = 0
-; Below score (row 0 ≈ Y 50–57): row-1 top (58) + full 21-line sprite → no HUD overlap
-DRONE_SPAWN_Y           = 50 + 8 + SPRITE_H_PX   ; 79
-; Arrival: stop before overlapping H-rail top (row 12 ≈ VIC Y 146)
-DRONE_RAIL_ARRIVE_Y     = 140
-; obj_user quadrant ids (for clamp / future waves)
+; Rail arrival thresholds
+DRONE_RAIL_ARRIVE_Y     = 140       ; from top (y >=)
+DRONE_RAIL_ARRIVE_Y_UP  = 152       ; from bottom (y <=)
+DRONE_RAIL_ARRIVE_X_R   = 160       ; from left (x >=), near V-rail
+DRONE_RAIL_ARRIVE_X_L   = 176       ; from right (x <=)
+DRONE_IMPACT_Y_OFF      = 4         ; blast row align (mirror X off)
+; Legacy quadrant ids (B clamp / old code)
 QUAD_UL                 = 0
 QUAD_UR                 = 1
 QUAD_LL                 = 2

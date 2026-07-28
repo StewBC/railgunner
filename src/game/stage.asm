@@ -23,7 +23,7 @@
     jsr video::init_sprite_palette
     jsr video::install_sprite_frames
     jsr player::init
-    jsr drones::init                ; empty pool; spawn API only (Step 8.0)
+    jsr drones::init                ; reset multi-C cadence (Step 8.3)
     ; Template HUD — paint live session score / health / level / lives.
     lda #1
     sta hud_status_dirty

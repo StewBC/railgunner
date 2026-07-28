@@ -718,10 +718,17 @@ copy_loop:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; C drone rail blast — full hit only if player is in the 2-cell impact zone
-; under the drone (same cols as rail::apply_ab_hit). X = C object slot.
+; C drone rail blast — full hit if player is in the 2-cell impact zone.
+; Vertical approach (top/bottom): 2 char-cols under drone (X footprint).
+; Horizontal approach (sides): 2 char-rows beside drone (Y footprint).
+; X = C object slot.
 ; ---------------------------------------------------------------------------
 .proc apply_c_blast_full
+    lda objects::obj_user, x
+    cmp #DRONE_APPROACH_RIGHT
+    bcs blast_y_footprint
+
+    ; --- X footprint (top/bottom C) ---
     lda objects::obj_x_lo, x
     clc
     adc #DRONE_IMPACT_X_OFF
@@ -743,7 +750,33 @@ copy_loop:
     sta tmp1
     jsr px_to_col
     ldx tmp2
+    jmp blast_compare
 
+blast_y_footprint:
+    ; --- Y footprint (side C) ---
+    lda objects::obj_y_int, x
+    clc
+    adc #DRONE_IMPACT_Y_OFF
+    sec
+    sbc #50
+    lsr a
+    lsr a
+    lsr a
+    sta draw_i                      ; drone impact row
+
+    stx tmp2
+    ldx #0
+    lda objects::obj_y_int, x
+    clc
+    adc #10                         ; player body mid
+    sec
+    sbc #50
+    lsr a
+    lsr a
+    lsr a                           ; player row
+    ldx tmp2
+
+blast_compare:
     cmp draw_i
     beq blast_hit
     tax

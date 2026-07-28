@@ -1,158 +1,21 @@
 ; Drone spawn + motion.
-; Step 8.0: no auto-spawn. Stage starts empty; update only integrates active
-; drones. spawn_* / ensure_* remain as the API for 8.3+ (and manual tests).
+; Step 8.3: dumb multi-direction C cadence (not the full spawn engine).
+; C only; A/B + wave tables later. spawn_c_approach is the main API.
 
 .scope drones
 
 ; ---------------------------------------------------------------------------
-; Stage enter: leave the pool empty (player is slot 0 elsewhere).
-; ---------------------------------------------------------------------------
 .proc init
+    lda #1
+    sta drone_spawn_timer           ; first spawn soon after stage enter
+    lda #0
+    sta drone_spawn_seq
+    sta drone_spawn_lane
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; If no active C, spawn one (UL). Not called from play path after 8.0.
-; ---------------------------------------------------------------------------
-.proc ensure_slice_mover
-    ldx #1
-    lda #0
-    sta tmp0
-count_c:
-    lda objects::obj_flags, x
-    and #(OBJF_ALLOCATED | OBJF_RETIRING)
-    cmp #OBJF_ALLOCATED
-    bne count_c_n
-    lda objects::obj_kind, x
-    cmp #OBJ_DRONE_C
-    bne count_c_n
-    inc tmp0
-count_c_n:
-    inx
-    cpx #OBJECT_CAPACITY
-    bne count_c
-    lda tmp0
-    bne ensure_c_done
-    jsr spawn_slice_mover
-ensure_c_done:
-    rts
-.endproc
-
-; ---------------------------------------------------------------------------
-; If no active B, spawn one (UR, rail damage). Not called from play path after 8.0.
-; ---------------------------------------------------------------------------
-.proc ensure_rail_attacker
-    ldx #1
-    lda #0
-    sta tmp0
-count_b:
-    lda objects::obj_flags, x
-    and #(OBJF_ALLOCATED | OBJF_RETIRING)
-    cmp #OBJF_ALLOCATED
-    bne count_b_n
-    lda objects::obj_kind, x
-    cmp #OBJ_DRONE_B
-    bne count_b_n
-    inc tmp0
-count_b_n:
-    inx
-    cpx #OBJECT_CAPACITY
-    bne count_b
-    lda tmp0
-    bne ensure_b_done
-    jsr spawn_rail_attacker
-ensure_b_done:
-    rts
-.endproc
-
-; ---------------------------------------------------------------------------
-; One C in upper-left, nose down → H-rail (player blast on arrival).
-; ---------------------------------------------------------------------------
-.proc spawn_slice_mover
-    jsr objects::alloc
-    bcs spawn_c_fail
-
-    lda #OBJ_DRONE_C
-    sta objects::obj_kind, x
-    lda #SPR_COLOR_DRONE_C
-    sta objects::obj_sprite_color, x
-    lda #OBJA_MULTICOLOR
-    sta objects::obj_sprite_attr, x
-    lda #SPR_PTR_DRONE_C_DOWN
-    sta objects::obj_sprite_ptr, x
-
-    lda #DRONE_SPAWN_X_LO
-    sta objects::obj_x_lo, x
-    lda #DRONE_SPAWN_X_HI
-    sta objects::obj_x_hi, x
-    lda #0
-    sta objects::obj_x_frac, x
-    sta objects::obj_y_frac, x
-    lda #DRONE_SPAWN_Y
-    sta objects::obj_y_int, x
-
-    lda #0
-    sta objects::obj_vx_frac, x
-    sta objects::obj_vx_lo, x
-    sta objects::obj_vx_hi, x
-    sta objects::obj_vy_frac, x
-    lda #DRONE_C_SPEED_Y
-    sta objects::obj_vy_int, x
-
-    lda #QUAD_UL
-    sta objects::obj_user, x
-
-    lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
-    sta objects::obj_flags, x
-    jsr objects::mark_dirty
-spawn_c_fail:
-    rts
-.endproc
-
-; ---------------------------------------------------------------------------
-; One B in upper-right, nose down → H-rail (rail damage on arrival).
-; ---------------------------------------------------------------------------
-.proc spawn_rail_attacker
-    jsr objects::alloc
-    bcs spawn_b_fail
-
-    lda #OBJ_DRONE_B
-    sta objects::obj_kind, x
-    lda #SPR_COLOR_DRONE_B
-    sta objects::obj_sprite_color, x
-    lda #OBJA_MULTICOLOR
-    sta objects::obj_sprite_attr, x
-    lda #SPR_PTR_DRONE_B_DOWN
-    sta objects::obj_sprite_ptr, x
-
-    lda #DRONE_B_SPAWN_X_LO
-    sta objects::obj_x_lo, x
-    lda #DRONE_B_SPAWN_X_HI
-    sta objects::obj_x_hi, x
-    lda #0
-    sta objects::obj_x_frac, x
-    sta objects::obj_y_frac, x
-    lda #DRONE_SPAWN_Y
-    sta objects::obj_y_int, x
-
-    lda #0
-    sta objects::obj_vx_frac, x
-    sta objects::obj_vx_lo, x
-    sta objects::obj_vx_hi, x
-    sta objects::obj_vy_frac, x
-    lda #DRONE_B_SPEED_Y
-    sta objects::obj_vy_int, x
-
-    lda #QUAD_UR
-    sta objects::obj_user, x
-
-    lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
-    sta objects::obj_flags, x
-    jsr objects::mark_dirty
-spawn_b_fail:
-    rts
-.endproc
-
+; Play tick: move active drones, then maybe spawn another C.
 ; ---------------------------------------------------------------------------
 .proc update
     ldx #1
@@ -168,13 +31,259 @@ upd_loop:
     bcs upd_next
 
     jsr integrate_slot
-    jsr clamp_to_quadrant
+    jsr clamp_to_approach
     jsr check_rail_arrival
 upd_next:
     inx
     cpx #OBJECT_CAPACITY
     bne upd_loop
-    ; No ensure_* — empty field until spawn engine / test harness calls spawn_*
+
+    jsr spawn_tick
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Cadence: every DRONE_SPAWN_CADENCE ticks, try one C if under cap.
+; ---------------------------------------------------------------------------
+.proc spawn_tick
+    lda drone_spawn_timer
+    beq spawn_try
+    dec drone_spawn_timer
+    rts
+spawn_try:
+    lda #DRONE_SPAWN_CADENCE
+    sta drone_spawn_timer
+    jsr count_active_c
+    cmp #DRONE_C_MAX_ACTIVE
+    bcs spawn_tick_done
+    lda drone_spawn_seq
+    and #3
+    jsr spawn_c_approach
+    inc drone_spawn_seq
+    inc drone_spawn_lane            ; alternate lane next time
+spawn_tick_done:
+    rts
+.endproc
+
+; A = number of active C drones (not retiring).
+.proc count_active_c
+    ldx #1
+    lda #0
+    sta tmp0
+cac_loop:
+    lda objects::obj_flags, x
+    and #(OBJF_ALLOCATED | OBJF_RETIRING)
+    cmp #OBJF_ALLOCATED
+    bne cac_n
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_C
+    bne cac_n
+    inc tmp0
+cac_n:
+    inx
+    cpx #OBJECT_CAPACITY
+    bne cac_loop
+    lda tmp0
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Spawn one C. A = DRONE_APPROACH_*. C set on alloc fail.
+; ---------------------------------------------------------------------------
+.proc spawn_c_approach
+    sta tmp2                        ; approach
+    jsr objects::alloc
+    bcc sca_ok
+    rts                             ; C set
+sca_ok:
+    lda #OBJ_DRONE_C
+    sta objects::obj_kind, x
+    lda #SPR_COLOR_DRONE_C
+    sta objects::obj_sprite_color, x
+    lda #OBJA_MULTICOLOR
+    sta objects::obj_sprite_attr, x
+
+    lda #0
+    sta objects::obj_x_frac, x
+    sta objects::obj_y_frac, x
+    sta objects::obj_vx_frac, x
+    sta objects::obj_vy_frac, x
+    sta objects::obj_vx_lo, x
+    sta objects::obj_vx_hi, x
+    sta objects::obj_vy_int, x
+
+    lda tmp2
+    sta objects::obj_user, x
+    cmp #DRONE_APPROACH_DOWN
+    beq sca_down
+    cmp #DRONE_APPROACH_UP
+    beq sca_up
+    cmp #DRONE_APPROACH_RIGHT
+    beq sca_right
+    jmp sca_left
+
+sca_down:
+    lda #SPR_PTR_DRONE_C_DOWN
+    sta objects::obj_sprite_ptr, x
+    jsr pick_vert_lane_x
+    lda #DRONE_SPAWN_Y_TOP
+    sta objects::obj_y_int, x
+    lda #DRONE_C_SPEED
+    sta objects::obj_vy_int, x
+    jmp sca_flags
+
+sca_up:
+    lda #SPR_PTR_DRONE_C_UP
+    sta objects::obj_sprite_ptr, x
+    jsr pick_vert_lane_x
+    lda #DRONE_SPAWN_Y_BOT
+    sta objects::obj_y_int, x
+    lda #$FF                        ; -1
+    sta objects::obj_vy_int, x
+    jmp sca_flags
+
+sca_right:
+    ; from left edge → V-rail
+    lda #SPR_PTR_DRONE_C_RIGHT
+    sta objects::obj_sprite_ptr, x
+    lda #DRONE_SPAWN_X_EDGE_L_LO
+    sta objects::obj_x_lo, x
+    lda #DRONE_SPAWN_X_EDGE_L_HI
+    sta objects::obj_x_hi, x
+    jsr pick_horiz_lane_y
+    lda #DRONE_C_SPEED
+    sta objects::obj_vx_lo, x
+    lda #0
+    sta objects::obj_vx_hi, x
+    jmp sca_flags
+
+sca_left:
+    lda #SPR_PTR_DRONE_C_LEFT
+    sta objects::obj_sprite_ptr, x
+    lda #DRONE_SPAWN_X_EDGE_R_LO
+    sta objects::obj_x_lo, x
+    lda #DRONE_SPAWN_X_EDGE_R_HI
+    sta objects::obj_x_hi, x
+    jsr pick_horiz_lane_y
+    lda #$FF
+    sta objects::obj_vx_lo, x
+    sta objects::obj_vx_hi, x
+
+sca_flags:
+    lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
+    sta objects::obj_flags, x
+    jsr objects::mark_dirty
+    clc
+    rts
+.endproc
+
+; Set X from drone_spawn_lane (even=left band, odd=right). Preserves X slot.
+.proc pick_vert_lane_x
+    lda drone_spawn_lane
+    and #1
+    bne pvl_right
+    lda #DRONE_SPAWN_X_LO
+    sta objects::obj_x_lo, x
+    lda #DRONE_SPAWN_X_HI
+    sta objects::obj_x_hi, x
+    rts
+pvl_right:
+    lda #DRONE_SPAWN_X_RIGHT_LO
+    sta objects::obj_x_lo, x
+    lda #DRONE_SPAWN_X_RIGHT_HI
+    sta objects::obj_x_hi, x
+    rts
+.endproc
+
+.proc pick_horiz_lane_y
+    lda drone_spawn_lane
+    and #1
+    bne phl_bot
+    lda #DRONE_SPAWN_Y_TOP
+    sta objects::obj_y_int, x
+    rts
+phl_bot:
+    lda #DRONE_SPAWN_Y_BOT
+    sta objects::obj_y_int, x
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Legacy wrappers (API for tests / older call sites)
+; ---------------------------------------------------------------------------
+.proc spawn_slice_mover
+    lda #DRONE_APPROACH_DOWN
+    jmp spawn_c_approach
+.endproc
+
+.proc ensure_slice_mover
+    jsr count_active_c
+    cmp #1
+    bcs esm_done
+    lda #DRONE_APPROACH_DOWN
+    jsr spawn_c_approach
+esm_done:
+    rts
+.endproc
+
+.proc ensure_rail_attacker
+    ; B not used in 8.3 cadence; keep for 8.5
+    ldx #1
+    lda #0
+    sta tmp0
+era_count:
+    lda objects::obj_flags, x
+    and #(OBJF_ALLOCATED | OBJF_RETIRING)
+    cmp #OBJF_ALLOCATED
+    bne era_n
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_B
+    bne era_n
+    inc tmp0
+era_n:
+    inx
+    cpx #OBJECT_CAPACITY
+    bne era_count
+    lda tmp0
+    bne era_done
+    jsr spawn_rail_attacker
+era_done:
+    rts
+.endproc
+
+.proc spawn_rail_attacker
+    jsr objects::alloc
+    bcs sra_fail
+    lda #OBJ_DRONE_B
+    sta objects::obj_kind, x
+    lda #SPR_COLOR_DRONE_B
+    sta objects::obj_sprite_color, x
+    lda #OBJA_MULTICOLOR
+    sta objects::obj_sprite_attr, x
+    lda #SPR_PTR_DRONE_B_DOWN
+    sta objects::obj_sprite_ptr, x
+    lda #DRONE_B_SPAWN_X_LO
+    sta objects::obj_x_lo, x
+    lda #DRONE_B_SPAWN_X_HI
+    sta objects::obj_x_hi, x
+    lda #0
+    sta objects::obj_x_frac, x
+    sta objects::obj_y_frac, x
+    lda #DRONE_SPAWN_Y
+    sta objects::obj_y_int, x
+    lda #0
+    sta objects::obj_vx_frac, x
+    sta objects::obj_vx_lo, x
+    sta objects::obj_vx_hi, x
+    sta objects::obj_vy_frac, x
+    lda #DRONE_B_SPEED_Y
+    sta objects::obj_vy_int, x
+    lda #DRONE_APPROACH_DOWN
+    sta objects::obj_user, x
+    lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
+    sta objects::obj_flags, x
+    jsr objects::mark_dirty
+sra_fail:
     rts
 .endproc
 
@@ -205,87 +314,99 @@ upd_next:
 .endproc
 
 ; ---------------------------------------------------------------------------
-.proc clamp_to_quadrant
+; Vertical approach: X fixed. Horizontal: keep Y in playfield.
+; ---------------------------------------------------------------------------
+.proc clamp_to_approach
     lda objects::obj_user, x
-    cmp #QUAD_UR
-    beq clamp_right
-    cmp #QUAD_LR
-    beq clamp_right
-    lda objects::obj_x_hi, x
-    bne left_hi
-    lda objects::obj_x_lo, x
-    cmp #DRONE_X_LEFT_MIN
-    bcs left_max
-    lda #DRONE_X_LEFT_MIN
-    sta objects::obj_x_lo, x
-    lda #0
-    sta objects::obj_x_hi, x
+    cmp #DRONE_APPROACH_RIGHT
+    bcc clamp_done                  ; DOWN/UP — no X drift
+    lda objects::obj_y_int, x
+    cmp #50
+    bcs clamp_h_bot
+    lda #50
+    sta objects::obj_y_int, x
     rts
-left_max:
-    cmp #DRONE_X_LEFT_MAX
+clamp_h_bot:
+    cmp #230
     bcc clamp_done
-    beq clamp_done
-left_hi:
-    lda #DRONE_X_LEFT_MAX
-    sta objects::obj_x_lo, x
-    lda #0
-    sta objects::obj_x_hi, x
-    rts
-
-clamp_right:
-    lda objects::obj_x_hi, x
-    bne right_ge_256
-    lda objects::obj_x_lo, x
-    cmp #DRONE_X_RIGHT_MIN
-    bcs clamp_done
-    lda #DRONE_X_RIGHT_MIN
-    sta objects::obj_x_lo, x
-    lda #0
-    sta objects::obj_x_hi, x
-    rts
-right_ge_256:
-    lda objects::obj_x_lo, x
-    cmp #$41
-    bcc clamp_done
-    lda #$40
-    sta objects::obj_x_lo, x
-    lda #1
-    sta objects::obj_x_hi, x
+    lda #230
+    sta objects::obj_y_int, x
 clamp_done:
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Rail arrival: C → player blast; A/B → rail damage (2 cells); then retire.
+; Rail arrival by approach axis; C blast then retire.
 ; ---------------------------------------------------------------------------
 .proc check_rail_arrival
+    lda objects::obj_user, x
+    cmp #DRONE_APPROACH_DOWN
+    beq arr_down
+    cmp #DRONE_APPROACH_UP
+    beq arr_up
+    cmp #DRONE_APPROACH_RIGHT
+    beq arr_right
+    ; LEFT
+    jmp arr_left
+
+arr_down:
     lda objects::obj_y_int, x
     cmp #DRONE_RAIL_ARRIVE_Y
-    bcc arrive_done
+    bcc arr_done
+    jmp arr_hit
+
+arr_up:
+    ; from bottom: y decreasing; arrive when y <= threshold
+    lda objects::obj_y_int, x
+    cmp #DRONE_RAIL_ARRIVE_Y_UP
+    beq arr_hit
+    bcc arr_hit
+    rts
+
+arr_right:
+    ; from left: x increasing; arrive when x >= ARRIVE_X_R
+    lda objects::obj_x_hi, x
+    bne arr_hit
+    lda objects::obj_x_lo, x
+    cmp #DRONE_RAIL_ARRIVE_X_R
+    bcc arr_done
+    jmp arr_hit
+
+arr_left:
+    ; from right: x decreasing; arrive when x <= ARRIVE_X_L
+    lda objects::obj_x_hi, x
+    bne arr_done                    ; still x >= 256
+    lda objects::obj_x_lo, x
+    cmp #DRONE_RAIL_ARRIVE_X_L
+    beq arr_hit
+    bcc arr_hit
+    rts
+
+arr_hit:
     lda objects::obj_kind, x
     cmp #OBJ_DRONE_C
-    beq arrive_c
+    beq arr_c
     cmp #OBJ_DRONE_A
-    beq arrive_ab
+    beq arr_ab
     cmp #OBJ_DRONE_B
-    beq arrive_ab
-    jmp arrive_retire
-arrive_c:
+    beq arr_ab
+    jmp arr_retire
+arr_c:
     txa
     pha
     jsr player::apply_c_blast_full
     pla
     tax
-    jmp arrive_retire
-arrive_ab:
+    jmp arr_retire
+arr_ab:
     txa
     pha
     jsr rail::apply_ab_hit
     pla
     tax
-arrive_retire:
+arr_retire:
     jsr objects::retire_and_try_free
-arrive_done:
+arr_done:
     rts
 .endproc
 
