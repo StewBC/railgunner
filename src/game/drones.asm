@@ -157,7 +157,7 @@ sca_down:
     lda #SPR_PTR_DRONE_C_DOWN
     sta objects::obj_sprite_ptr, x
     jsr pick_vert_lane_x
-    lda #DRONE_SPAWN_Y_TOP
+    lda #DRONE_SPAWN_Y_FROM_TOP     ; off-screen above (mux floor)
     sta objects::obj_y_int, x
     lda #DRONE_C_SPEED
     sta objects::obj_vy_int, x
@@ -167,7 +167,7 @@ sca_up:
     lda #SPR_PTR_DRONE_C_UP
     sta objects::obj_sprite_ptr, x
     jsr pick_vert_lane_x
-    lda #DRONE_SPAWN_Y_BOT
+    lda #DRONE_SPAWN_Y_FROM_BOT     ; off-screen below (mux-safe max)
     sta objects::obj_y_int, x
     lda #$FF                        ; -1
     sta objects::obj_vy_int, x
@@ -226,15 +226,16 @@ pvl_right:
     rts
 .endproc
 
+; On-screen Y for left/right approach (not off-screen — X is off-screen).
 .proc pick_horiz_lane_y
     lda drone_spawn_lane
     and #1
     bne phl_bot
-    lda #DRONE_SPAWN_Y_TOP
+    lda #DRONE_LANE_Y_TOP
     sta objects::obj_y_int, x
     rts
 phl_bot:
-    lda #DRONE_SPAWN_Y_BOT
+    lda #DRONE_LANE_Y_BOT
     sta objects::obj_y_int, x
     rts
 .endproc
@@ -300,7 +301,7 @@ era_done:
     lda #0
     sta objects::obj_x_frac, x
     sta objects::obj_y_frac, x
-    lda #DRONE_SPAWN_Y
+    lda #DRONE_SPAWN_Y_FROM_TOP
     sta objects::obj_y_int, x
     lda #0
     sta objects::obj_vx_frac, x
@@ -345,24 +346,10 @@ sra_fail:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Vertical approach: X fixed. Horizontal: keep Y in playfield.
+; No soft pull-on-screen: spawn points are intentionally off-screen (edges)
+; or fixed on-screen lanes (side approach Y). Motion stays straight to rail.
 ; ---------------------------------------------------------------------------
 .proc clamp_to_approach
-    lda objects::obj_user, x
-    cmp #DRONE_APPROACH_RIGHT
-    bcc clamp_done                  ; DOWN/UP — no X drift
-    lda objects::obj_y_int, x
-    cmp #50
-    bcs clamp_h_bot
-    lda #50
-    sta objects::obj_y_int, x
-    rts
-clamp_h_bot:
-    cmp #230
-    bcc clamp_done
-    lda #230
-    sta objects::obj_y_int, x
-clamp_done:
     rts
 .endproc
 

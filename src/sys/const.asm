@@ -491,19 +491,24 @@ DRONE_APPROACH_DOWN     = 0         ; from top → H-rail
 DRONE_APPROACH_UP       = 1         ; from bottom → H-rail
 DRONE_APPROACH_RIGHT    = 2         ; from left → V-rail
 DRONE_APPROACH_LEFT     = 3         ; from right → V-rail
-; Vertical approach lanes (top/bottom spawn X)
+; Vertical approach: on-screen X lanes, off-screen Y (from space)
 DRONE_SPAWN_X_LO        = 100
 DRONE_SPAWN_X_HI        = 0
 DRONE_SPAWN_X_RIGHT_LO  = 220
 DRONE_SPAWN_X_RIGHT_HI  = 0
-; Horizontal approach lanes (left/right spawn Y)
-DRONE_SPAWN_Y_TOP       = 50 + 8 + SPRITE_H_PX   ; 79 (below HUD)
-DRONE_SPAWN_Y_BOT       = 220
-DRONE_SPAWN_Y           = DRONE_SPAWN_Y_TOP       ; alias (legacy B spawn)
-; Side spawn X (screen edges)
-DRONE_SPAWN_X_EDGE_L_LO = 28
+; Char area ≈ Y 50..249. Mux gather needs Y >= MUX_MIN_SPRITE_Y (37) and
+; Y+21 < 263. Top: sit at mux floor (mostly upper border; HUD clip later).
+; Bottom: max mux-safe Y (mostly lower border).
+DRONE_SPAWN_Y_FROM_TOP  = MUX_MIN_SPRITE_Y       ; 37 — above playfield
+DRONE_SPAWN_Y_FROM_BOT  = 262 - SPRITE_H_PX       ; 241 — below playfield
+DRONE_SPAWN_Y           = DRONE_SPAWN_Y_FROM_TOP  ; alias (legacy B spawn)
+; Horizontal approach: off-screen X, on-screen Y lanes (upper / lower half)
+DRONE_LANE_Y_TOP        = 90
+DRONE_LANE_Y_BOT        = 200
+; Fully left of char area (X+23 < 24); fully right (X >= 24+320)
+DRONE_SPAWN_X_EDGE_L_LO = 0
 DRONE_SPAWN_X_EDGE_L_HI = 0
-DRONE_SPAWN_X_EDGE_R_LO = $40       ; 320
+DRONE_SPAWN_X_EDGE_R_LO = $58                   ; 344 = 24+320
 DRONE_SPAWN_X_EDGE_R_HI = 1
 ; Slice B (legacy ensure_rail_attacker)
 DRONE_B_SPAWN_X_LO      = 220
