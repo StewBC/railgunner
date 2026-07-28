@@ -450,7 +450,24 @@ Symbols: `game_mode`, `input_fire`, `input_fire_edge` (see `sys/zeropage.asm`).
 
 ---
 
-## 12. Quick reference card
+## 12. Cooperative live debug (intermittent glitches)
+
+When the human sees a rare sprite/mux glitch while playing: **they pause**, the
+watcher writes an evidence pack, you analyze and steer via an inbox file.
+Full protocol (topology, inbox commands, RailGunner regions):
+**[`coop-debug.md`](coop-debug.md)**.
+
+```bash
+make coop
+# On freeze: build/debug/snap-NNN.txt
+# Steer: echo resume >> build/debug/coop_inbox
+```
+
+Do not commit coop tooling until a freeze→snap→resume path is proven live.
+
+---
+
+## 13. Quick reference card
 
 ```bash
 # Human play
@@ -458,6 +475,9 @@ tools/play.sh
 
 # Agent session
 tools/agent_session.py
+
+# Coop glitch hunt (see coop-debug.md)
+make coop
 
 # Offline PRG / symbols
 tools/build-prg.sh
@@ -487,7 +507,7 @@ Sticky completion events (safe after fast ops):
 
 ---
 
-## 13. c64m friction log (dogfood feedback)
+## 14. c64m friction log (dogfood feedback)
 
 RailGunner's second purpose is to **dogfood c64m**: agents are developers using
 the tool they built (see [`README.md`](README.md) → Project goal). When using

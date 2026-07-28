@@ -46,6 +46,7 @@ update the handoff so the next agent does not rediscover it.
 | [`sprite-mux-issues.md`](sprite-mux-issues.md) | Mux review findings / integration hazards |
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
 | [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, debug/control recipes for agents |
+| [`coop-debug.md`](coop-debug.md) | **Cooperative live debug** — human pause + agent evidence packs (`coop_debug_rg`) |
 
 **Optional / not in the handoff path:** [`reviews/`](reviews/) holds post-stage
 code reviews (historical + disposition tables). Agents should **not** treat

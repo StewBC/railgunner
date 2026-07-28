@@ -2,6 +2,7 @@
 #
 #   make            assets (if needed) → build/railgunner.prg
 #   make play       full build, then windowed play (tools/play.sh)
+#   make coop       build, windowed emu + control port, coop_debug watcher
 #   make assets     regenerate converted art when sources change
 #   make screens    title (and future) screen bins only
 #   make charset    charset bins (placeholder until converters exist)
@@ -11,7 +12,7 @@
 # Generators live under tools/; this file only wires timestamps and targets.
 # Agent path stays tools/agent_session.py (live assemble; no Makefile required).
 
-.PHONY: all prg assets screens charset sprites play clean help ensure_prg_header
+.PHONY: all prg assets screens charset sprites play coop clean help ensure_prg_header
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 TOOLS := $(ROOT)/tools
@@ -60,6 +61,7 @@ help:
 	@echo "RailGunner make targets:"
 	@echo "  make / make prg   regenerate assets if needed, assemble PRG"
 	@echo "  make play         build then tools/play.sh (windowed)"
+	@echo "  make coop         build, emu+control-port, coop live-debug watcher"
 	@echo "  make assets       screens + charset + sprites converters"
 	@echo "  make screens      railgunner.png → title_hires*.bin"
 	@echo "  make charset      (no converters yet)"
@@ -110,6 +112,11 @@ $(TITLE_HIRES_COL): $(TITLE_HIRES_BIN)
 # Build then launch; skip a second assemble inside play.sh (header already checked).
 play: prg
 	RAILGUNNER_SKIP_BUILD=1 $(TOOLS)/play.sh
+
+# Build, start windowed c64m with control port + PRG if needed, run coop watcher.
+# Protocol: agents/coop-debug.md  (pause on glitch → build/debug/snap-*.txt)
+coop: prg
+	RAILGUNNER_SKIP_BUILD=1 $(TOOLS)/coop.sh
 
 clean:
 	rm -f $(RAW) $(PRG) $(SYM)
