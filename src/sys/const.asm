@@ -158,19 +158,23 @@ START_LIVES     = 3                 ; total lives; max show HUD_LIVES_MAX_SHOW (
 START_HEALTH    = 32                ; 8 bar chars × 4 steps (2px each)
 START_AMMO      = 8
 START_LEVEL     = 1
-; Level-1 table length (Step 8.4). Grow in 8.7 — do not pad empty waves.
+; Level-1 table length. Grow in 8.7 — do not pad empty waves.
 WAVES_PER_LEVEL = 4
-; approach_mask bits for wave rows
-WAVE_EDGE_DOWN  = %00000001
-WAVE_EDGE_UP    = %00000010
-WAVE_EDGE_RIGHT = %00000100         ; from left
-WAVE_EDGE_LEFT  = %00001000         ; from right
-WAVE_EDGE_TB    = WAVE_EDGE_DOWN | WAVE_EDGE_UP
-WAVE_EDGE_ALL   = WAVE_EDGE_TB | WAVE_EDGE_RIGHT | WAVE_EDGE_LEFT
-; wave row: c_quota, c_cadence, max_c, approach_mask, b_quota, a_quota
-WAVE_ROW_BYTES  = 6
-WAVE_AB_CADENCE = 110               ; slower spawn than C (staging)
-WAVE_AB_MAX     = 1                 ; at most one A/B live (rail threat sparse)
+; Playfield quadrants (around the cross)
+;   Q1 upper-right  Q2 lower-right  Q3 lower-left  Q4 upper-left
+WAVE_Q1         = %00000001
+WAVE_Q2         = %00000010
+WAVE_Q3         = %00000100
+WAVE_Q4         = %00001000
+WAVE_Q_TOP      = WAVE_Q1 | WAVE_Q4
+WAVE_Q_ALL      = WAVE_Q1 | WAVE_Q2 | WAVE_Q3 | WAVE_Q4
+; wave row (8 bytes): c_kills, b_kills, a_kills, cd_min, cd_max, max_active, quad_mask, flags
+WAVE_ROW_BYTES  = 8
+WAVE_F_PIGGY_C  = %00000001         ; schedule C near each A/B launch
+WAVE_F_MAIN_C   = %00000010         ; main dice may roll C (teach waves)
+WAVE_AB_MAX     = 1                 ; at most one A/B live
+WAVE_PIGGY_MIN  = 6                 ; ticks after A/B before piggy C
+WAVE_PIGGY_SPAN = 36                ; + random 0..35
 
 ; C blast (player only). Damage only if player body col is in the impact
 ; footprint (same 2 char cells as A/B rail strike — almost a direct hit).
@@ -481,12 +485,10 @@ DRONE_X_RIGHT_MIN       = 192
 DRONE_X_RIGHT_MAX       = 320
 
 ; ---------------------------------------------------------------------------
-; Drones (Step 8.3: multi-direction C; A/B later)
-; obj_user = DRONE_APPROACH_* (not only legacy QUAD_*)
+; Drones — launcher v2 (dice + kill targets + piggyback C)
+; obj_user = DRONE_APPROACH_*
 ; ---------------------------------------------------------------------------
-DRONE_C_SPEED           = 1         ; pixels per logic tick (all axes)
-; A/B speeds (playtest: prior frac speeds felt much too slow)
-; B matches C; A slightly slower so multi-HP still reads as "tank"
+DRONE_C_SPEED           = 1
 DRONE_B_SPEED_Y         = 1
 DRONE_B_SPEED_Y_FRAC    = 0
 DRONE_A_SPEED_Y         = 0
@@ -494,42 +496,42 @@ DRONE_A_SPEED_Y_FRAC    = $C0       ; ~0.75 px/tick
 DRONE_HP_C              = 1
 DRONE_HP_B              = 2
 DRONE_HP_A              = 3
-DRONE_C_MAX_ACTIVE      = 3         ; default cap; wave may lower
-DRONE_SPAWN_CADENCE     = 72        ; fallback if wave not loaded
-; Approach stored in obj_user
+; Approach
 DRONE_APPROACH_DOWN     = 0         ; from top → H-rail
 DRONE_APPROACH_UP       = 1         ; from bottom → H-rail
 DRONE_APPROACH_RIGHT    = 2         ; from left → V-rail
 DRONE_APPROACH_LEFT     = 3         ; from right → V-rail
-; Vertical approach: on-screen X lanes, off-screen Y (from space)
-DRONE_SPAWN_X_LO        = 100
-DRONE_SPAWN_X_HI        = 0
-DRONE_SPAWN_X_RIGHT_LO  = 220
-DRONE_SPAWN_X_RIGHT_HI  = 0
-; Char area ≈ Y 50..249. Mux gather needs Y >= MUX_MIN_SPRITE_Y (37) and
-; Y+21 < 263. Top: sit at mux floor (mostly upper border; HUD clip later).
-; Bottom: max mux-safe Y (mostly lower border).
-DRONE_SPAWN_Y_FROM_TOP  = MUX_MIN_SPRITE_Y       ; 37 — above playfield
-DRONE_SPAWN_Y_FROM_BOT  = 262 - SPRITE_H_PX       ; 241 — below playfield
-DRONE_SPAWN_Y           = DRONE_SPAWN_Y_FROM_TOP  ; alias (legacy B spawn)
-; Horizontal approach: off-screen X, on-screen Y lanes (upper / lower half)
-DRONE_LANE_Y_TOP        = 90
-DRONE_LANE_Y_BOT        = 200
-; Fully left of char area (X+23 < 24); fully right (X >= 24+320)
+; Off-screen spawn Y (mux-safe)
+DRONE_SPAWN_Y_FROM_TOP  = MUX_MIN_SPRITE_Y       ; 37
+DRONE_SPAWN_Y_FROM_BOT  = 262 - SPRITE_H_PX       ; 241
+DRONE_SPAWN_Y           = DRONE_SPAWN_Y_FROM_TOP
+; Off-screen spawn X
 DRONE_SPAWN_X_EDGE_L_LO = 0
 DRONE_SPAWN_X_EDGE_L_HI = 0
-DRONE_SPAWN_X_EDGE_R_LO = $58                   ; 344 = 24+320
+DRONE_SPAWN_X_EDGE_R_LO = $58                   ; 344
 DRONE_SPAWN_X_EDGE_R_HI = 1
-; Slice B (legacy ensure_rail_attacker)
+; In-quadrant coordinate bands (on-screen for the free axis)
+; Left half X for vertical approach (Q3/Q4)
+DRONE_BAND_X_L0         = 40
+DRONE_BAND_X_L1         = 140
+; Right half X (Q1/Q2) — stay in 8-bit X for simple dice (MSB spawn separate)
+DRONE_BAND_X_R0         = 196
+DRONE_BAND_X_R1         = 255
+; Upper half Y for horizontal approach (Q1/Q4)
+DRONE_BAND_Y_T0         = 70
+DRONE_BAND_Y_T1         = 120
+; Lower half Y (Q2/Q3)
+DRONE_BAND_Y_B0         = 170
+DRONE_BAND_Y_B1         = 220
+; Legacy B spawn X (ensure_rail_attacker)
 DRONE_B_SPAWN_X_LO      = 220
 DRONE_B_SPAWN_X_HI      = 0
-; Rail arrival thresholds
-DRONE_RAIL_ARRIVE_Y     = 140       ; from top (y >=)
-DRONE_RAIL_ARRIVE_Y_UP  = 152       ; from bottom (y <=)
-DRONE_RAIL_ARRIVE_X_R   = 160       ; from left (x >=), near V-rail
-DRONE_RAIL_ARRIVE_X_L   = 176       ; from right (x <=)
-DRONE_IMPACT_Y_OFF      = 4         ; blast row align (mirror X off)
-; Legacy quadrant ids (B clamp / old code)
+; Rail arrival
+DRONE_RAIL_ARRIVE_Y     = 140
+DRONE_RAIL_ARRIVE_Y_UP  = 152
+DRONE_RAIL_ARRIVE_X_R   = 160
+DRONE_RAIL_ARRIVE_X_L   = 176
+DRONE_IMPACT_Y_OFF      = 4
 QUAD_UL                 = 0
 QUAD_UR                 = 1
 QUAD_LL                 = 2

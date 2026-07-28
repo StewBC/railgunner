@@ -1,21 +1,17 @@
-; Wave state — load table row; clear on *kills*, not rail-suicides.
-; Quotas = kills required. Spawn until kill targets met (replacements OK).
+; Wave load + kill clear (launcher v2 params).
 
 .scope waves
 
-; ---------------------------------------------------------------------------
 .proc load
     lda wave
     cmp #WAVES_PER_LEVEL
     bcc load_idx
     lda #WAVES_PER_LEVEL - 1
 load_idx:
-    sta tmp0
+    ; *8 = asl 3
     asl a
-    sta tmp1                        ; *2
-    asl a                           ; *4
-    clc
-    adc tmp1                        ; *6
+    asl a
+    asl a
     clc
     adc #<level1_wave_table
     sta ptr_lo
@@ -28,36 +24,44 @@ load_idx:
     sta wave_quota
     iny
     lda (ptr_lo), y
-    sta wave_cadence
+    sta wave_b_quota
+    iny
+    lda (ptr_lo), y
+    sta wave_a_quota
+    iny
+    lda (ptr_lo), y
+    sta wave_cd_min
+    iny
+    lda (ptr_lo), y
+    sta wave_cd_max
     iny
     lda (ptr_lo), y
     sta wave_max_active
     iny
     lda (ptr_lo), y
-    sta wave_approach_mask
+    sta wave_quad_mask
     iny
     lda (ptr_lo), y
-    sta wave_b_quota
-    iny
-    lda (ptr_lo), y
-    sta wave_a_quota
+    sta wave_flags
 
     lda #0
     sta wave_kills_c
     sta wave_kills_b
     sta wave_kills_a
-    sta drone_spawn_seq
-    sta drone_spawn_lane
-    lda #1
-    sta drone_spawn_timer
-    lda #WAVE_AB_CADENCE / 2
-    sta wave_ab_timer
+    sta piggy_timer
+    lda #$FF
+    sta spawn_last_quad
+    ; seed RNG from frame if zero
+    lda rng_state
+    bne load_timer
+    lda frame_count
+    ora #1
+    sta rng_state
+load_timer:
+    jsr drones::roll_cooldown
     rts
 .endproc
 
-; ---------------------------------------------------------------------------
-; Clear when kill targets met and field empty. Suicides do not count.
-; ---------------------------------------------------------------------------
 .proc check_clear
     lda pending_mode
     bne cc_done
@@ -79,9 +83,6 @@ cc_done:
     rts
 .endproc
 
-; ---------------------------------------------------------------------------
-; Register a bullet kill for drone slot X (kind from obj_kind).
-; ---------------------------------------------------------------------------
 .proc note_kill
     lda objects::obj_kind, x
     cmp #OBJ_DRONE_C
