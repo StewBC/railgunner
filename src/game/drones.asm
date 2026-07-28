@@ -503,74 +503,158 @@ pfl_st:
     rts
 .endproc
 
-; Speeds for C/A/B (kind spawn_kind)
+; ---------------------------------------------------------------------------
+; Speed: pick velocity tier (class max + geometric step-down), then table lookup.
+; build_speed_mag → tmp0=frac, tmp1=int (positive magnitude)
+; ---------------------------------------------------------------------------
 .proc speed_down
-    lda spawn_kind
-    cmp #OBJ_DRONE_A
-    beq sdn_a
-    cmp #OBJ_DRONE_B
-    beq sdn_b
-    lda #DRONE_C_SPEED
-    sta objects::obj_vy_int, x
-    rts
-sdn_b:
-    lda #DRONE_B_SPEED_Y_FRAC
+    lda #DRONE_APPROACH_DOWN
+    jsr build_speed_mag
+    lda tmp0
     sta objects::obj_vy_frac, x
-    lda #DRONE_B_SPEED_Y
-    sta objects::obj_vy_int, x
-    rts
-sdn_a:
-    lda #DRONE_A_SPEED_Y_FRAC
-    sta objects::obj_vy_frac, x
-    lda #DRONE_A_SPEED_Y
+    lda tmp1
     sta objects::obj_vy_int, x
     rts
 .endproc
 
 .proc speed_up
-    jsr speed_down
+    lda #DRONE_APPROACH_UP
+    jsr build_speed_mag
     lda #0
     sec
-    sbc objects::obj_vy_frac, x
+    sbc tmp0
     sta objects::obj_vy_frac, x
     lda #0
-    sbc objects::obj_vy_int, x
+    sbc tmp1
     sta objects::obj_vy_int, x
     rts
 .endproc
 
 .proc speed_right
-    lda spawn_kind
-    cmp #OBJ_DRONE_A
-    beq sr_a
-    cmp #OBJ_DRONE_B
-    beq sr_b
-    lda #DRONE_C_SPEED
-    sta objects::obj_vx_lo, x
-    rts
-sr_b:
-    lda #DRONE_B_SPEED_Y
-    sta objects::obj_vx_lo, x
-    rts
-sr_a:
-    lda #DRONE_A_SPEED_Y_FRAC
+    lda #DRONE_APPROACH_RIGHT
+    jsr build_speed_mag
+    lda tmp0
     sta objects::obj_vx_frac, x
+    lda tmp1
+    sta objects::obj_vx_lo, x
+    lda #0
+    sta objects::obj_vx_hi, x
     rts
 .endproc
 
 .proc speed_left
-    jsr speed_right
+    lda #DRONE_APPROACH_LEFT
+    jsr build_speed_mag
     lda #0
     sec
-    sbc objects::obj_vx_frac, x
+    sbc tmp0
     sta objects::obj_vx_frac, x
     lda #0
-    sbc objects::obj_vx_lo, x
+    sbc tmp1
     sta objects::obj_vx_lo, x
     lda #0
-    sbc objects::obj_vx_hi, x
+    sbc #0
     and #1
     sta objects::obj_vx_hi, x
+    rts
+.endproc
+
+; A = approach (0..3). Uses spawn_kind + drone_speed_cap.
+; Out: tmp0=frac, tmp1=int. Clobbers mux_i, mux_j (X object slot preserved)
+.proc build_speed_mag
+    sta mux_j                       ; approach
+    jsr pick_speed_tier             ; A = 0-based tier
+    ; index = tier * 8 + approach * 2
+    asl a
+    asl a
+    asl a                           ; *8
+    sta mux_i
+    lda mux_j
+    asl a                           ; approach * 2
+    clc
+    adc mux_i
+    tay
+    lda drone_vel_tier, y
+    sta tmp0
+    lda drone_vel_tier + 1, y
+    sta tmp1
+    ; Never zero
+    lda tmp0
+    ora tmp1
+    bne bsm_done
+    lda #1
+    sta tmp0
+bsm_done:
+    rts
+.endproc
+
+; Class max tier from drone_speed_cap, then geometric step-down toward 1.
+; P(stop) = 50% each step → near-max common, far-slow rare.
+; Out: A = 0-based tier index. Clobbers mux_i. Preserves X.
+.proc pick_speed_tier
+    lda drone_speed_cap
+    bne pst_cap_ok
+    lda #1
+pst_cap_ok:
+    cmp #MAX_LEVEL + 1
+    bcc pst_cap_clamped
+    lda #MAX_LEVEL
+pst_cap_clamped:
+    ; Class offsets: C=0, B=1, A=2 below cap (floor 1)
+    sta mux_i
+    lda spawn_kind
+    cmp #OBJ_DRONE_A
+    beq pst_a
+    cmp #OBJ_DRONE_B
+    beq pst_b
+    ; C — full cap
+    jmp pst_have_max
+pst_b:
+    lda mux_i
+    sec
+    sbc #DRONE_TIER_OFF_B
+    bcs pst_b_ok
+    lda #1
+pst_b_ok:
+    cmp #1
+    bcs pst_b_store
+    lda #1
+pst_b_store:
+    sta mux_i
+    jmp pst_have_max
+pst_a:
+    lda mux_i
+    sec
+    sbc #DRONE_TIER_OFF_A
+    bcs pst_a_ok
+    lda #1
+pst_a_ok:
+    cmp #1
+    bcs pst_a_store
+    lda #1
+pst_a_store:
+    sta mux_i
+pst_have_max:
+    ; mux_i = 1-based max tier for this class
+    lda mux_i
+    cmp #1
+    bcs pst_max_ge1
+    lda #1
+    sta mux_i
+pst_max_ge1:
+pst_step:
+    lda mux_i
+    cmp #2
+    bcc pst_done                    ; already at tier 1
+    jsr rng8
+    and #1
+    bne pst_done                    ; 50% keep current
+    dec mux_i                       ; else step one tier slower
+    jmp pst_step
+pst_done:
+    lda mux_i
+    sec
+    sbc #1                          ; 0-based table index
     rts
 .endproc
 

@@ -48,6 +48,7 @@ wave_cd_max:       .res 1
 wave_max_active:   .res 1
 wave_quad_mask:    .res 1           ; WAVE_Q1..Q4
 wave_flags:        .res 1           ; WAVE_F_*
+drone_speed_cap:   .res 1           ; 1..MAX_LEVEL — C max velocity tier this level
 spawn_last_quad:   .res 1           ; anti-streak (0..3, $FF = none)
 spawn_kind:        .res 1           ; OBJ_DRONE_* for in-flight launch (not tmp*)
 spawn_quad:        .res 1           ; 0..3
@@ -57,6 +58,15 @@ piggy_timer:       .res 1           ; 0 = idle; else countdown to C spawn
 piggy_quad:        .res 1
 piggy_approach:    .res 1
 spawn_quad_list:   .res 4           ; scratch for roll_quad candidates
+
+; Bonus parcel (9.1) — at most one live; 2 drops per *level* (not per wave)
+parcel_slot:       .res 1           ; object index, or $FF = none
+parcel_due:        .res 1           ; sticky bit: spawn when free
+parcel_flip:       .res 1           ; global end flip-flop (0/1)
+parcel_drop_mask:  .res 1           ; PARCEL_DROP_T1/T2 already fired this level
+parcel_dir:        .res 1           ; SPR_DIR_* travel for active parcel
+parcel_level_kills:.res 1           ; cumulative kills this level
+parcel_level_total:.res 1           ; total kill debt for whole level
 
 ; Mode-local timers / scratch
 mode_timer:     .res 1

@@ -94,6 +94,7 @@ mux_build_failed:
 .include "game/rail.asm"
 .include "game/player.asm"
 .include "game/drones.asm"
+.include "game/parcels.asm"
 .include "game/waves.asm"
 .include "game/collision.asm"
 .include "game/stage.asm"

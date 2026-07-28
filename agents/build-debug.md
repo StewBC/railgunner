@@ -521,6 +521,35 @@ reproducible (exact command + response). Mark severity (papercut / slows-work /
 blocks-work). Cross off (`~~struck~~ fixed in c64m <ref>`) when resolved
 upstream — do not delete history.
 
+### ~~2026-07-28 — `lsr <zp>` / `lsr $nn` emits opcode only (no operand byte)~~
+
+**Fixed in c64m.** Root cause: `lsr` carried `width = 0` in the assembler opcode
+table (`src/tools/assembler/gperf.gperf` + generated `gperf.c`), the same field
+that tells `emit_opcode` how many operand bytes to write. Width `0` is the
+implied/accumulator width (default case emits no operand), so `lsr $nn` wrote a
+lone `$46`. Every other read-modify-write shift (`asl`/`rol`/`ror`, `inc`/`dec`)
+had `width = 8`; `lsr` is now `8` too. Accumulator mode (`lsr` / `lsr a`) was
+unaffected — it is special-cased in `is_implied_instruction` and never consults
+`width`. Regression test `test_shift_addressing_modes` (in
+`tests/tools/test_assembler_expressions.c`) locks down zeropage/absolute/
+accumulator for all four shifts; c64m suite 62/62. Verified end-to-end:
+`c64masm -v` on `lsr $03` now emits `46 03`.
+
+- **Severity:** blocks-work (silent wrong code).
+- **Did:** assembled `lsr tmp1` / `lsr $4d` / `lsr $03` in game `mul8x8` and in
+  minimal repros with `c64masm -v`.
+- **c64m did:** emitted a lone `$46` (LSR zp opcode) with **no** address byte.
+  Following bytes (`bcc` rel, etc.) were then mis-decoded at runtime. By
+  contrast `asl $03`, `ror $03`, `rol $03`, `inc $03`, `lsr a`, and
+  absolute `lsr $0300` all emit full instructions.
+- **Friction:** silent mis-assembly — no error, PRG “succeeds”, game logic
+  reads as random ZP corruption. RailGunner symptom: wave kill quotas became
+  `$FE/$FF/$BF`, wave never cleared, only top-half quads (W0 mask) forever.
+- **Workaround:** never `lsr <zp>`; use `lda zp / lsr a / sta zp`.
+- **Suggested improvement:** emit ZP operand for `lsr $nn` / `lsr symbol` (and
+  fail the assemble if operand is missing). Regression test: `lsr $02` →
+  `46 02`.
+
 ### ~~2026-07-26 — ARGB framebuffer read closes the control connection~~
 
 **Triage/fix submitted upstream (c64m).** Leave struck until a RailGunner

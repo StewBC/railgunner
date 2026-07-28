@@ -363,6 +363,7 @@ tt_done:
 .endproc
 
 ; Advance score colour phase every SCORE_COLOR_PERIOD frames; repaint rows.
+; Phase decrements so the wheel drifts down the table (row 1→2→3), not up.
 .proc title_text_rotate_colors
     inc score_color_tick
     lda score_color_tick
@@ -370,11 +371,11 @@ tt_done:
     bcc rotate_done
     lda #0
     sta score_color_tick
-    inc score_color_phase
+    dec score_color_phase
     lda score_color_phase
-    cmp #10
+    cmp #10                         ; 0..9 ok; wrapped $FF → 9
     bcc rotate_paint
-    lda #0
+    lda #9
     sta score_color_phase
 rotate_paint:
     jsr title_text_color_scores

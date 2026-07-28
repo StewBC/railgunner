@@ -20,9 +20,16 @@
 ; Sets score_dirty. Clobbers A.
 ; ---------------------------------------------------------------------------
 .proc add_hit
-    lda score0
+    lda #SCORE_HIT_POINTS
+    jmp add_n
+.endproc
+
+; ---------------------------------------------------------------------------
+; Award A points (0–255). Caps at 999999. Clobbers A.
+; ---------------------------------------------------------------------------
+.proc add_n
     clc
-    adc #SCORE_HIT_POINTS
+    adc score0
     sta score0
     lda score1
     adc #0

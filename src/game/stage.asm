@@ -26,6 +26,7 @@
     jsr video::install_sprite_frames
     jsr player::init
     jsr drones::init
+    jsr parcels::init
     jsr waves::load                 ; wave 0 (or current) params + spawn reset
     ; Template HUD — paint live session score / health / level / lives.
     lda #1

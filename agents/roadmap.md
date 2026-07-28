@@ -9,10 +9,9 @@ docs; this file only keeps the map coherent.
 [`repo-layout.md`](repo-layout.md) (where code lives), [`README.md`](README.md)
 (index). Optional post-stage reviews: [`reviews/`](reviews/) (not a work queue).
 
-**Current phase:** Stage 2 (Vertical slice) **done** (steps **1–7**). Active
-work is **Step 8 — full player + session / spawn**; **8.0–8.6 done** (launcher
-v2 dice + piggyback C). **Next: 8.7** fun playtest / tune. Do not start
-bonuses, ammo scarcity, disk HS, or audio until Step 8 exit holds. Post–step-7 code hygiene is archived under
+**Current phase:** **Step 9** features. **9.1 in** (parcel delivery + score-only
+payload). Next: **9.2** message system (or 9.3 ammo after). Open design debt:
+**C threat too weak** — revisit mid–late Step 9. Post–step-7 hygiene:
 [`reviews/2026-07-27-clade-post-step7.md`](reviews/2026-07-27-clade-post-step7.md).
 
 ---
@@ -52,7 +51,7 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch; re-prove under multi-drone mux load |
 | Score / thin HUD | **Done (thin)** | Hit→point; health/lives/level live; ammo template still static |
 | Death / session end | **Done (slice)** | C blast → health; 0 → next life / game over → title |
-| Waves / spawn | **Launcher v2 (8.6)** | Dice type/quad/approach/coord; kill targets; cd min/max; C piggybacks A/B |
+| Waves / spawn | **Step 8 done** | Dice + kill targets; level-scaled quotas/cd/max; fair velocity tiers; C/B/A tier pick. C threat feel parked. |
 | Rail damage A/B | **In play (8.5)** | Multi-HP 3/2; H-rail D/F→E; scars persist across levels |
 | High score entry / disk | Stub | Always skip hiscore from game over |
 | Bonuses / ammo unlock | Not started | Step 9 |
@@ -140,11 +139,10 @@ playtest pass says “this is fun enough to build on.”
 | ~~**8.4**~~ | ~~**Levels / waves as data**~~ **done** | `data/waves.asm` level-1 ×4 rows (quota/cadence/max/mask); clear when quota done + field empty → NEXT_WAVE/LEVEL. |
 | ~~**8.5**~~ | ~~**A/B + rail damage**~~ **done** | HP 3/2/1; rail hit on arrival; scars across levels. |
 | ~~**8.6**~~ | ~~**Spawn engine v2**~~ **done** | Dice composer: kill debts, random cooldown, quad/approach/coord; piggyback C on A/B; teach waves MAIN_C. |
-| **8.7** | **Tune basic spawn / gameplay; evaluate fun** | Playtest. Side armour / force V-rail still deferred. Exit = “worth building Step 9 on.” |
+| ~~**8.7**~~ | ~~**Tune basic spawn / gameplay; evaluate fun**~~ **passed** | Knobs in (velocity tiers, class tier pick, quotas/cd/max, composition, hard-tail growth). Human: “better than it ever was / enough that we know we have a game.” **Parked:** C threat / health relevance redesign (revisit mid–late Step 9). Side armour / force V-rail still deferred. |
 
-**Out of scope until Step 8 exit:** bonuses, ammo rationing, message-between-levels
-fiction, disk HS, music, boss scripts, explosion polish (logic explosions may be
-stubs).
+**Step 8 complete.** Features (bonuses, ammo, messages), disk HS, music, bosses,
+explosion polish remain later steps (9+).
 
 ---
 
@@ -156,7 +154,7 @@ that sets extra-life thresholds. Still no requirement for full audio or bosses.
 
 | ID | Work | Notes |
 |----|------|--------|
-| **9.1** | **Bonus drop mechanism only** | Timing/placement owned by (or scheduled through) the spawn engine. No bonus *types* yet — parcel motion, “opposite arm,” intercept, one active parcel. |
+| ~~**9.1**~~ | ~~**Bonus drop mechanism only**~~ **done** | Opposite arm + global flip; **2 parcels per level** at ~⅓/⅔ of level kill debt; one live + `parcel_due`; hires disc; soft collect; score `5*level` table; wave-end auto-award. |
 | **9.2** | **Message system** | Between-level (or between-wave) player-facing text. Vehicle for story snippets **and** the ammo-scarcity radio beat. Keep presentation thin (reuse typewriter or a short playfield banner). |
 | **9.3** | **Ammo scarcity + ammo packs** | Message unlocks rationing; ammo bar becomes live; fire consumes; ammo bonus is first real drop type. **Mini fun pass after this** — scarcity can ruin the game if wrong; do not march through 9.4–9.7 blind. |
 | **9.4** | **Repair bonus** | Orbiting repair; stand still on damaged segment. |

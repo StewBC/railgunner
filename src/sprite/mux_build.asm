@@ -810,7 +810,8 @@ publish_busy:
 .endproc
 
 kind_priority:
-    .byte 3,2,1,0,3,3
+    ; player, A, B, C, BONUS, EFFECT — lower = drawn front
+    .byte 3,2,1,0,0,3
 
 lane_bit_table:
     .byte $01,$02,$04,$08,$10,$20,$40,$80

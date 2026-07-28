@@ -158,7 +158,9 @@ START_LIVES     = 3                 ; total lives; max show HUD_LIVES_MAX_SHOW (
 START_HEALTH    = 32                ; 8 bar chars × 4 steps (2px each)
 START_AMMO      = 8
 START_LEVEL     = 1
-; Level-1 table length. Grow in 8.7 — do not pad empty waves.
+; Difficulty curve clamps here (speed caps ~L10; tables index 0..MAX_LEVEL-1).
+; Beyond MAX_LEVEL, params stay at the L15 intensity (endless playtest).
+MAX_LEVEL       = 15
 WAVES_PER_LEVEL = 4
 ; Playfield quadrants (around the cross)
 ;   Q1 upper-right  Q2 lower-right  Q3 lower-left  Q4 upper-left
@@ -168,13 +170,16 @@ WAVE_Q3         = %00000100
 WAVE_Q4         = %00001000
 WAVE_Q_TOP      = WAVE_Q1 | WAVE_Q4
 WAVE_Q_ALL      = WAVE_Q1 | WAVE_Q2 | WAVE_Q3 | WAVE_Q4
-; wave row (8 bytes): c_kills, b_kills, a_kills, cd_min, cd_max, max_active, quad_mask, flags
-WAVE_ROW_BYTES  = 8
+; Wave shape is computed in waves::load from base + level knobs (not fixed rows).
 WAVE_F_PIGGY_C  = %00000001         ; schedule C near each A/B launch
-WAVE_F_MAIN_C   = %00000010         ; main dice may roll C (teach waves)
+WAVE_F_MAIN_C   = %00000010         ; main dice may roll C (teach / open waves)
 WAVE_AB_MAX     = 1                 ; at most one A/B live
 WAVE_PIGGY_MIN  = 6                 ; ticks after A/B before piggy C
 WAVE_PIGGY_SPAN = 36                ; + random 0..35
+; Density floors (after level shrink)
+WAVE_CD_MIN_FLOOR = 12
+WAVE_CD_SPAN_MIN  = 10              ; cd_max always >= cd_min + this
+WAVE_MAX_ACTIVE_CAP = 10            ; player + 9 drones → mux territory
 
 ; C blast (player only). Damage only if player body col is in the impact
 ; footprint (same 2 char cells as A/B rail strike — almost a direct hit).
@@ -313,9 +318,23 @@ SPR_PTR_DRONE_A_LEFT  = $C8         ; $3200
 SPR_PTR_DRONE_A_RIGHT = $C9         ; $3240
 SPR_PTR_DRONE_A_UP    = $CA         ; $3280
 SPR_PTR_DRONE_A_DOWN  = $CB         ; $32C0
+SPR_PTR_PARCEL        = $CC         ; $3300 — hires disc (own colour)
 
 SPR_PTR_PLAYER_0      = $F8         ; $3E00 player buffer 0
 SPR_PTR_PLAYER_1      = $F9         ; $3E40 player buffer 1
+
+; Parcel / bonus (Step 9.1)
+SPR_COLOR_PARCEL_SCORE = COL_YELLOW ; unique colour = payload cue
+PARCEL_SPEED           = 2          ; ~½ PLAYER_MOVE_STEP (4)
+PARCEL_PAYLOAD_SCORE   = 0          ; 9.1 only; bit-flags later
+; Soft collect AABB (sprite-relative pixels)
+PARCEL_HIT_X0          = 6
+PARCEL_HIT_X1          = 17
+PARCEL_HIT_Y0          = 5
+PARCEL_HIT_Y1          = 14
+; Kill-progress drop marks (2 per *level*)
+PARCEL_DROP_T1         = %00000001  ; ~1/3 of level debt
+PARCEL_DROP_T2         = %00000010  ; ~2/3 of level debt
 
 ; Direction index for future table lookups (matches left/right/up/down order)
 SPR_DIR_LEFT    = 0
@@ -487,15 +506,22 @@ DRONE_X_RIGHT_MAX       = 320
 ; ---------------------------------------------------------------------------
 ; Drones — launcher v2 (dice + kill targets + piggyback C)
 ; obj_user = DRONE_APPROACH_*
+;
+; Speed model (8.7):
+;   1) Precomputed velocity tiers (drone_vel_tier): equal first-sight→rail
+;      time across N/S/E/W, scaled by level (L1 calm … L10 peak).
+;   2) Class max tier: C = level, B = level-1, A = level-2 (floor 1).
+;   3) Each spawn picks a tier ≤ class max; geometric step-down from max so
+;      near-max is common and far-slow is rare at high levels.
+;   Distances: DOWN 103, UP 89, RIGHT 160, LEFT 168; T≈140 at L1.
 ; ---------------------------------------------------------------------------
-DRONE_C_SPEED           = 1
-DRONE_B_SPEED_Y         = 1
-DRONE_B_SPEED_Y_FRAC    = 0
-DRONE_A_SPEED_Y         = 0
-DRONE_A_SPEED_Y_FRAC    = $C0       ; ~0.75 px/tick
 DRONE_HP_C              = 1
 DRONE_HP_B              = 2
 DRONE_HP_A              = 3
+; Class max-tier offsets below current level cap (C uses full cap)
+DRONE_TIER_OFF_C        = 0
+DRONE_TIER_OFF_B        = 1
+DRONE_TIER_OFF_A        = 2
 ; Approach
 DRONE_APPROACH_DOWN     = 0         ; from top → H-rail
 DRONE_APPROACH_UP       = 1         ; from bottom → H-rail

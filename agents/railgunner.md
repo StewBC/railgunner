@@ -156,7 +156,16 @@ Rail arrival does not score.
 **Type convention is fixed:** A = large, B = medium, C = small. Preserve this
 mapping in code, data, art names, and future documentation.
 
-Speed is constant within a given wave; later waves within a level, and later levels overall, increase drone speed as a difficulty lever. All drones in a wave move at that wave's speed.
+Speed is **not** one fixed value per wave. Velocities are precomputed **tiers**
+(level 1…15) with **equal first-sight → rail time** on all four approaches
+(N/S travel less distance than E/W, so base px/tick differs). On spawn:
+
+- **C** may use up to the current level’s tier; **B** one tier lower max; **A**
+  two lower (floor tier 1). So C is fastest class, A slowest.
+- Within that class max, each drone **picks a tier ≤ max** with probability
+  biased toward the max (slow entries become rare at high levels).
+- Peak tier scale rises through ~level 10 then holds; late levels also squeeze
+  the open “breather” and grow kill quotas / on-screen density.
 
 ### What each type attacks
 

@@ -20,6 +20,7 @@ play_logic:
     sta pending_mode
     jsr player::update
     jsr drones::update
+    jsr parcels::update
     jsr bullets::update
     jsr collision::update
     ; Wave clear only if combat did not already request death / rail-loss

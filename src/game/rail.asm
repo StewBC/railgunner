@@ -10,6 +10,11 @@
 ; Core destroyed (E column or B row) → game over.
 ; Strike footprint: 2 columns (H) or 2 rows (V) under the drone body.
 ;
+; Junction: G/H/I/J (and elbow B on the H edges) have no damage glyphs
+; (UDGs are a–f only). H-outer D/F never stamps cols 18–20; V damage never
+; stamps rows 12–14 (those cells are the H-rail). E core still takes damage
+; through the centre.
+;
 ; screen_put_xy clobbers tmp0–tmp2 — keep approach in draw_j for the strike.
 
 .segment "OBJECTS"
@@ -186,6 +191,36 @@ ah0:
 .endproc
 
 ; ---------------------------------------------------------------------------
+; Geometry gates (draw_i = col for H, row for V)
+; C set = in restricted band
+; ---------------------------------------------------------------------------
+.proc col_is_junction
+    lda draw_i
+    cmp #RAIL_COL_LEFT
+    bcc cij_no
+    cmp #RAIL_COL_RIGHT + 1
+    bcs cij_no
+    sec                             ; cols 18..20
+    rts
+cij_no:
+    clc
+    rts
+.endproc
+
+.proc row_is_hrail
+    lda draw_i
+    cmp #RAIL_ROW_TOP
+    bcc rih_no
+    cmp #RAIL_ROW_BOT + 1
+    bcs rih_no
+    sec                             ; rows 12..14
+    rts
+rih_no:
+    clc
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
 ; H-rail column damage (draw_i = col, draw_j = approach UP/DOWN)
 ; ---------------------------------------------------------------------------
 .proc damage_col
@@ -196,6 +231,9 @@ ah0:
 .endproc
 
 .proc dmg_from_top
+    ; Junction top edge is G/B/H — no D decay; pass strike into E core
+    jsr col_is_junction
+    bcs dft_e_only
     ldx draw_i
     lda rail_data::dmg_d, x
     cmp #3
@@ -225,6 +263,9 @@ dft_e_step:
 .endproc
 
 .proc dmg_from_bot
+    ; Junction bottom edge is I/B/J — no F decay; pass strike into E core
+    jsr col_is_junction
+    bcs dfb_e_only
     ldx draw_i
     lda rail_data::dmg_f, x
     cmp #3
@@ -278,10 +319,15 @@ deh_rts:
 ; V-rail row damage (draw_i = row, draw_j = approach LEFT/RIGHT)
 ; ---------------------------------------------------------------------------
 .proc damage_row
+    ; H-rail band is D/E/F + G/H/I/J elbows — not V A/B/C cells
+    jsr row_is_hrail
+    bcs dr_skip
     lda draw_j
     cmp #DRONE_APPROACH_LEFT
     beq dmg_from_right
     jmp dmg_from_left
+dr_skip:
+    rts
 .endproc
 
 ; From left (approach RIGHT): A outer → B core
@@ -367,8 +413,11 @@ dbv_rts:
 
 ; ---------------------------------------------------------------------------
 ; Draw helpers — draw_i = col (H) or row (V)
+; Never stamp over G/H/I/J (or H-band cells that are not V A/B/C).
 ; ---------------------------------------------------------------------------
 .proc draw_d
+    jsr col_is_junction
+    bcs dd_skip
     ldx draw_i
     lda rail_data::dmg_d, x
     tay
@@ -385,6 +434,8 @@ dbv_rts:
     ldx draw_i
     ldy #RAIL_ROW_TOP
     jmp screen_color_xy
+dd_skip:
+    rts
 .endproc
 
 .proc draw_e
@@ -407,6 +458,8 @@ dbv_rts:
 .endproc
 
 .proc draw_f
+    jsr col_is_junction
+    bcs df_skip
     ldx draw_i
     lda rail_data::dmg_f, x
     tay
@@ -423,9 +476,13 @@ dbv_rts:
     ldx draw_i
     ldy #RAIL_ROW_BOT
     jmp screen_color_xy
+df_skip:
+    rts
 .endproc
 
 .proc draw_va
+    jsr row_is_hrail
+    bcs dva_skip
     ldx draw_i
     lda rail_data::dmg_va, x
     tay
@@ -442,9 +499,13 @@ dbv_rts:
     ldx #RAIL_COL_LEFT
     ldy draw_i
     jmp screen_color_xy
+dva_skip:
+    rts
 .endproc
 
 .proc draw_vb
+    jsr row_is_hrail
+    bcs dvb_skip
     ldx draw_i
     lda rail_data::dmg_vb, x
     tay
@@ -461,9 +522,13 @@ dbv_rts:
     ldx #RAIL_COL_MID
     ldy draw_i
     jmp screen_color_xy
+dvb_skip:
+    rts
 .endproc
 
 .proc draw_vc
+    jsr row_is_hrail
+    bcs dvc_skip
     ldx draw_i
     lda rail_data::dmg_vc, x
     tay
@@ -480,6 +545,8 @@ dbv_rts:
     ldx #RAIL_COL_RIGHT
     ldy draw_i
     jmp screen_color_xy
+dvc_skip:
+    rts
 .endproc
 
 d_glyph:
