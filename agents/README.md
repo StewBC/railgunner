@@ -10,11 +10,10 @@ the tool (and fix the handoff).
 
 ## Read in this order
 
-1. **`railgunner.md`** — top-level design brief (what the game is, layout,
-   mechanics, technical approach).
-2. **`roadmap.md`** — development stages, game flow (modes), **where we are**,
-   and the ordered **Next steps** list (default work order — prefer this over
-   freestyle features). Living guide; detail docs hang off it later.
+1. **`level-rework.md`** — **current** loop freeze (levels, HUD, mines, R-ledger).
+2. **`railgunner.md`** — original design brief (layout, long-horizon systems).
+3. **`roadmap.md`** — stages, **where we are**, ordered **Next steps** (default
+   work order). Living guide; detail docs hang off it later.
 3. **`repo-layout.md`** — where source lives, what already exists, Stage 2 files
    still to add, include rules. Create new files only under this plan.
 4. **`assembler-syntax.md`** — **required before writing any `.asm`**. c64m
@@ -38,7 +37,8 @@ update the handoff so the next agent does not rediscover it.
 
 | Doc | Role |
 |-----|------|
-| [`railgunner.md`](railgunner.md) | Top-level design brief: screen, controls, combat, bonuses, wave data, HOW |
+| [`level-rework.md`](level-rework.md) | **Current loop freeze:** levels, HUD, death/mines, R1–R11 ledger (prefer over stale brief) |
+| [`railgunner.md`](railgunner.md) | Original design brief (screen, controls, bonuses vision); defer to level-rework on conflict |
 | [`roadmap.md`](roadmap.md) | Stages, flow, **where we are**, ordered **Next steps**, matrix, open questions |
 | [`repo-layout.md`](repo-layout.md) | Repo tree, what exists vs Stage 2 files to add, include rules |
 | [`objects-sprites.md`](objects-sprites.md) | Pool/mux design + ABI (implemented; consumers still Stage 2+) |

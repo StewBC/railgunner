@@ -1,9 +1,13 @@
 # RailGunner — Design Brief
 
-**Role:** Top-level design brief for agents. Read this first for *what* we are
-building and *why* the technical choices exist. For *how* to write assembly that
-assembles under c64m, read [`assembler-syntax.md`](assembler-syntax.md) before
-emitting any source. Index: [`README.md`](README.md).
+**Role:** Original top-level design brief (vision + long-horizon systems).
+
+**Current loop (levels, HUD, death, C cargo/mines, no health/ammo, no
+player-facing waves):** prefer **[`level-rework.md`](level-rework.md)** when it
+conflicts with sections below (ammo, health, C-blast HP, wave-as-content).
+
+For *how* to write assembly under c64m, read
+[`assembler-syntax.md`](assembler-syntax.md). Index: [`README.md`](README.md).
 
 ---
 
@@ -17,7 +21,7 @@ A Commodore 64 shooter. The player is a gun mounted on rails that form a cross a
 ```
 col: 0123456789012345678901234567890123456789
 row +----------------------------------------+
-  0 |000000  H:######## A:######## L:01  AAAA|  HUD (see below)
+  0 |000000 - LVL 01 - ######## - PILOTS:AAAA|  HUD (level-rework; was H/A bars)
   1 |                  ABC                   |  V-rail only
   2 |                  ABC                   |
     |                  ...                   |  rows 1–11: ABC @ cols 18–20

@@ -222,9 +222,10 @@ visible glitch.
 
 `tools/coop_debug_rg.py` resolves names from `build/symbols.txt`:
 
-**Session / player / waves (ZP):** `game_mode`, `input_dirs`, score, health,
-lives, level, wave, `pending_mode`, player rail/swing/move, drone spawn timers,
-wave kill quotas and counters.
+**Session / player / level (ZP):** `game_mode`, `input_dirs`, score, lives,
+`level`, `level_kills`, `level_quota`, `level_banner_t`, `pending_mode`, player
+rail/swing/move, drone spawn timers, cargo/mine flags, parcel slot. Prefer
+[`level-rework.md`](level-rework.md) over older “wave quota” wording.
 
 **Objects / mux:** `obj_flags`, `obj_kind`, `obj_x_lo`/`hi`, `obj_y_int`,
 `obj_sprite_ptr`, `obj_reserved` (HP), `hw_owner`, `free_count`, front/back/ready

@@ -5,14 +5,16 @@ the game should be; elements say *which runtime pieces* exist. Depth is uneven
 on purpose — sketches and open questions are fine. Detailed specs live in later
 docs; this file only keeps the map coherent.
 
-**Companions:** [`railgunner.md`](railgunner.md) (mechanics / design truth),
-[`repo-layout.md`](repo-layout.md) (where code lives), [`README.md`](README.md)
-(index). Optional post-stage reviews: [`reviews/`](reviews/) (not a work queue).
+**Companions:** [`level-rework.md`](level-rework.md) (**current loop / R1–R11**),
+[`railgunner.md`](railgunner.md) (original brief — defer to level-rework on
+conflict), [`repo-layout.md`](repo-layout.md), [`README.md`](README.md).
+Optional reviews: [`reviews/`](reviews/) (not a work queue).
 
-**Current phase:** **Level-centric rework R1–R8 landed** (no player-facing waves;
-HUD progress; rank banner; health/ammo removed; C cargo→GHIJ mines; lives).
-**Next:** fun tune (R10), then fairness/sets (R9), victory/boss hooks (R11).
-Ammo scarcity (old 9.3) **deferred** (ammo removed). Post–step-7 hygiene:
+**Current phase:** **Level-centric baseline R1–R8 done.** See
+[`level-rework.md`](level-rework.md) for the freeze, ledger, and code map.
+**Next (ordered):** **R10** fun tune → **R9** fairness/sets (design first) →
+bonus types / polish → **R11** victory/boss hooks. Ammo scarcity cancelled for
+now (ammo removed). Post–step-7 hygiene:
 [`reviews/2026-07-27-clade-post-step7.md`](reviews/2026-07-27-clade-post-step7.md).
 
 ---
@@ -42,20 +44,22 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Area | Status | Notes |
 |------|--------|--------|
 | Cold init / IRQ / input | Done | `boot/init`, `sys/*`, main loop with logic ticks |
-| Mode dispatcher | Done | Jump table; modes include story/instructions extras |
-| Frontend attract | Ahead of plan | Hires title ↔ text menu; typewriter; S/I stubs |
-| Game / stage init | Minimal | Session vars reset; playfield draw; player on H-rail |
-| Play | **Combat slice** | Player H-arm, V bullets, C top→H-rail, collision; death → next life / game over |
-| Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
-| Player sprite / move | **Full cross (8.1)** | Mount both ways, 90° remap, V travel, L/R + U/D barrel mid-swing |
-| Bullets / charset UDGs | **Both streams** | V + H UDGs; fire U/D on H-arm, L/R on V-arm; cell ROF lock |
-| Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch; re-prove under multi-drone mux load |
-| Score / thin HUD | **Done (thin)** | Hit→point; health/lives/level live; ammo template still static |
-| Death / session end | **Done (slice)** | C blast → health; 0 → next life / game over → title |
-| Waves / spawn | **Step 8 done** | Dice + kill targets; level-scaled quotas/cd/max; fair velocity tiers; C/B/A tier pick. C threat feel parked. |
-| Rail damage A/B | **In play (8.5)** | Multi-HP 3/2; H-rail D/F→E; scars persist across levels |
-| High score entry / disk | Stub | Always skip hiscore from game over |
-| Bonuses / ammo unlock | Not started | Step 9 |
+| Mode dispatcher | Done | Jump table; story/instructions extras |
+| Frontend attract | Done | Hires title ↔ text menu; typewriter |
+| Stage init | New game only | Full redraw + player start; **not** on level-up |
+| Play | **Level-centric combat** | Full cross, A/B/C, parcels, cargo/mines; see [level-rework.md](level-rework.md) |
+| Object pool + sprite mux | Done | Production path + `tst/` demos |
+| Player | Full cross | Mount/remap, both arms fire |
+| Bullets | Both streams | V + H UDGs; cell ROF lock |
+| Collision | Slice | `COLLISION_MODE=0` HW latch |
+| HUD | **Rework done** | `000000 - LVL nn - bar - PILOTS:AAAA`; no health/ammo |
+| Level / spawn | **R1–R8** | Level kill quota; stop spawn; quiescence → rank banner; no player waves |
+| Rail damage A/B | In play | Multi-HP; core collapse → game over |
+| C threat | Cargo/mines | Cargo → GHIJ stacks → arm → centre costs a life |
+| Parcels | Score-only | 2/level @ ~⅓ & ~⅔ of level quota |
+| High score / disk | Stub | Always skip hiscore from game over |
+| Fairness / sets | **Todo R9** | Deferred design |
+| Bonus types (repair/shield/…) | Not started | After R10 |
 | Audio | Not started | Steps 13–15 |
 
 **Intentional early work (keep):** mux foundation, title art, drone art (all
@@ -147,23 +151,29 @@ explosion polish remain later steps (9+).
 
 ---
 
-### Step 9 — Features (bonuses, messages, ammo, score meta)
+### Level rework R9–R11 (active queue after R1–R8)
 
-**Intent:** Survival depth and scoring systems on top of a fun core loop.
-**Exit criteria:** All listed bonus types + ammo scarcity path + a balance pass
-that sets extra-life thresholds. Still no requirement for full audio or bosses.
+Full freeze + ledger: **[`level-rework.md`](level-rework.md)**.
 
 | ID | Work | Notes |
 |----|------|--------|
-| ~~**9.1**~~ | ~~**Bonus drop mechanism only**~~ **done** | Opposite arm + global flip; **2 parcels per level** at ~⅓/⅔ of level kill debt; one live + `parcel_due`; hires disc; soft collect; score `5*level` table; wave-end auto-award. |
-| ~~**9.2**~~ | ~~**Message system**~~ **done (thin)** | Playfield banner WAVE/LEVEL CLEAR; hold ~1.8s + FIRE skip; restore field on wave continue. Radio/ammo copy can reuse `message::` later. |
-| **9.3** | **Ammo scarcity + ammo packs** | Message unlocks rationing; ammo bar becomes live; fire consumes; ammo bonus is first real drop type. **Mini fun pass after this** — scarcity can ruin the game if wrong; do not march through 9.4–9.7 blind. |
-| **9.4** | **Repair bonus** | Orbiting repair; stand still on damaged segment. |
-| **9.5** | **Shield bonus** | Pool absorbs C-blast damage; tiers 6/4/2; ring art when ready (stub colour OK first). |
-| **9.6** | **Damage multiplier bonus** | 2× / 3× with degrade; bullet colour hint when art allows. |
-| **9.7** | **Pure score bonus** | Consolation when other types already held (per design brief). |
-| **9.8** | **Score / gameplay balance pass** | Points, drop rates, durations, scarcity feel. |
-| **9.9** | **Extra life** | Life-up from score thresholds that fall out of 9.8 (and/or a rare drop if design wants — prefer thresholds first). |
+| **R9** | **Sets + fairness gate** | A/B launch separation; close-shave curve; design first |
+| **R10** | **Fun tune** | Quotas, banner time, density, `MINE_STACK_K`, cargo feel |
+| **R11** | **Victory / boss hooks** | Empty hooks; possible set-pieces after 5/10/15 |
+
+### Step 9 — Features (parcels done; rest after R10)
+
+| ID | Work | Notes |
+|----|------|--------|
+| ~~**9.1**~~ | ~~**Parcel mechanism + score**~~ **done** | See level-rework §2 parcels |
+| ~~**9.2**~~ | ~~**Messages**~~ **done as rank banner** | HUD rank line on level clear (not wave clear) |
+| ~~**9.3**~~ | ~~**Ammo scarcity**~~ **cancelled** | Ammo removed in rework; revisit only if design returns ammo |
+| **9.4** | **Repair bonus** | After R10; rail damage still live |
+| **9.5** | **Shield bonus** | Needs new damage model (mines / future hits) |
+| **9.6** | **Damage multiplier** | 2× on score/hits |
+| **9.7** | **Score consolation parcel** | When other types held |
+| **9.8** | **Balance pass** | With R10 |
+| **9.9** | **Extra life** | Score thresholds |
 
 ---
 
