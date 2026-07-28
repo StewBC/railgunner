@@ -167,8 +167,10 @@ WAVE_EDGE_RIGHT = %00000100         ; from left
 WAVE_EDGE_LEFT  = %00001000         ; from right
 WAVE_EDGE_TB    = WAVE_EDGE_DOWN | WAVE_EDGE_UP
 WAVE_EDGE_ALL   = WAVE_EDGE_TB | WAVE_EDGE_RIGHT | WAVE_EDGE_LEFT
-; wave table row: quota, cadence, max_active, approach_mask
-WAVE_ROW_BYTES  = 4
+; wave row: c_quota, c_cadence, max_c, approach_mask, b_quota, a_quota
+WAVE_ROW_BYTES  = 6
+WAVE_AB_CADENCE = 110               ; slower spawn than C (staging)
+WAVE_AB_MAX     = 1                 ; at most one A/B live (rail threat sparse)
 
 ; C blast (player only). Damage only if player body col is in the impact
 ; footprint (same 2 char cells as A/B rail strike — almost a direct hit).
@@ -483,9 +485,16 @@ DRONE_X_RIGHT_MAX       = 320
 ; obj_user = DRONE_APPROACH_* (not only legacy QUAD_*)
 ; ---------------------------------------------------------------------------
 DRONE_C_SPEED           = 1         ; pixels per logic tick (all axes)
-DRONE_B_SPEED_Y         = 1
-DRONE_C_MAX_ACTIVE      = 3         ; dumb multi-C cap (mux-friendly)
-DRONE_SPAWN_CADENCE     = 72        ; logic ticks between spawn attempts (~1.4s PAL)
+; A/B slower than C (frac motion) — rail threats, not chaff
+DRONE_B_SPEED_Y         = 0
+DRONE_B_SPEED_Y_FRAC    = $80       ; ~0.5 px/tick
+DRONE_A_SPEED_Y         = 0
+DRONE_A_SPEED_Y_FRAC    = $55       ; ~0.33 px/tick
+DRONE_HP_C              = 1
+DRONE_HP_B              = 2
+DRONE_HP_A              = 3
+DRONE_C_MAX_ACTIVE      = 3         ; default cap; wave may lower
+DRONE_SPAWN_CADENCE     = 72        ; fallback if wave not loaded
 ; Approach stored in obj_user
 DRONE_APPROACH_DOWN     = 0         ; from top → H-rail
 DRONE_APPROACH_UP       = 1         ; from bottom → H-rail

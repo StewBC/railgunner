@@ -1,19 +1,19 @@
-; Wave / level tables (Step 8.4).
-; Row: quota, cadence, max_active, approach_mask (WAVE_EDGE_*).
-; Level 1 only for now — short teach → open the cross. Tune in 8.7.
+; Wave / level tables (Step 8.4–8.5).
+; Row: c_quota, c_cadence, max_c, approach_mask, b_quota, a_quota
+; Level 1: teach C → open cross → introduce slow B → A + denser C.
+; A/B only approach top/bottom (H-rail). Tune in 8.7.
 
-; Wave 0: top only, one at a time — learn the board
-; Wave 1: top+bottom
-; Wave 2: all edges, max 2
-; Wave 3: all edges, denser (still capped at 3)
 level1_wave_table:
-    .byte 3, 96, 1, WAVE_EDGE_DOWN
-    .byte 4, 80, 2, WAVE_EDGE_TB
-    .byte 5, 64, 2, WAVE_EDGE_ALL
-    .byte 6, 56, 3, WAVE_EDGE_ALL
+    ; W0: C top only, single-file — learn
+    .byte 3, 96, 1, WAVE_EDGE_DOWN, 0, 0
+    ; W1: C top+bottom
+    .byte 4, 80, 2, WAVE_EDGE_TB, 0, 0
+    ; W2: C all edges + two slow B (rail intro)
+    .byte 5, 64, 2, WAVE_EDGE_ALL, 2, 0
+    ; W3: C denser + two B + one A
+    .byte 6, 56, 3, WAVE_EDGE_ALL, 2, 1
 level1_wave_table_end:
 
-; Sanity: table length must match WAVES_PER_LEVEL in const.asm
 .if (level1_wave_table_end - level1_wave_table) .ne (WAVES_PER_LEVEL * WAVE_ROW_BYTES)
     .byte ERR_wave_table_length
 .endif

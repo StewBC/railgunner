@@ -10,9 +10,9 @@ docs; this file only keeps the map coherent.
 (index). Optional post-stage reviews: [`reviews/`](reviews/) (not a work queue).
 
 **Current phase:** Stage 2 (Vertical slice) **done** (steps **1–7**). Active
-work is **Step 8 — full player + session / spawn** (“make it a game”); **8.0–8.4
-done**, next **8.5** (A/B + rail damage in play). Do not start bonuses, ammo
-scarcity, disk high scores, or audio until the Step 8 exit criteria hold. Post–step-7 code hygiene is archived under
+work is **Step 8 — full player + session / spawn** (“make it a game”); **8.0–8.5
+done**, next **8.6** (spawn engine harden) / **8.7** (fun tune). Do not start
+bonuses, ammo scarcity, disk high scores, or audio until Step 8 exit holds. Post–step-7 code hygiene is archived under
 [`reviews/2026-07-27-clade-post-step7.md`](reviews/2026-07-27-clade-post-step7.md).
 
 ---
@@ -53,7 +53,7 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Score / thin HUD | **Done (thin)** | Hit→point; health/lives/level live; ammo template still static |
 | Death / session end | **Done (slice)** | C blast → health; 0 → next life / game over → title |
 | Waves / spawn | **Table waves (8.4)** | Level-1: 4 waves, teach→open; quota clear → next wave/level |
-| Rail damage A/B | Partial | A/B rail path exists; multi-type waves later |
+| Rail damage A/B | **In play (8.5)** | Slow A/B, multi-HP 3/2, H-rail damage; staged from wave 2+ |
 | High score entry / disk | Stub | Always skip hiscore from game over |
 | Bonuses / ammo unlock | Not started | Step 9 |
 | Audio | Not started | Steps 13–15 |
@@ -138,7 +138,7 @@ playtest pass says “this is fun enough to build on.”
 | ~~**8.2**~~ | ~~**Shooting on the other arm**~~ **done** | HT/HB stream; launch cols 17/21; Y half-lanes; collision AABB; same cell ROF. **Checkpoint:** full player experience. |
 | ~~**8.3**~~ | ~~**Multi-direction C pressure**~~ **done** | Cadence spawner rotates DOWN/UP/RIGHT/LEFT; max 3 C; lane alternate; blast X or Y footprint by approach. |
 | ~~**8.4**~~ | ~~**Levels / waves as data**~~ **done** | `data/waves.asm` level-1 ×4 rows (quota/cadence/max/mask); clear when quota done + field empty → NEXT_WAVE/LEVEL. |
-| **8.5** | **A/B content + rail damage in play** | After multi-C feels alive (8.3). Multi-hit A/B (3/2 HP), rail damage on arrival, rail-destroyed reachable. Required before **8.7 exit**, not before first multi-spawn. |
+| ~~**8.5**~~ | ~~**A/B + rail damage**~~ **done** | HP 3/2/1; A/B ~⅓–½ C speed; max 1 A/B; waves 2–3 introduce B then A; rail hit on arrival. |
 | **8.6** | **Spawn engine** | Master controller: when/where/type/speed from level/wave data; pool + mux budget. Single owner of spawn policy. Consumes 8.4; can start thin during 8.3 as a stub and grow. |
 | **8.7** | **Tune basic spawn / gameplay; evaluate fun** | Playtest session. Adjust speeds, density, mix, damage, ROF. Behaviour changes allowed if the game is not fun. Exit = “worth building Step 9 on.” |
 

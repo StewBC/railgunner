@@ -68,9 +68,7 @@ upd_next:
     jsr test_bullets                ; C clear + X = bullet slot
     bcs hw_try_rail
     jsr bullets::destroy
-    jsr score::add_hit
-    ldx mode_state
-    jsr objects::retire_and_try_free
+    jsr drones::apply_bullet_hit    ; score + multi-HP; retire at 0
     rts
 hw_try_rail:
     ldx mode_state
@@ -169,9 +167,7 @@ es_none:
 as_bullet:
     ldx mux_key_prio
     jsr bullets::destroy
-    jsr score::add_hit
-    ldx mode_state
-    jsr objects::retire_and_try_free
+    jsr drones::apply_bullet_hit
     rts
 as_rail:
     jsr rail_arrival_retire

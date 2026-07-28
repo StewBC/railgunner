@@ -39,10 +39,15 @@ drone_spawn_timer: .res 1           ; ticks until next spawn attempt
 drone_spawn_seq:   .res 1           ; 0..3 approach rotation
 drone_spawn_lane:  .res 1           ; alternate left/right or top/bot lane
 wave_quota:        .res 1           ; C to spawn this wave
-wave_spawned:      .res 1           ; spawned so far this wave
-wave_cadence:      .res 1           ; ticks between spawn attempts
+wave_spawned:      .res 1           ; C spawned so far this wave
+wave_cadence:      .res 1           ; C ticks between spawn attempts
 wave_max_active:   .res 1           ; concurrent C cap
-wave_approach_mask:.res 1           ; WAVE_EDGE_* bits
+wave_approach_mask:.res 1           ; WAVE_EDGE_* bits (C)
+wave_b_quota:      .res 1           ; B (medium) to spawn
+wave_a_quota:      .res 1           ; A (large) to spawn
+wave_b_spawned:    .res 1
+wave_a_spawned:    .res 1
+wave_ab_timer:     .res 1           ; separate slower cadence for A/B
 
 ; Mode-local timers / scratch
 mode_timer:     .res 1

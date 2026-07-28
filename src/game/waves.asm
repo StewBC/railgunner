@@ -1,21 +1,21 @@
 ; Wave state — load table row into ZP; detect wave clear → next wave.
-; Spawn policy still lives in drones::; this owns quota / clear / table index.
 
 .scope waves
 
-; ---------------------------------------------------------------------------
-; Load params for current `wave` (0..WAVES_PER_LEVEL-1). Resets spawn counters.
-; Clobbers A,X,Y,tmp0,ptr_*.
 ; ---------------------------------------------------------------------------
 .proc load
     lda wave
     cmp #WAVES_PER_LEVEL
     bcc load_idx
-    lda #WAVES_PER_LEVEL - 1        ; clamp (should not happen in play)
+    lda #WAVES_PER_LEVEL - 1
 load_idx:
+    ; index * 6 = *4 + *2
     sta tmp0
     asl a
-    asl a                           ; * WAVE_ROW_BYTES (4)
+    sta tmp1                        ; *2
+    asl a                           ; *4
+    clc
+    adc tmp1                        ; *6
     clc
     adc #<level1_wave_table
     sta ptr_lo
@@ -35,19 +35,28 @@ load_idx:
     iny
     lda (ptr_lo), y
     sta wave_approach_mask
+    iny
+    lda (ptr_lo), y
+    sta wave_b_quota
+    iny
+    lda (ptr_lo), y
+    sta wave_a_quota
 
     lda #0
     sta wave_spawned
+    sta wave_b_spawned
+    sta wave_a_spawned
     sta drone_spawn_seq
     sta drone_spawn_lane
     lda #1
-    sta drone_spawn_timer           ; first spawn soon
+    sta drone_spawn_timer
+    lda #WAVE_AB_CADENCE / 2        ; first A/B a bit after C starts
+    sta wave_ab_timer
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; If this wave's quota is done and no C left → pending MODE_NEXT_WAVE.
-; Does nothing if pending_mode already set (death wins).
+; Clear when all quotas spawned and no A/B/C remain.
 ; ---------------------------------------------------------------------------
 .proc check_clear
     lda pending_mode
@@ -55,7 +64,13 @@ load_idx:
     lda wave_spawned
     cmp wave_quota
     bcc cc_done
-    jsr drones::count_active_c
+    lda wave_b_spawned
+    cmp wave_b_quota
+    bcc cc_done
+    lda wave_a_spawned
+    cmp wave_a_quota
+    bcc cc_done
+    jsr drones::count_active_drones
     cmp #0
     bne cc_done
     lda #MODE_NEXT_WAVE

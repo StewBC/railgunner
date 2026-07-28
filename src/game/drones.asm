@@ -34,35 +34,93 @@ upd_next:
     cpx #OBJECT_CAPACITY
     bne upd_loop
 
-    jsr spawn_tick
+    jsr spawn_tick_c
+    jsr spawn_tick_ab
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Cadence from wave_cadence; stop when wave_spawned >= wave_quota.
-; Approach chosen from wave_approach_mask (seq walks 0..3).
+; C cadence from wave_cadence; stop when wave_spawned >= wave_quota.
 ; ---------------------------------------------------------------------------
-.proc spawn_tick
+.proc spawn_tick_c
     lda drone_spawn_timer
-    beq spawn_try
+    beq stc_try
     dec drone_spawn_timer
     rts
-spawn_try:
+stc_try:
     lda wave_cadence
     sta drone_spawn_timer
     lda wave_spawned
     cmp wave_quota
-    bcs spawn_tick_done             ; quota full — wait for clear
+    bcs stc_done
     jsr count_active_c
     cmp wave_max_active
-    bcs spawn_tick_done
-    jsr pick_approach_from_mask     ; A = DRONE_APPROACH_*
+    bcs stc_done
+    jsr pick_approach_from_mask
     jsr spawn_c_approach
-    bcs spawn_tick_done             ; alloc fail
+    bcs stc_done
     inc wave_spawned
     inc drone_spawn_seq
     inc drone_spawn_lane
-spawn_tick_done:
+stc_done:
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; A/B: slower cadence, max WAVE_AB_MAX live, top/bottom only (H-rail).
+; Prefer finishing B quota before A (chaff hunt vs structure).
+; ---------------------------------------------------------------------------
+.proc spawn_tick_ab
+    lda wave_ab_timer
+    beq stab_try
+    dec wave_ab_timer
+    rts
+stab_try:
+    lda #WAVE_AB_CADENCE
+    sta wave_ab_timer
+    ; any A/B left to spawn?
+    lda wave_b_spawned
+    cmp wave_b_quota
+    bcc stab_have
+    lda wave_a_spawned
+    cmp wave_a_quota
+    bcs stab_done
+stab_have:
+    jsr count_active_ab
+    cmp #WAVE_AB_MAX
+    bcs stab_done
+    ; kind: B until b_quota done, else A
+    lda wave_b_spawned
+    cmp wave_b_quota
+    bcc stab_b
+    lda #OBJ_DRONE_A
+    jmp stab_spawn
+stab_b:
+    lda #OBJ_DRONE_B
+stab_spawn:
+    sta tmp0                        ; kind for spawn_ab
+    sta tmp1                        ; keep for counters (tmp0 may clobber)
+    ; approach: alternate top/bottom only
+    lda drone_spawn_lane
+    and #1
+    beq stab_down
+    lda #DRONE_APPROACH_UP
+    jmp stab_go
+stab_down:
+    lda #DRONE_APPROACH_DOWN
+stab_go:
+    jsr spawn_ab_approach           ; A=approach, tmp0=kind
+    bcs stab_done
+    lda tmp1
+    cmp #OBJ_DRONE_A
+    beq stab_inc_a
+    inc wave_b_spawned
+    jmp stab_lane
+stab_inc_a:
+    inc wave_a_spawned
+stab_lane:
+    inc drone_spawn_lane
+stab_done:
     rts
 .endproc
 
@@ -114,6 +172,55 @@ cac_n:
     inx
     cpx #OBJECT_CAPACITY
     bne cac_loop
+    lda tmp0
+    rts
+.endproc
+
+; A = active A+B count.
+.proc count_active_ab
+    ldx #1
+    lda #0
+    sta tmp0
+cab_loop:
+    lda objects::obj_flags, x
+    and #(OBJF_ALLOCATED | OBJF_RETIRING)
+    cmp #OBJF_ALLOCATED
+    bne cab_n
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_A
+    beq cab_yes
+    cmp #OBJ_DRONE_B
+    bne cab_n
+cab_yes:
+    inc tmp0
+cab_n:
+    inx
+    cpx #OBJECT_CAPACITY
+    bne cab_loop
+    lda tmp0
+    rts
+.endproc
+
+; A = any active A/B/C (for wave clear).
+.proc count_active_drones
+    ldx #1
+    lda #0
+    sta tmp0
+cad_loop:
+    lda objects::obj_flags, x
+    and #(OBJF_ALLOCATED | OBJF_RETIRING)
+    cmp #OBJF_ALLOCATED
+    bne cad_n
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_A
+    bcc cad_n
+    cmp #OBJ_BONUS
+    bcs cad_n
+    inc tmp0
+cad_n:
+    inx
+    cpx #OBJECT_CAPACITY
+    bne cad_loop
     lda tmp0
     rts
 .endproc
@@ -201,10 +308,118 @@ sca_left:
     sta objects::obj_vx_hi, x
 
 sca_flags:
+    lda #DRONE_HP_C
+    sta objects::obj_reserved, x    ; hits remaining
     lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
     sta objects::obj_flags, x
     jsr objects::mark_dirty
     clc
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Spawn A or B. A = approach (DOWN/UP only), tmp0 = OBJ_DRONE_A/B.
+; C set on alloc fail. Preserves kind in tmp0.
+; ---------------------------------------------------------------------------
+.proc spawn_ab_approach
+    sta tmp2                        ; approach
+    jsr objects::alloc
+    bcc sab_ok
+    rts
+sab_ok:
+    lda tmp0
+    sta objects::obj_kind, x
+    cmp #OBJ_DRONE_A
+    beq sab_a
+    lda #SPR_COLOR_DRONE_B
+    sta objects::obj_sprite_color, x
+    lda #DRONE_HP_B
+    sta objects::obj_reserved, x
+    lda #DRONE_B_SPEED_Y_FRAC
+    sta objects::obj_vy_frac, x
+    lda #DRONE_B_SPEED_Y
+    sta objects::obj_vy_int, x
+    lda tmp2
+    cmp #DRONE_APPROACH_UP
+    beq sab_b_up
+    lda #SPR_PTR_DRONE_B_DOWN
+    jmp sab_ptr
+sab_b_up:
+    lda #SPR_PTR_DRONE_B_UP
+    jmp sab_ptr
+sab_a:
+    lda #SPR_COLOR_DRONE_A
+    sta objects::obj_sprite_color, x
+    lda #DRONE_HP_A
+    sta objects::obj_reserved, x
+    lda #DRONE_A_SPEED_Y_FRAC
+    sta objects::obj_vy_frac, x
+    lda #DRONE_A_SPEED_Y
+    sta objects::obj_vy_int, x
+    lda tmp2
+    cmp #DRONE_APPROACH_UP
+    beq sab_a_up
+    lda #SPR_PTR_DRONE_A_DOWN
+    jmp sab_ptr
+sab_a_up:
+    lda #SPR_PTR_DRONE_A_UP
+sab_ptr:
+    sta objects::obj_sprite_ptr, x
+    lda #OBJA_MULTICOLOR
+    sta objects::obj_sprite_attr, x
+    lda #0
+    sta objects::obj_x_frac, x
+    sta objects::obj_y_frac, x
+    sta objects::obj_vx_frac, x
+    sta objects::obj_vx_lo, x
+    sta objects::obj_vx_hi, x
+
+    lda tmp2
+    sta objects::obj_user, x
+    cmp #DRONE_APPROACH_UP
+    beq sab_from_bot
+    jsr pick_vert_lane_x
+    lda #DRONE_SPAWN_Y_FROM_TOP
+    sta objects::obj_y_int, x
+    ; vy already set; for UP approach negate
+    jmp sab_flags
+sab_from_bot:
+    jsr pick_vert_lane_x
+    lda #DRONE_SPAWN_Y_FROM_BOT
+    sta objects::obj_y_int, x
+    ; negate fractional + int speed for upward travel
+    lda #0
+    sec
+    sbc objects::obj_vy_frac, x
+    sta objects::obj_vy_frac, x
+    lda #0
+    sbc objects::obj_vy_int, x
+    sta objects::obj_vy_int, x
+sab_flags:
+    lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
+    sta objects::obj_flags, x
+    jsr objects::mark_dirty
+    clc
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Bullet hit on drone mode_state: score 1, dec HP, retire at 0.
+; X = drone slot (also mode_state). Clobbers A.
+; ---------------------------------------------------------------------------
+.proc apply_bullet_hit
+    jsr score::add_hit
+    ldx mode_state
+    lda objects::obj_reserved, x
+    beq abh_kill                    ; already 0 — kill
+    sec
+    sbc #1
+    sta objects::obj_reserved, x
+    beq abh_kill
+    rts                             ; still alive
+abh_kill:
+    ldx mode_state
+    jsr objects::retire_and_try_free
     rts
 .endproc
 
@@ -308,10 +523,14 @@ era_done:
     sta objects::obj_vx_lo, x
     sta objects::obj_vx_hi, x
     sta objects::obj_vy_frac, x
+    lda #DRONE_B_SPEED_Y_FRAC
+    sta objects::obj_vy_frac, x
     lda #DRONE_B_SPEED_Y
     sta objects::obj_vy_int, x
     lda #DRONE_APPROACH_DOWN
     sta objects::obj_user, x
+    lda #DRONE_HP_B
+    sta objects::obj_reserved, x
     lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
     sta objects::obj_flags, x
     jsr objects::mark_dirty
