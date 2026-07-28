@@ -47,6 +47,10 @@ update the handoff so the next agent does not rediscover it.
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
 | [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, debug/control recipes for agents |
 
+**Optional / not in the handoff path:** [`reviews/`](reviews/) holds post-stage
+code reviews (historical + disposition tables). Agents should **not** treat
+them as required reading or as a work queue ahead of `roadmap.md`.
+
 ## Source tree (summary)
 
 | Path | Role |
