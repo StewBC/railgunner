@@ -43,9 +43,8 @@ play_done:
 ; Next wave / next level (driven by wave quota clear)
 ; ---------------------------------------------------------------------------
 .proc next_wave_enter
-    lda #COL_LT_GREEN
-    sta VIC_BORDER
-    ; TODO: "WAVE CLEAR" message + pause (Polish / 9.2)
+    ; No border flash — play stays COL_GREEN until presentation (9.2 / polish)
+    ; TODO: "WAVE CLEAR" message + pause
     inc wave
     lda wave
     cmp #WAVES_PER_LEVEL
@@ -65,9 +64,7 @@ next_wave_more:
 .endproc
 
 .proc next_level_enter
-    lda #COL_PURPLE
-    sta VIC_BORDER
-    ; TODO: "LEVEL CLEAR" message + pause
+    ; TODO: "LEVEL CLEAR" message + pause (border flash was too fast to read)
     inc level
     lda #1
     sta hud_status_dirty            ; stage_init will paint_status (incl. level)

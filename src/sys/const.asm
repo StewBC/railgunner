@@ -485,11 +485,12 @@ DRONE_X_RIGHT_MAX       = 320
 ; obj_user = DRONE_APPROACH_* (not only legacy QUAD_*)
 ; ---------------------------------------------------------------------------
 DRONE_C_SPEED           = 1         ; pixels per logic tick (all axes)
-; A/B slower than C (frac motion) — rail threats, not chaff
-DRONE_B_SPEED_Y         = 0
-DRONE_B_SPEED_Y_FRAC    = $80       ; ~0.5 px/tick
+; A/B speeds (playtest: prior frac speeds felt much too slow)
+; B matches C; A slightly slower so multi-HP still reads as "tank"
+DRONE_B_SPEED_Y         = 1
+DRONE_B_SPEED_Y_FRAC    = 0
 DRONE_A_SPEED_Y         = 0
-DRONE_A_SPEED_Y_FRAC    = $55       ; ~0.33 px/tick
+DRONE_A_SPEED_Y_FRAC    = $C0       ; ~0.75 px/tick
 DRONE_HP_C              = 1
 DRONE_HP_B              = 2
 DRONE_HP_A              = 3

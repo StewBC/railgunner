@@ -1,12 +1,14 @@
-; H-rail damage (downward A/B). Per-cell cumulative:
-;   D row (outer): 0 → 1 → 2 → space, then further hits go to E
-;   E row (core):  0 → 1 → 2 → space + game over (rail destroyed)
+; H-rail damage (A/B). Per-cell cumulative, approach-aware:
+;   From top (DOWN):  D (outer) → E (core)
+;   From bottom (UP): F (outer) → E (core)
+;   E destroyed → game over (rail destroyed)
 ; One strike damages two independent columns (ship wider than 8px).
 
 .segment "OBJECTS"
 .scope rail_data
 dmg_d:  .res SCREEN_W              ; top edge D  0..3 (3 = space)
 dmg_e:  .res SCREEN_W              ; mid solid E 0..3 (3 = space / rail dead)
+dmg_f:  .res SCREEN_W              ; bottom edge F 0..3
 .endscope
 
 .segment "CODE_HI"
@@ -18,15 +20,17 @@ dmg_e:  .res SCREEN_W              ; mid solid E 0..3 (3 = space / rail dead)
 clr:
     sta rail_data::dmg_d, x
     sta rail_data::dmg_e, x
+    sta rail_data::dmg_f, x
     inx
     cpx #SCREEN_W
     bne clr
     rts
 .endproc
 
-; X = drone slot → two columns under the body (not geometric centre+1).
-; Sprite left + DRONE_IMPACT_X_OFF lines up with visible art (was +12).
+; X = drone slot → two columns under body; outer edge from approach dir.
 .proc apply_ab_hit
+    lda objects::obj_user, x
+    sta tmp2                        ; approach (DOWN vs UP)
     lda objects::obj_x_lo, x
     clc
     adc #DRONE_IMPACT_X_OFF
@@ -72,58 +76,92 @@ ab0:
     jmp damage_col
 .endproc
 
-; Advance one column stack: outer D first, then E. draw_i = col.
+; Outer edge from approach in tmp2, then E. draw_i = col.
 .proc damage_col
+    lda tmp2
+    cmp #DRONE_APPROACH_UP
+    beq dmg_from_bot
+    jmp dmg_from_top
+.endproc
+
+; From top: D then E (original path).
+.proc dmg_from_top
     ldx draw_i
     lda rail_data::dmg_d, x
     cmp #3
-    bcs dmg_e_only                  ; D already gone → hit E
+    bcs dft_e_only
     cmp #2
-    beq d_finish_outer              ; D at '2' → this hit spaces D and starts E
-    ; D at 0 or 1 → step D only
+    beq dft_d_finish
     clc
     adc #1
     sta rail_data::dmg_d, x
     jsr draw_d
     rts
-
-d_finish_outer:
-    ; D was at 2: destroy D (space) and apply first step to E if E still 0
+dft_d_finish:
     lda #3
     sta rail_data::dmg_d, x
     jsr draw_d
     ldx draw_i
     lda rail_data::dmg_e, x
-    bne dmg_e_step                  ; E already damaged — step it this hit too
+    bne dft_e_step
     lda #1
     sta rail_data::dmg_e, x
     jsr draw_e
     rts
-
-dmg_e_only:
+dft_e_only:
     ldx draw_i
-dmg_e_step:
+dft_e_step:
+    jmp damage_e
+.endproc
+
+; From bottom: F then E (hit lands on underside of H-rail).
+.proc dmg_from_bot
+    ldx draw_i
+    lda rail_data::dmg_f, x
+    cmp #3
+    bcs dfb_e_only
+    cmp #2
+    beq dfb_f_finish
+    clc
+    adc #1
+    sta rail_data::dmg_f, x
+    jsr draw_f
+    rts
+dfb_f_finish:
+    lda #3
+    sta rail_data::dmg_f, x
+    jsr draw_f
+    ldx draw_i
+    lda rail_data::dmg_e, x
+    bne dfb_e_step
+    lda #1
+    sta rail_data::dmg_e, x
+    jsr draw_e
+    rts
+dfb_e_only:
+    ldx draw_i
+dfb_e_step:
+    jmp damage_e
+.endproc
+
+.proc damage_e
     lda rail_data::dmg_e, x
     cmp #3
-    bcs dmg_rts                     ; already dead column
+    bcs de_rts
     cmp #2
-    beq e_destroy
+    beq de_destroy
     clc
     adc #1
     sta rail_data::dmg_e, x
     jsr draw_e
     rts
-
-e_destroy:
-    ; E at '2' → space + rail destroyed (defer mode_set to end of play tick)
+de_destroy:
     lda #3
     sta rail_data::dmg_e, x
     jsr draw_e
     lda #MODE_GAME_OVER
     sta pending_mode
-    rts
-
-dmg_rts:
+de_rts:
     rts
 .endproc
 
@@ -165,11 +203,31 @@ dmg_rts:
     jmp screen_color_xy
 .endproc
 
-; level 0..3
+.proc draw_f
+    ldx draw_i
+    lda rail_data::dmg_f, x
+    tay
+    lda f_glyph, y
+    sta tmp0
+    ldy #RAIL_ROW_BOT
+    ldx draw_i
+    lda tmp0
+    jsr screen_put_xy
+    ldx draw_i
+    lda rail_data::dmg_f, x
+    tay
+    lda dmg_color, y
+    ldx draw_i
+    ldy #RAIL_ROW_BOT
+    jmp screen_color_xy
+.endproc
+
 d_glyph:
     .byte SC_RAIL_D, SC_ZERO+1, SC_ZERO+2, SC_SPACE
 e_glyph:
     .byte SC_RAIL_E, SC_ZERO+1, SC_ZERO+2, SC_SPACE
+f_glyph:
+    .byte SC_RAIL_F, SC_ZERO+1, SC_ZERO+2, SC_SPACE
 dmg_color:
     .byte COL_GRAY, COL_ORANGE, COL_BROWN, COL_DK_GRAY
 
