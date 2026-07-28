@@ -49,6 +49,9 @@ wave_max_active:   .res 1
 wave_quad_mask:    .res 1           ; WAVE_Q1..Q4
 wave_flags:        .res 1           ; WAVE_F_*
 spawn_last_quad:   .res 1           ; anti-streak (0..3, $FF = none)
+spawn_kind:        .res 1           ; OBJ_DRONE_* for in-flight launch (not tmp*)
+spawn_quad:        .res 1           ; 0..3
+spawn_approach:    .res 1           ; DRONE_APPROACH_*
 ; Piggyback C after A/B
 piggy_timer:       .res 1           ; 0 = idle; else countdown to C spawn
 piggy_quad:        .res 1

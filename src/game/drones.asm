@@ -101,17 +101,17 @@ stm_try:
     bcs stm_done
     jsr roll_type                   ; A = OBJ_DRONE_* or 0 if none
     beq stm_done
-    sta tmp0                        ; kind
+    sta spawn_kind                  ; NOT tmp0 — rng_mod clobbers tmp0
     jsr roll_quad                   ; A = 0..3 quad index
-    sta tmp1
-    jsr roll_approach_for_quad      ; A = approach (uses tmp1)
-    sta tmp2
-    jsr spawn_drone                 ; kind tmp0, approach tmp2, quad tmp1
+    sta spawn_quad
+    jsr roll_approach_for_quad      ; A = approach (uses spawn_quad)
+    sta spawn_approach
+    jsr spawn_drone
     bcs stm_done
-    lda tmp1
+    lda spawn_quad
     sta spawn_last_quad
     ; piggyback C after A/B
-    lda tmp0
+    lda spawn_kind
     cmp #OBJ_DRONE_C
     beq stm_done
     lda wave_flags
@@ -265,16 +265,16 @@ cqb_n:
     rts
 .endproc
 
-; tmp1 = quad 0..3 → A = approach (random among 2 legal)
+; spawn_quad = 0..3 → A = approach (random among 2 legal)
 .proc roll_approach_for_quad
     jsr rng8
     and #1
-    sta tmp0                        ; 0 or 1 choice
-    lda tmp1
+    sta mux_i                       ; 0 or 1 choice (avoid tmp0)
+    lda spawn_quad
     asl a
     tax                             ; *2 into table
     lda approach_pair, x
-    ldy tmp0
+    ldy mux_i
     beq raf_done
     lda approach_pair+1, x
 raf_done:
@@ -299,9 +299,9 @@ approach_pair:
     clc
     adc #WAVE_PIGGY_MIN
     sta piggy_timer
-    lda tmp1
+    lda spawn_quad
     sta piggy_quad
-    lda tmp2
+    lda spawn_approach
     sta piggy_approach
 sp_done:
     rts
@@ -316,10 +316,9 @@ sp_done:
     cmp wave_max_active
     bcs stp_done
     lda #OBJ_DRONE_C
-    sta tmp0
+    sta spawn_kind
     lda piggy_quad
-    sta tmp1
-    ; approach: same or roll alternate for quad
+    sta spawn_quad
     jsr rng8
     and #1
     beq stp_same
@@ -328,21 +327,21 @@ sp_done:
 stp_same:
     lda piggy_approach
 stp_go:
-    sta tmp2
+    sta spawn_approach
     jsr spawn_drone
 stp_done:
     rts
 .endproc
 
 ; ===========================================================================
-; spawn_drone: tmp0=kind, tmp1=quad, tmp2=approach → C set fail
+; spawn_drone: spawn_kind / spawn_quad / spawn_approach → C set fail
 ; ===========================================================================
 .proc spawn_drone
     jsr objects::alloc
     bcc sd_ok
     rts
 sd_ok:
-    lda tmp0
+    lda spawn_kind
     sta objects::obj_kind, x
     cmp #OBJ_DRONE_A
     beq sd_a
@@ -376,7 +375,7 @@ sd_common:
     sta objects::obj_vx_lo, x
     sta objects::obj_vx_hi, x
     sta objects::obj_vy_int, x
-    lda tmp2
+    lda spawn_approach
     sta objects::obj_user, x
 
     ; pointer + velocity + position by approach
@@ -431,9 +430,9 @@ sd_flags:
     rts
 .endproc
 
-; --- pointers (kind in tmp0) ---
+; --- pointers (kind in spawn_kind) ---
 .proc ptr_for_kind_down
-    lda tmp0
+    lda spawn_kind
     cmp #OBJ_DRONE_A
     beq pfd_a
     cmp #OBJ_DRONE_B
@@ -451,7 +450,7 @@ pfd_st:
 .endproc
 
 .proc ptr_for_kind_up
-    lda tmp0
+    lda spawn_kind
     cmp #OBJ_DRONE_A
     beq pfu_a
     cmp #OBJ_DRONE_B
@@ -469,11 +468,9 @@ pfu_st:
 .endproc
 
 .proc ptr_for_kind_right
-    ; A/B only vertical art for now — use C side for A/B horizontal if needed
-    lda tmp0
+    lda spawn_kind
     cmp #OBJ_DRONE_C
     beq pfr_c
-    ; A/B from side still use facing art
     cmp #OBJ_DRONE_A
     beq pfr_a
     lda #SPR_PTR_DRONE_B_RIGHT
@@ -489,7 +486,7 @@ pfr_st:
 .endproc
 
 .proc ptr_for_kind_left
-    lda tmp0
+    lda spawn_kind
     cmp #OBJ_DRONE_C
     beq pfl_c
     cmp #OBJ_DRONE_A
@@ -506,9 +503,9 @@ pfl_st:
     rts
 .endproc
 
-; Speeds for C/A/B (kind tmp0)
+; Speeds for C/A/B (kind spawn_kind)
 .proc speed_down
-    lda tmp0
+    lda spawn_kind
     cmp #OBJ_DRONE_A
     beq sdn_a
     cmp #OBJ_DRONE_B
@@ -543,7 +540,7 @@ sdn_a:
 .endproc
 
 .proc speed_right
-    lda tmp0
+    lda spawn_kind
     cmp #OBJ_DRONE_A
     beq sr_a
     cmp #OBJ_DRONE_B
@@ -556,7 +553,6 @@ sr_b:
     sta objects::obj_vx_lo, x
     rts
 sr_a:
-    ; ~0.75: use frac on x
     lda #DRONE_A_SPEED_Y_FRAC
     sta objects::obj_vx_frac, x
     rts
@@ -578,14 +574,13 @@ sr_a:
     rts
 .endproc
 
-; Random X in left or right band from quad (tmp1)
+; Random X in left or right band from spawn_quad
 .proc place_x_for_quad_vert
-    lda tmp1
+    lda spawn_quad
     cmp #1
     beq px_right                    ; Q2
     cmp #0
     beq px_right                    ; Q1
-    ; Q3/Q4 left
     lda #DRONE_BAND_X_L1
     sec
     sbc #DRONE_BAND_X_L0
@@ -614,12 +609,11 @@ px_right:
 .endproc
 
 .proc place_y_for_quad_horiz
-    lda tmp1
+    lda spawn_quad
     cmp #2
     beq py_bot                      ; Q3
     cmp #1
     beq py_bot                      ; Q2
-    ; Q1/Q4 top
     lda #DRONE_BAND_Y_T1
     sec
     sbc #DRONE_BAND_Y_T0
@@ -785,11 +779,11 @@ arr_done:
 
 ; Legacy test helpers
 .proc spawn_c_approach
-    sta tmp2
+    sta spawn_approach
     lda #OBJ_DRONE_C
-    sta tmp0
+    sta spawn_kind
     lda #3
-    sta tmp1
+    sta spawn_quad
     jmp spawn_drone
 .endproc
 
