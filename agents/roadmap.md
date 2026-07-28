@@ -47,7 +47,7 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Game / stage init | Minimal | Session vars reset; playfield draw; player on H-rail |
 | Play | **Combat slice** | Player H-arm, V bullets, C top→H-rail, collision; death → next life / game over |
 | Object pool + sprite mux | **Done early** | Production path + `tst/` demos; see [`sprite-mux-status.md`](sprite-mux-status.md) |
-| Player sprite / move | **H-arm only** | Slot 0; 4px steps; U/D barrel mid-swing; **V-arm = Step 8.1** |
+| Player sprite / move | **H-arm only** | Slot 0; 4px steps; U/D barrel mid-swing; **V-arm = 8.1a/b** |
 | Bullets / charset UDGs | **V stream only** | H-rail fire up/down; H-stream UDGs reserved; **L/R fire = Step 8.2** |
 | Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch; re-prove under multi-drone mux load |
 | Score / thin HUD | **Done (thin)** | Hit→point; health/lives/level live; ammo template still static |
@@ -89,9 +89,11 @@ playtest pass says “this is fun enough to build on.”
 
 **Exit criteria:**
 
-- Full player locomotion + fire on both arms (8.1–8.2).
-- Multi-direction drones under a real spawn policy (8.3–8.6).
-- A basic level/wave shape exists and has been **playtested for fun** (8.7).
+- Full player locomotion + fire on both arms (8.1a–8.2), including **correct
+  mount/remap** (not “move works most of the time”).
+- Multi-direction **C** pressure proven under load (8.3), then A/B + rail in the
+  mix (8.5), under a real spawn policy (8.4–8.6).
+- A **short** level/wave shape exists and has been **playtested for fun** (8.7).
 - Still **no** bonuses, ammo rationing, disk HS, or music.
 
 **Notes / decisions while doing Step 8:**
@@ -99,37 +101,45 @@ playtest pass says “this is fun enough to build on.”
 - **8.0 first** — the auto rail-attack C is great for the slice and terrible for
   free player testing. Kill auto-spawn (or gate it behind a debug flag) before
   investing in V-arm work.
-- **V-arm is the hard player piece.** Design brief rules
-  ([`railgunner.md`](railgunner.md)): mount at the centre intersection, 90°
-  barrel remap when changing rails, no barrel flip in the dead centre, diagonal
-  input = parallel = move / perpendicular = mount or aim. Implement the
-  *minimum correct* mount/remap; polish edge cases in 8.7 if needed.
+- **V-arm is two pieces (8.1a / 8.1b).** Mount/remap is not polish for 8.7 — it
+  is **done criteria** for 8.1a. Free V-arm travel (8.1b) sits on top of that.
+  Design brief ([`railgunner.md`](railgunner.md)): mount at centre intersection;
+  90° barrel remap on rail change; no barrel flip in the dead centre; diagonal
+  = parallel axis move / perpendicular mount or aim.
 - **Fire follows facing** — 8.2 is the horizontal bullet stream (UDGs already
   reserved `$F8–$FF`) with the same cell-occupancy ROF rule as the vertical
   stream. Prefer one shared launch path parameterized by direction.
-- **Insert 8.5 (A/B + rail damage as content)** — without A/B the “rail fully
-  destroyed” loss path never matters and the spawn engine has nothing interesting
-  to compose. Put multi-hit A/B (3/2 HP) and visible rail damage *before* or
-  *inside* the first real spawn tables, not after the fun pass.
+- **Multi-C before full A/B polish.** Fun teaches more from **several C’s from
+  multiple edges** than from multi-HP A/B first. Sequence intent:
+  **8.3** (directions + light multi-C under a *dumb* spawner) → **8.5** (A/B +
+  rail as content) → **8.4 / 8.6** (real tables + spawn engine). 8.5 is required
+  before the **8.7 fun exit**, not before any multi-spawn. Numbers stay 8.3 →
+  8.4 → 8.5 → 8.6 for IDs; **do not block 8.3 on finished wave tables or A/B.**
 - **Collision under load** — Step 5 was never locked under multi-drone mux
-  pressure. When 8.3+ puts several sprites on screen, re-smoke latch attribution
-  before calling the consumer done.
+  pressure. Smoke latch attribution when multi-drone first appears (8.3); dig
+  only if it fails — not a separate epic.
 - **Wave vs continuous spawn** — design brief is wave-based; the “spawn engine”
   (8.6) is the *runtime* that *consumes* wave/level data (8.4). Do not invent a
   second competing system. 8.4 = data shape + counters; 8.6 = who/when/where/speed.
+  First tables: **3–5 waves per level**, one short “level 1” — grow content in
+  8.7, do not invent twenty empty waves.
 - **8.7 is a first-class step**, not optional polish. Be willing to change
   speeds, spawn density, C blast feel, or ROF if the game is not fun. Document
   knobs in code constants or a tiny table, not only in chat.
+- **Player start position** — after V-arm works, prefer **centre intersection**
+  (or a fixed legal rest on H-arm). Left-of-V is a slice artifact; decide in
+  8.1b and stick to it.
 
 | ID | Work | Notes |
 |----|------|--------|
 | **8.0** | **Stop auto-spawning the rail-attack drone** | Removes constant pressure so H→V player work is testable. Keep `drones::` spawn *API*; disable stage-init / ensure-slice auto spawn (or `#if` debug only). |
-| **8.1** | **Locomotion on the other arm (V-rail)** | Mount at intersection; move U/D on V-arm; L/R barrel rest with mid-swing; 90° remap on rail change per design brief. |
+| **8.1a** | **V-arm mount + barrel remap (rules)** | **Done when:** centre mount works both ways; 90° remap on rail change; no barrel flip in intersection dead zone; diagonal input resolves per design brief. Not “mostly works.” |
+| **8.1b** | **V-arm free travel + L/R barrel** | Move U/D on V-arm; L/R barrel rest with mid-swing (mirror of H-arm). Builds on 8.1a. |
 | **8.2** | **Shooting on the other arm** | Horizontal bullet stream + launch when barrel L/R at rest on V-arm. Same occupancy ROF. **Checkpoint:** full player experience (move + fire both arms) with manual/test spawns. |
-| **8.3** | **Spawn vertical-approach drones** | Edges → V-rail (and keep top/bottom → H-rail). C still player-threat; start with C-only if simpler. |
-| **8.4** | **Levels / waves as data** | How many waves per level (placeholder **20** until tuned); drones-per-wave or clear condition; level & wave counters already exist — make them *drive* content. Mode hooks `MODE_NEXT_WAVE` / `MODE_NEXT_LEVEL` leave stub land. |
-| **8.5** | **A/B content + rail damage in play** | A/B multi-HP, rail segment damage on arrival, rail-destroyed → game over already stubbed — make it reachable in normal play. Overlap priority C&lt;B&lt;A already in mux. |
-| **8.6** | **Spawn engine** | Master controller: when/where to spawn, type mix, speed from level/wave data, respect pool capacity and mux “≤7 jobs / line” budget. Single owner of spawn policy. |
+| **8.3** | **Multi-direction C pressure** | Edges → V-rail and keep top/bottom → H-rail. **C-only first.** Light multi-C under a dumb fixed cadence / one-or-two-quadrant spawner is enough — prove feel + mux load. Full tables later. |
+| **8.4** | **Levels / waves as data** | First tables: **3–5 waves / level**, short level-1 only. Drones-per-wave or clear condition; counters drive content. Mode hooks leave stub land. Expand count only when 8.7 asks for more. |
+| **8.5** | **A/B content + rail damage in play** | After multi-C feels alive (8.3). Multi-hit A/B (3/2 HP), rail damage on arrival, rail-destroyed reachable. Required before **8.7 exit**, not before first multi-spawn. |
+| **8.6** | **Spawn engine** | Master controller: when/where/type/speed from level/wave data; pool + mux budget. Single owner of spawn policy. Consumes 8.4; can start thin during 8.3 as a stub and grow. |
 | **8.7** | **Tune basic spawn / gameplay; evaluate fun** | Playtest session. Adjust speeds, density, mix, damage, ROF. Behaviour changes allowed if the game is not fun. Exit = “worth building Step 9 on.” |
 
 **Out of scope until Step 8 exit:** bonuses, ammo rationing, message-between-levels
@@ -148,7 +158,7 @@ that sets extra-life thresholds. Still no requirement for full audio or bosses.
 |----|------|--------|
 | **9.1** | **Bonus drop mechanism only** | Timing/placement owned by (or scheduled through) the spawn engine. No bonus *types* yet — parcel motion, “opposite arm,” intercept, one active parcel. |
 | **9.2** | **Message system** | Between-level (or between-wave) player-facing text. Vehicle for story snippets **and** the ammo-scarcity radio beat. Keep presentation thin (reuse typewriter or a short playfield banner). |
-| **9.3** | **Ammo scarcity + ammo packs** | Message unlocks rationing; ammo bar becomes live; fire consumes; ammo bonus is first real drop type. |
+| **9.3** | **Ammo scarcity + ammo packs** | Message unlocks rationing; ammo bar becomes live; fire consumes; ammo bonus is first real drop type. **Mini fun pass after this** — scarcity can ruin the game if wrong; do not march through 9.4–9.7 blind. |
 | **9.4** | **Repair bonus** | Orbiting repair; stand still on damaged segment. |
 | **9.5** | **Shield bonus** | Pool absorbs C-blast damage; tiers 6/4/2; ring art when ready (stub colour OK first). |
 | **9.6** | **Damage multiplier bonus** | 2× / 3× with degrade; bullet colour hint when art allows. |
@@ -226,7 +236,7 @@ smoke full path title → play → death → HS → title. Ship checklist lives 
 | Steps | Stage label |
 |-------|-------------|
 | 1–7 | **2. Vertical slice** (done) |
-| 8.0–8.7 | **3. Core loop** + **4. Systems** (full arms, waves, spawn, A/B/rail) |
+| 8.0–8.7 | **3. Core loop** + **4. Systems** (full arms, multi-C, A/B/rail, spawn) |
 | 9, 11 | **5. Features** |
 | 10, 16 | **6. Polish** |
 | 12 | Optional systems/features |
@@ -306,7 +316,7 @@ order.
 |-------|--------|------------------------|
 | **1. Scaffold** | Boot, mode stubs, transitions without real combat | Cold init → title → FIRE → empty playfield → stub game over → title; can assemble/run under c64m |
 | **2. Vertical slice** | Prove hard tech on a minimal playable path | **Done.** One rail arm, one drone type, bullets, collision, score/HUD, death → game over |
-| **3. Core loop** | Full session shape with real pressure | Full cross player (8.1–8.2), multi-wave / next level, lives, spawn-driven play (8.3–8.7) |
+| **3. Core loop** | Full session shape with real pressure | Full cross player (8.1a–8.2), multi-wave / next level, lives, spawn-driven play (8.3–8.7) |
 | **4. Systems** | Mechanics from the design brief | A/B/C mix, rail damage, wave tables, spawn engine, mux load proven |
 | **5. Features** | Content and meta systems | Bonuses, ammo unlock + rationing, messages, disk high scores |
 | **6. Polish** | Feel, readability, edge cases | Explosions, art/UDG pass, balance, transitions, optional bosses decision |
@@ -364,8 +374,8 @@ Per-session reset (new game from title).
 Per-stage or post-death re-entry into play.
 
 - Enemy wave counter → 0 (or “next wave to spawn = 1”).
-- Player position — early slice used left of V-rail; full game may prefer centre
-  intersection once V-arm works (decide in 8.1 and stick to it).
+- Player position — prefer **centre intersection** once V-arm works (decide in
+  8.1b and stick to it); left-of-V is a slice artifact.
 - Clear transient play state: active bullets, drones, messages; later also
   active bonuses, shield, repair orbiters as those systems exist.
 - Rail damage: policy TBD in detail docs — full repair on stage re-init vs
@@ -397,7 +407,7 @@ Exit conditions:
 
 **Placeholder content knobs** (replace with tables in 8.4+):
 
-- Waves per level: **20** (assumption until tuning).
+- Waves per level: **3–5** for first tables (grow in 8.7; do not start at 20).
 - Wave speed, composition, quadrants: see wave data in design brief.
 
 Lots of subsystems live under Play (mux, collision, bonuses, ammo). Those get
@@ -475,9 +485,9 @@ the pool/mux — **consume** it for player/drone sprites and events.
 1. **Scaffold** — **done.** Boot, modes, title attract, stub game over.
 2. **Vertical slice** — **done** (steps 1–7). H-arm, V bullets, one C, collision,
    score, death.
-3. **Full player + spawn (Step 8)** — **active.** Kill auto-spawn → V-arm move →
-   H-stream fire → multi-direction drones → wave data → A/B/rail → spawn engine →
-   fun pass.
+3. **Full player + spawn (Step 8)** — **active.** Kill auto-spawn → mount/remap
+   (8.1a) → V-arm travel (8.1b) → H-stream fire → multi-direction **C** pressure →
+   A/B + rail → short wave tables + spawn engine → fun pass.
 4. **Features (Step 9 + 11)** — Bonus mechanism, messages, ammo scarcity, bonus
    types, balance, extra life; then high-score load/save/entry.
 5. **Visual polish (Step 10)** — Explosions, animation, UDG/font pass.
@@ -493,17 +503,18 @@ Record decisions here when made; do not block early stages on them.
 
 | Topic | Default for now | Later |
 |-------|-----------------|--------|
-| Waves per level | 20 | Wave/level tables (8.4) + fun pass (8.7) |
+| Waves per level | **3–5** first tables | Grow in 8.7; never pad to 20 empty waves |
 | Starting lives | 3 | Tuning / 9.8–9.9 |
 | Starting health | 32 (8×4 bar steps) | Tuning with C-blast costs |
 | Rail/health on next life | Reset full | Confirm vs carry damage |
 | High scores without disk | RAM zeros / no persist | Load/save file format (11.x) |
 | Wave-clear vs level-clear UI | Short pause + text | Message system 9.2; art / SFX |
-| Ammo inactive early | Grayed bar present | Radio message unlock (9.2–9.3) |
+| Ammo inactive early | Grayed bar present | Radio message unlock (9.2–9.3); mini fun pass after 9.3 |
 | Mode implementation | **Done:** jump table in `frontend/mode.asm` | — |
-| Bosses | Undecided — evaluate in 12.1 | Scripted patterns if yes |
-| Player start position | Left of V-rail (slice) | Centre once V-arm works? Decide in 8.1 |
+| Bosses | Undecided — evaluate in 12.1; bias **no** until 8.7+9.8 need set pieces | Scripted patterns if yes |
+| Player start position | Left of V-rail (slice) | **Centre** once V-arm works (8.1b) |
 | Auto-spawn during dev | On (slice) → **off for 8.0** | Debug flag if useful later |
+| 8.1a mount/remap | Must be correct before 8.1b done | Not deferred to 8.7 polish |
 
 ---
 
