@@ -361,118 +361,22 @@ load_cmd_color:
     lda sprite_mux_data::plan0_cmd_color, x
     sta irq_value_color
 
-    lda irq_lane
-    cmp #0
-    bne writer_check_1
-    jmp writer_0
-writer_check_1:
-    cmp #1
-    bne writer_check_2
-    jmp writer_1
-writer_check_2:
-    cmp #2
-    bne writer_check_3
-    jmp writer_2
-writer_check_3:
-    cmp #3
-    bne writer_check_4
-    jmp writer_3
-writer_check_4:
-    cmp #4
-    bne writer_check_5
-    jmp writer_4
-writer_check_5:
-    cmp #5
-    bne writer_check_6
-    jmp writer_5
-writer_check_6:
-    cmp #6
-    beq writer_is_6
-    jmp writer_7
-writer_is_6:
-    jmp writer_6
+    ; All VIC targets are lane-indexed: ptr/color at +lane, X/Y at +(lane*2).
+    ; Indexed stores cost +1 cycle each vs absolute, but drop the cmp ladder
+    ; (~30 cycles worst case) and ~100 bytes of near-identical writers.
+    ldx irq_lane
+    lda irq_value_ptr
+    sta SPRITE_PTR_BASE, x
+    lda irq_value_color
+    sta VIC_SPR_COLOR0, x
+    txa
+    asl a                           ; X = lane*2 for $D000/$D001 pairs
+    tax
+    lda irq_value_x
+    sta $D000, x
+    lda irq_value_y
+    sta $D001, x
 
-writer_0:
-    lda irq_value_x
-    sta $D000
-    lda irq_value_y
-    sta $D001
-    lda irq_value_ptr
-    sta SPRITE_PTR_BASE + 0
-    lda irq_value_color
-    sta VIC_SPR_COLOR0 + 0
-    jmp writer_done
-writer_1:
-    lda irq_value_x
-    sta $D002
-    lda irq_value_y
-    sta $D003
-    lda irq_value_ptr
-    sta SPRITE_PTR_BASE + 1
-    lda irq_value_color
-    sta VIC_SPR_COLOR0 + 1
-    jmp writer_done
-writer_2:
-    lda irq_value_x
-    sta $D004
-    lda irq_value_y
-    sta $D005
-    lda irq_value_ptr
-    sta SPRITE_PTR_BASE + 2
-    lda irq_value_color
-    sta VIC_SPR_COLOR0 + 2
-    jmp writer_done
-writer_3:
-    lda irq_value_x
-    sta $D006
-    lda irq_value_y
-    sta $D007
-    lda irq_value_ptr
-    sta SPRITE_PTR_BASE + 3
-    lda irq_value_color
-    sta VIC_SPR_COLOR0 + 3
-    jmp writer_done
-writer_4:
-    lda irq_value_x
-    sta $D008
-    lda irq_value_y
-    sta $D009
-    lda irq_value_ptr
-    sta SPRITE_PTR_BASE + 4
-    lda irq_value_color
-    sta VIC_SPR_COLOR0 + 4
-    jmp writer_done
-writer_5:
-    lda irq_value_x
-    sta $D00A
-    lda irq_value_y
-    sta $D00B
-    lda irq_value_ptr
-    sta SPRITE_PTR_BASE + 5
-    lda irq_value_color
-    sta VIC_SPR_COLOR0 + 5
-    jmp writer_done
-writer_6:
-    lda irq_value_x
-    sta $D00C
-    lda irq_value_y
-    sta $D00D
-    lda irq_value_ptr
-    sta SPRITE_PTR_BASE + 6
-    lda irq_value_color
-    sta VIC_SPR_COLOR0 + 6
-    jmp writer_done
-writer_7:
-    lda irq_value_x
-    sta $D00E
-    lda irq_value_y
-    sta $D00F
-    lda irq_value_ptr
-    sta SPRITE_PTR_BASE + 7
-    lda irq_value_color
-    sta VIC_SPR_COLOR0 + 7
-
-writer_done:
     ldx irq_command_index
 load_cmd_xmsb:
     lda sprite_mux_data::plan0_cmd_xmsb, x
