@@ -17,6 +17,8 @@
 ;   (GAP_MID / Y_HRAIL), evaluate input once: prefer perpendicular non-coincident
 ;   dirs (mount other rail), else reverse-parallel, else keep travel. After that
 ;   decision, ignore stick until the player leaves the intersection.
+;   Opposite-axis chords (up+down / left+right) can still oscillate arm↔mid;
+;   joystick cannot do that — leave it; not worth special-casing.
 
 .scope player
 
