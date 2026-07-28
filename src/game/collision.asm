@@ -52,7 +52,6 @@ upd_next:
     inx
     cpx #OBJECT_CAPACITY
     bne upd_loop
-    jsr drones::ensure_slice_mover
     rts
 .endproc
 

@@ -10,9 +10,9 @@ docs; this file only keeps the map coherent.
 (index). Optional post-stage reviews: [`reviews/`](reviews/) (not a work queue).
 
 **Current phase:** Stage 2 (Vertical slice) **done** (steps **1–7**). Active
-work is **Step 8 — full player + session / spawn** (“make it a game”). Do not
-start bonuses, ammo scarcity, disk high scores, or audio until the Step 8 exit
-criteria hold (see below). Post–step-7 code hygiene is archived under
+work is **Step 8 — full player + session / spawn** (“make it a game”); **8.0 done**,
+next **8.1a** (V-arm mount/remap). Do not start bonuses, ammo scarcity, disk high
+scores, or audio until the Step 8 exit criteria hold (see below). Post–step-7 code hygiene is archived under
 [`reviews/2026-07-27-clade-post-step7.md`](reviews/2026-07-27-clade-post-step7.md).
 
 ---
@@ -52,7 +52,7 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Collision consumer | **Slice (not locked)** | `COLLISION_MODE=0` HW latch; re-prove under multi-drone mux load |
 | Score / thin HUD | **Done (thin)** | Hit→point; health/lives/level live; ammo template still static |
 | Death / session end | **Done (slice)** | C blast → health; 0 → next life / game over → title |
-| Waves / spawn | Slice harness | One auto C mover; wave/level modes stub; **Step 8.0+** |
+| Waves / spawn | Auto-spawn **off** | Empty field; spawn_* API kept; **next 8.1a** |
 | Rail damage A/B | Partial | A/B rail path exists; multi-type waves later |
 | High score entry / disk | Stub | Always skip hiscore from game over |
 | Bonuses / ammo unlock | Not started | Step 9 |
@@ -132,7 +132,7 @@ playtest pass says “this is fun enough to build on.”
 
 | ID | Work | Notes |
 |----|------|--------|
-| **8.0** | **Stop auto-spawning the rail-attack drone** | Removes constant pressure so H→V player work is testable. Keep `drones::` spawn *API*; disable stage-init / ensure-slice auto spawn (or `#if` debug only). |
+| ~~**8.0**~~ | ~~**Stop auto-spawning**~~ **done** | `drones::init` empty; no ensure on update/collision. `spawn_*` / `ensure_*` kept for 8.3+. |
 | **8.1a** | **V-arm mount + barrel remap (rules)** | **Done when:** centre mount works both ways; 90° remap on rail change; no barrel flip in intersection dead zone; diagonal input resolves per design brief. Not “mostly works.” |
 | **8.1b** | **V-arm free travel + L/R barrel** | Move U/D on V-arm; L/R barrel rest with mid-swing (mirror of H-arm). Builds on 8.1a. |
 | **8.2** | **Shooting on the other arm** | Horizontal bullet stream + launch when barrel L/R at rest on V-arm. Same occupancy ROF. **Checkpoint:** full player experience (move + fire both arms) with manual/test spawns. |
@@ -513,7 +513,7 @@ Record decisions here when made; do not block early stages on them.
 | Mode implementation | **Done:** jump table in `frontend/mode.asm` | — |
 | Bosses | Undecided — evaluate in 12.1; bias **no** until 8.7+9.8 need set pieces | Scripted patterns if yes |
 | Player start position | Left of V-rail (slice) | **Centre** once V-arm works (8.1b) |
-| Auto-spawn during dev | On (slice) → **off for 8.0** | Debug flag if useful later |
+| Auto-spawn during dev | **Off (8.0 done)** | Re-enable via spawn engine / ensure_* when 8.3 starts |
 | 8.1a mount/remap | Must be correct before 8.1b done | Not deferred to 8.7 polish |
 
 ---

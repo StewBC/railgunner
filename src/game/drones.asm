@@ -1,18 +1,18 @@
 ; Drone spawn + motion.
-; Stage 2: one C (UL, player threat) + one B (UR, rail threat); vertical only.
-; Later: waves of 3 per quadrant.
+; Step 8.0: no auto-spawn. Stage starts empty; update only integrates active
+; drones. spawn_* / ensure_* remain as the API for 8.3+ (and manual tests).
 
 .scope drones
 
 ; ---------------------------------------------------------------------------
+; Stage enter: leave the pool empty (player is slot 0 elsewhere).
+; ---------------------------------------------------------------------------
 .proc init
-    jsr ensure_slice_mover
-    jsr ensure_rail_attacker
     rts
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Keep exactly one active C in play (UL).
+; If no active C, spawn one (UL). Not called from play path after 8.0.
 ; ---------------------------------------------------------------------------
 .proc ensure_slice_mover
     ldx #1
@@ -39,7 +39,7 @@ ensure_c_done:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Keep exactly one active B in play (UR) — damages rail on arrival.
+; If no active B, spawn one (UR, rail damage). Not called from play path after 8.0.
 ; ---------------------------------------------------------------------------
 .proc ensure_rail_attacker
     ldx #1
@@ -174,8 +174,7 @@ upd_next:
     inx
     cpx #OBJECT_CAPACITY
     bne upd_loop
-    jsr ensure_slice_mover
-    jsr ensure_rail_attacker
+    ; No ensure_* — empty field until spawn engine / test harness calls spawn_*
     rts
 .endproc
 
