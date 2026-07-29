@@ -190,6 +190,8 @@ Standard 6502 mnemonics and addressing modes. Write them in the usual form:
     sta BORDER          ; symbol as address
     jmp ($0318)         ; indirect jump
     bne loop            ; relative branch to label
+    lsr $4d             ; RMW on ZP — must emit opcode + operand (fixed in c64m)
+    ldx $10,y           ; zeropage,Y (LDX/STX only) — not promoted to abs,Y
 ```
 
 **Macro pitfall:** arguments that contain a comma must be double-quoted, or the comma splits parameters:
@@ -197,6 +199,17 @@ Standard 6502 mnemonics and addressing modes. Write them in the usual form:
 ```asm
     copy "($50),y", $0400
 ```
+
+**Silent encoding (fixed upstream, do not re-work around):**
+
+| Form | Was wrong | Now |
+|------|-----------|-----|
+| `lsr $nn` / `lsr zp` | opcode only (`$46`), dropped address byte | full `46 nn` (width fixed like `asl`/`rol`/`ror`) |
+| `ldx $nn,y` | always absolute,Y (`$BE`) | zeropage,Y (`$B6`) when in range |
+| `stx $nn,y` | hard error (no abs,Y form) | zeropage,Y when the opcode exists |
+
+If you still see lone-opcode `lsr` or forced abs,Y, rebuild `tools/c64masm`
+from c64m (need ≥ 638d3c9). Prefer `c64masm -v` on a one-liner to verify.
 
 ---
 
@@ -229,6 +242,7 @@ Standard 6502 mnemonics and addressing modes. Write them in the usual form:
 | `.scope [name] [file="f"] [dest="d"]` / `.endscope` | Namespace; optional multi-file output (`c64masm` only) |
 | `.proc name` / `.endproc` | Named procedure (named scope) |
 | `.segdef "n",addr[,flags]` | Define named segment at `addr`. Flags are a comma-separated list of `emit`/`noemit` and `locked` |
+| `.segdef "n",reclaim="host"` | Reclaim overlay on an emitted host (implicit `noemit`; see §8) |
 | `.segment "n"` | Activate segment; `.segment ""` → native mode |
 | `.6502` | Restrict to 6502 opcodes (**default**) |
 | `.65c02` | Allow 65C02 opcodes |
@@ -369,6 +383,8 @@ table:  .byte $01,$02,$03
 ```
 
 - `noemit`: location counter advances, **no bytes written** — use for ZP variable maps.
+- A plain **`noemit` segment may not overlap any other segment** (including
+  another `noemit`). Intentional overlays use a **reclaim** segment (below).
 - `.segment ""` returns to native (non-named) mode.
 - Segment names are **quoted strings** in `.segdef` / `.segment`.
 
@@ -390,6 +406,34 @@ The trailing part of `.segdef` is a comma-separated flag list. Any of `emit` /
   assembly fails with an error naming the locked segment, leaving the fix to
   you. Without auto-adjust, `locked` has no effect (an overlap is a plain
   overlap error, as before).
+
+### Reclaim segments (intentional overlays)
+
+`.segdef "NAME", reclaim="HOST"` is the sanctioned way to **reuse a host
+segment’s address range at runtime** after the host’s load-time contents are
+consumed (classic: title image at `$4000`, then buffers in the same RAM).
+
+```asm
+.segdef "TITLE", $4000                 ; image, emitted into the PRG
+.segdef "REUSE", reclaim="TITLE"       ; labels resolve into TITLE's space
+
+.segment "REUSE"
+buffer: .res $100                      ; lives at $4000, emits nothing
+```
+
+Rules:
+
+- Implicitly **`noemit`**; takes **no address of its own** (inherits host start).
+- Host must be a **previously defined, emitted** segment.
+- Size of the reclaim segment must be **≤ host** size.
+- Follows the host if auto-adjust relocates it (start re-read on each re-parse).
+- Assembler enforces address/size only — **you** must free/relocate the host
+  before using the reclaim region at runtime.
+
+RailGunner already has a large emitted `TITLE` at `$4000` and a tight `CODE`
+region under the charset/sprite map. When you need buffers that reuse title
+RAM after the title is discarded, prefer `reclaim="TITLE"` over fake
+`noemit` overlaps (those now fail assembly).
 
 ---
 
@@ -521,6 +565,10 @@ rearm_oneshots = no
 10. **Segment names are quoted** (`"CODE"`); scope names usually bare (`game`).
 11. **Paths** for `.include` / `.incbin` are relative to the **including** file's directory.
 12. Stick to **6502** mnemonics unless you intentionally enable `.65c02`.
+13. **Overlays:** plain `noemit` may not overlap anything. Use
+    `.segdef "N", reclaim="HOST"` for intentional runtime reuse of host RAM.
+14. **Fixed VIC addresses:** mark with `locked` so auto-adjust never moves them;
+    if lower segments overrun a locked anchor, assembly fails by design.
 
 ---
 
@@ -558,6 +606,7 @@ lda #imm / zp / abs / (zp),y / (zp,x) / abs,x / abs,y
 .macro .endmacro   .local
 .scope .endscope   .proc .endproc
 .segdef "N",addr[,emit|noemit][,locked]   .segment "N"
+.segdef "N",reclaim="HOST"                ; overlay host (implicit noemit)
 
 scope::label              ; cross-scope
 ::rootlabel               ; from root

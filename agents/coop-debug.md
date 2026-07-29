@@ -41,7 +41,16 @@ watchpoints, and chat. No c64m source edits required.
   looking” immediacy.
 
 **CTRL-ENTER / human chat** = free-text description *after* pause.  
-**Pause key** = freezes the machine so history is still meaningful.
+**Pause key** = freezes the machine so history, the **frame ring**, and the
+**VIC ring** are still meaningful. A pause one second late is ~50 PAL frames
+past a one-frame glitch — the flight recorder still has the bus traffic, the
+frame ring still has the pixels (~16.5 s default), and the VIC ring still has
+per-line latched sprite X (~10 s default). Scrub before assuming the glitch
+is gone.
+
+Protocol stack (c64m): **C64M/6** — history (C64M/3) + guarded `when=` (C64M/4)
++ frame ring (C64M/5) + VIC ring (C64M/6). Details:
+[`build-debug.md`](build-debug.md) §§6.5b–6.7c.
 
 ---
 
@@ -147,6 +156,8 @@ Contents (while paused — hot cache / legal history):
 | SPRITES table | enable/x/y/expand/pri/mc/color for HW 0–7 |
 | GAME REGIONS | RailGunner ZP + object SoA + mux scalars (from symbols) |
 | RECENT WRITES | Flight recorder: writes to sprite regs + selected SoA |
+| Frame ring (via inbox) | `scrub` / `frame` — retained pixels + cycle for history |
+| VIC ring (via inbox) | `vic <frame>` — per-line latched `spr_x` / enable (why the pixels) |
 
 **Read the snap first**, then the human’s description. Answer in chat with a
 hypothesis or next instrument step.
@@ -161,9 +172,14 @@ Commands are only consumed while **paused**.
 INBOX=build/debug/coop_inbox
 
 echo 'note Q2 C flicker after kill' >> "$INBOX"
+echo 'scrub 60' >> "$INBOX"                    # last ~1s of frames → PNGs
+echo 'frame 912' >> "$INBOX"                   # after you spot the bad frame#
+echo 'vic 912' >> "$INBOX"                     # latched spr_x per line for that frame
+echo 'vic 912 50-120' >> "$INBOX"              # optional raster window only
 echo 'hist $D000 write 64' >> "$INBOX"
 echo 'dump $C078 24 map' >> "$INBOX"          # obj_flags (re-check symbols!)
 echo 'arm write $C120' >> "$INBOX"             # example: write trap
+echo 'arm write $D010 when=value!&1,mem($D000)>$F0' >> "$INBOX"
 echo resume >> "$INBOX"
 ```
 
@@ -171,33 +187,73 @@ echo resume >> "$INBOX"
 |---------|--------|
 | `resume` | `run` — clear sticky pause/breakpoint latches; back to watch |
 | `quit` | Stop daemon (does not kill c64m) |
-| `arm <access> <addr> [end=$…]` | `break-create … actions=break` — next hit auto-pauses |
-| `count <access> <addr> [end=$…]` | Count-only watchpoint (no pause) |
+| `arm <access> <addr> [opts…]` | `break-create … actions=break` — next hit auto-pauses. **opts** pass through (e.g. `end=$…`, `when=…`) |
+| `count <access> <addr> [opts…]` | Count-only watchpoint (no pause); same opts including `when=` |
 | `clear` | `break-clear-all` |
 | `dump <addr> <len> [map\|ram]` | Extra memory → current snap file |
 | `hist <addr> [access] [limit]` | Extra history-find → current snap |
+| `scrub [count]` | Dump last N ring frames as PNGs under `build/debug/snap-NNN-frames/` |
+| `frame <n>` | Pull one ring frame + machine cycle into the pack (key for `hist` / `vic`) |
+| `vic <frame> [first-last]` | Per-line VIC state for that frame (latched `spr_x` with `$D010` MSB, enable/visible/active) |
 | `note <text…>` | Append human/agent note into snap |
 
 `access`: `exec` \| `read` \| `write` \| `read-write`  
 Addresses: `$C078` or `0xC078`.
 
-### 5.3 Arm-and-reproduce (intermittent bugs)
+**Guarded arms (`when=`):** up to 4 ANDed terms; no whitespace inside the
+condition. Same grammar as control-port `break-create` (see build-debug §6.5b).
+Examples from upstream `coop_watch.py`:
 
-When the manual pause was too late (aftermath only):
+```text
+arm write $D021 when=i==1
+arm write $D010 when=value!&1,mem($D000)>$F0
+arm write $00C3 when=raster>=250
+count write $D015 when=raster<50
+```
+
+### 5.3 Late pause — scrub → vic → hist (full chain)
+
+When the human saw a **one-frame** flash / wrong sprite / hitch and paused a
+beat later, the live `get-frame` is already the aftermath. Use all three black
+boxes on **one machine-cycle axis**:
+
+1. `echo 'scrub 60' >> build/debug/coop_inbox` (or `scrub 200` for ~4 s)  
+2. Open `build/debug/snap-NNN-frames/*.png` — find the bad frame by eye  
+3. `echo 'frame <n>' >> …` — pack gets pixels + **machine cycle**  
+4. `echo 'vic <n>' >> …` (optional `vic <n> 40-120` for a raster band) —  
+   **latched** `spr_x` / `spr_en` / `spr_vis` per line. Compare to what the
+   game/mux thinks it wrote (`hist $D000` / `$D010`, or SoA `obj_x_*`)  
+5. `echo 'hist …'` / `history-find cycle=…` for bus traffic at that moment  
+
+**Kill criterion for “ghost on left edge” / wrong X for one frame:**  
+`vic` shows `spr_x` for that HW lane **≠** the X from `hist`/`obj_x` on the
+same frame’s lines. That is the latched-XMSB bug class — neither pixels alone
+nor the flight recorder alone can prove it.
+
+Check scrub log for **`dropped=`**: non-zero means the glitch may have rolled
+off — raise `[debug] frame_ring_memory_mb` / `vic_ring_memory_mb` or pause
+faster. Frame ring does not record at turbo 3.
+
+### 5.4 Arm-and-reproduce (intermittent bugs)
+
+When the manual pause was too late **and** the ring did not catch a clear
+visual, or the bug is conditional:
 
 1. From description, pick a **write** (or exec) that should fire if the bug is real  
    - Mux wrong pointer: `arm write` range over `objects::obj_sprite_ptr` or sprite regs  
    - Kill double-count: `arm write $xxxx` score / kill counter  
-2. `echo 'arm write $ADDR' >> build/debug/coop_inbox`  
+   - Mid-IRQ only / raster band only: add **`when=`** so free-run does not stop
+     on every access  
+2. `echo 'arm write $ADDR when=…' >> build/debug/coop_inbox`  
 3. `echo resume >> build/debug/coop_inbox`  
 4. Human reproduces  
 5. Next snap has `stop=breakpoint` at the **exact instruction** — smoking gun  
 6. When done: `echo clear >> …` then `echo resume >> …`
 
-Optional: `count write $ADDR` first to see if the address is hot even without a
-visible glitch.
+Optional: `count write $ADDR when=…` first to see if the address is hot even
+without a visible glitch.
 
-### 5.4 After analysis
+### 5.5 After analysis
 
 - Prefer fixing the bug in a follow-up change (then rebuild + re-assemble).  
 - Do **not** commit coop docs/tools until the human confirms a successful
@@ -210,10 +266,12 @@ visible glitch.
 | Rule | Behavior |
 |------|----------|
 | One wait outstanding | Only a single `wait-paused` in flight |
-| History needs pause | `history-find` only after freeze |
+| History needs pause | `history-find` / `hist` only after freeze |
+| Frame ring lookup | `scrub` / `frame` / `get-frame-at` OK while running, but **pause** for a stable window |
 | `run` clears sticky latches | Next wait is the *next* stop, not the old one |
-| Turbo 1 | Real-time play; live pixels; never warp for visual QA |
-| Mid-raster `get-frame` | Partial buffer — pack uses CPU/VIC/sprites/history first; clean full frame needs `run-to-raster` later if required |
+| Turbo 1 | Real-time play; live pixels; never warp for visual QA (warp also stalls the frame ring) |
+| Frame payload | `indexed8` is the native representation; existing `argb8888` reads remain compatible |
+| Mid-raster `get-frame` | Partial buffer — pack uses CPU/VIC/sprites/history first; full live frame needs `run-to-raster` / `step-frame`; **past** frames use the ring |
 | Sole control client | No second `agent_session` / second watcher on the same port |
 
 ---
@@ -240,13 +298,16 @@ addresses refresh.
 
 ## 8. Glitch classes → first probe
 
-| Symptom | First look in snap | Then arm |
-|---------|-------------------|----------|
-| Sprite flicker / wrong frame | SPRITES table; `obj_sprite_ptr` / `obj_flags` | `arm write` on that slot’s ptr or `$D000` range |
+| Symptom | First look in snap | Then arm / scrub |
+|---------|-------------------|------------------|
+| One-frame flash / gone before pause | `scrub 60` → bad PNG; `frame n` → cycle; **`vic n`** for latched X | `hist` on `$D000`/`$D010`; compare `spr_x` vs write; `when=` if conditional |
+| Sprite flicker / wrong frame | SPRITES table; `obj_sprite_ptr` / `obj_flags`; scrub + **vic** if late | `arm write` on that slot’s ptr or `$D000` range; `when=raster…` if band-specific |
+| One-frame left-edge / wrong X | `vic n` `spr_x` vs game X on that line | `arm write $D010 when=…` if MSB thrash |
 | Mux freeze / hitch | `mux_last_error`, plan ready/count, `mux_plan_miss` | exec on mux build fail path if known |
 | Player teleport / wrong rail | `player_rail`, x/y slot 0 | write to player move or `obj_x_lo` |
 | Wave advances wrong | `wave_kills_*` vs quotas, `pending_mode` | write to kill counters |
 | Rail damage wrong quadrant | (logic) re-check after pause; history less critical | — |
+| Wrong VIC write only in IRQ / border | aftermath PC useless | `arm write $D0xx when=i==1` or `when=raster>=250` |
 
 Quadrant names (playfield): **Q1** upper-right, **Q2** lower-right, **Q3**
 lower-left, **Q4** upper-left.
@@ -256,11 +317,14 @@ lower-left, **Q4** upper-left.
 ## 9. What not to do
 
 - Do not hold the socket in a **subagent** and expect chat steers to arrive there.  
-- Do not `get-frame` every frame as a “glitch detector” (costly, weak signal).  
+- Do not `get-frame` every frame as a “glitch detector” (costly, weak signal) —
+  use the **frame ring** + `scrub` after pause instead.  
 - Do not edit `../c64m/` from a RailGunner session (boundary). Improve c64m via
   the friction log if the tool is awkward.  
-- Do not use turbo 3 for coop visual sessions.  
-- Do not open a second control client while the watcher owns 6510.
+- Do not use turbo 3 for coop visual sessions (no live pixels, ring stalls).  
+- Do not open a second control client while the watcher owns 6510.  
+- Do not save a guarded breakpoint from the **frontend** dialog — it clears
+  `when=` (control-port / inbox only).
 
 ---
 
@@ -268,10 +332,12 @@ lower-left, **Q4** upper-left.
 
 ```text
 [ ] make coop   (or manual: prg + emu on 6510 + coop_debug_rg.py)
-[ ] game in play
+[ ] game in play (turbo 1)
 [ ] human pauses on glitch
 [ ] read build/debug/snap-NNN.txt + human description
-[ ] inbox: note / hist / dump / arm as needed
+[ ] if visual / one-frame: scrub → find PNG → frame n → vic n → hist on cycle
+[ ] if wrong X: compare vic spr_x to hist/obj_x (latched vs written)
+[ ] inbox: note / hist / dump / arm [when=…] as needed
 [ ] inbox: resume (or clear + resume)
 [ ] only commit coop tooling after a proven freeze→snap→resume run
 ```

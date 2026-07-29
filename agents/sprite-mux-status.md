@@ -76,5 +76,9 @@ the orbit. Its ellipse covers X=54–290 and therefore crosses `$D010`.
 ## Memory warning
 
 The current production `CODE` segment ends exactly at `$1C00`, where the static
-sprite segment begins. New production code cannot simply grow in place; reclaim
-bytes or revise the memory map before adding more routines.
+sprite segment begins. New production code cannot simply grow in place; free
+bytes or revise the memory map before adding more routines. For intentional
+runtime overlays of an emitted region (e.g. title image RAM reused as buffers),
+use assembler **reclaim** segments (`.segdef "N", reclaim="HOST"`) — see
+[`assembler-syntax.md`](assembler-syntax.md) §8; plain `noemit` overlaps are
+rejected.

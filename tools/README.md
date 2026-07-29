@@ -16,7 +16,7 @@ Make wires timestamps so a changed `title.png` regenerates `.bin`s before assemb
 | **`agent_session.py`** | **Agent path:** windowed + control port + assemble + RUN |
 | **`coop.sh`** / **`make coop`** | Build + emu(control-port) + coop watcher (preferred coop entry) |
 | **`coop_debug_rg.py`** | Watcher only: coop_watch + game symbols → `build/debug/snap-*.txt` |
-| `coop_watch.py` | symlink → c64m cooperative watcher (generic; prefer `coop_debug_rg.py`) |
+| `coop_watch.py` | symlink → c64m cooperative watcher (generic; prefer `coop_debug_rg.py`). Inbox: `scrub`/`frame` (frame ring), `vic` (VIC ring / latched X), `arm … when=` — see `agents/coop-debug.md` |
 | **`png_to_c64_hires.py`** | PNG → C64 hires bitmap + colour-matrix `.bin` (title art) |
 | **`png_to_c64_sprite.py`** | PNG → C64 multicolour sprite `.bin` (64 bytes, 12×21) |
 | `run-emulator.sh` | Alias → `play.sh` (user path) |

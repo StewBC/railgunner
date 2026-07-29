@@ -17,7 +17,13 @@ See [`README.md`](README.md) for the two-path model and project goal.
 If this handoff and c64m disagree, **trust c64m** (source/tests/manual) and update
 this file.
 
-**Protocol:** `C64M/3` (localhost TCP, one client at a time).
+**Protocol:** `C64M/6` (localhost TCP, one client at a time). Bumps that matter
+for this repo: **C64M/3** flight recorder (`history-*`), **C64M/4** guarded
+breakpoints (`when=`), **C64M/5** frame ring (`frame-ring-*`, `get-frame-at`),
+**C64M/6** VIC ring (`vic-ring-*` — per-line latched sprite X / derived state).
+`hello` / `version` advertise `protocol=C64M/6`; `capabilities` includes
+`history`, `frame-ring`, and `vic-ring`. Rebuild `../c64m/build/c64m` if
+`hello` still says C64M/5.
 
 ---
 
@@ -204,7 +210,7 @@ from c64_control_client import Ctl
 SRC = (RG / "src" / "main.asm").resolve()
 
 c = Ctl(port=6510)          # default in upstream helper is 17652 — always pass 6510
-print(c.cmd("hello"))       # ('ok', 'name=c64m protocol=C64M/3')
+print(c.cmd("hello"))       # ('ok', 'name=c64m protocol=C64M/6')
 
 # Build into the machine (absolute path — emulator cwd is ../c64m)
 r = c.cmd(f"assemble reset=1 {SRC}")
@@ -308,6 +314,56 @@ Count-only (no pause) for rate measurement:
 6 break-list
 ```
 
+### 6.5b Guarded breakpoints (`when=`) — stop on *nuance*, not just address
+
+Address + access alone is too coarse for time-critical bugs (write only inside
+IRQ, only on a raster band, only when the written byte clears a bit). **`when=`**
+adds a **bounded AND-list of up to 4 terms**, evaluated *after* the
+address/access/mapping match. No OR, no grouping, no precedence — arm two
+breakpoints if you need OR.
+
+```text
+when=<term>[,<term>...]      term = <lhs><op><imm>
+```
+
+| LHS | Meaning |
+|-----|---------|
+| `a` `x` `y` `sp` `p` | CPU registers |
+| `n` `v` `b` `d` `i` `z` `c` | individual P flags as 0/1 |
+| `value` | byte carried by the matching access (not valid on `exec`) |
+| `mem($addr)` | one CPU-map byte at match time |
+| `raster` | VIC-II raster line |
+| `vic_cycle` | cycle within the line |
+
+| Op | Meaning |
+|----|---------|
+| `==` `!=` `<` `>` `<=` `>=` | integer compare |
+| `&` | mask set: `(lhs & imm) != 0` |
+| `!&` | mask clear: `(lhs & imm) == 0` |
+
+**No whitespace** inside the condition. Immediates: `$hex`, `0x`, decimal.
+Guards round-trip through the debug `.ini` with `;` between terms (INI values
+are already comma-lists). The **frontend breakpoint dialog cannot edit guards**
+and **clears them on save** — arm/update guards only over the control port.
+
+```text
+# Write $D021 only with I set (typical IRQ handler)
+1 break-create write $D021 actions=break when=i==1
+
+# Sprite XMSB cleared while sprite-0 X already high
+2 break-create write $D010 actions=break when=value!&1,mem($D000)>$F0
+
+# Store only in the lower border
+3 break-create write $00C3 actions=break when=raster>=250
+
+# Count-only: how often $D015 is written above raster 50
+4 break-create write $D015 actions=none when=raster>50
+```
+
+`hits=` / `counter=` advance only on **guarded** matches. RailGunner mux/sprite
+bugs often need this (wrong `$D0xx` write mid-frame) — pair with coop
+`arm write $ADDR when=…` (see [`coop-debug.md`](coop-debug.md)).
+
 ### 6.6 Joystick poke (port 2 common for games)
 
 Bits: up=1, down=2, left=4, right=8, fire=16.
@@ -320,17 +376,120 @@ Bits: up=1, down=2, left=4, right=8, fire=16.
 
 ### 6.7 Flight recorder (why did we jump here?)
 
+Always-on bounded in-memory 6510 forensic ring (HST1). Answers “what executed /
+what bus traffic happened before the stop.” Does **not** retain pixels — use
+the **frame ring** (§6.7b) for “what did the screen show N frames ago.”
+
 ```text
 1 history-record on
 2 history-clear
 3 run
 4 wait-paused 10000
 5 history-find pc=$080D limit=16
+6 history-find address=$D015 access=write limit=32
+7 history-find opcodes=A9,??,8D limit=16
 ```
 
-`history-find` / `next` / `read` require **paused**. Decode HST1 via
-`Ctl.history_find()` in the Python helper. Deep format:
-`../c64m/agents/cpu-flight-recorder.md`.
+| Command | When |
+|---------|------|
+| `history-info` / `history-record` / `history-clear` / `history-close` | OK while running |
+| `history-find` / `history-next` / `history-read` | **paused** only (`busy machine-running` otherwise) |
+
+Find keys (newest-first by default): `epoch timeline cycle from direction pc
+address access value opcodes limit`. Access: `execute`/`opcode`/`operand`/
+`data-read`/`data-write`/…; aliases `fetch`, `read`, `write`, `data`.
+`opcodes` is 1..32 comma-separated bytes with `?` nibble wildcards.
+
+Decode HST1 via `Ctl.history_find()` / `history_read()` in the Python helper.
+Deep format: `../c64m/agents/cpu-flight-recorder.md`. Budget:
+`[debug] history_memory_mb` / `--history-memory=` (default large; `0` disables).
+
+Cross-link with the frame ring: each retained frame carries a **machine cycle**;
+`history-find cycle=…` (or a cycle range) lines the bus traffic up with that
+picture.
+
+### 6.7b Frame ring (what did the screen *show*?)
+
+A human who sees a one-frame glitch and hits pause is ~50 PAL frames late; those
+pixels are gone from the live buffer. The **frame ring** keeps the last N
+completed native indexed frames in RAM (default **128 MiB ≈ 827 PAL frames ≈
+16.5 s** at 50 fps; `[debug] frame_ring_memory_mb`, `0` disables).
+
+```text
+N frame-ring-info
+N frame-ring-record <on|off>
+N frame-ring-clear
+N get-frame-at frame=<n>|cycle=<n> [format=argb8888|indexed8]
+```
+
+- Target **must** be named: `frame=916` or `cycle=15659138` — a bare number is
+  ambiguous and rejected/wrong by design.
+- Lookup = nearest retained frame **at or before** the target. Past newest →
+  clamp to newest. Older than window → `not-found` (never a substituted
+  neighbour).
+- Payloads match `get-frame` for the same format (same conversion path).
+- Answers **immediately** and work **while running** (own mutex; no deferred
+  slot). Pause first if you need a stable window.
+- **Warp (turbo 3) does not record** (live pixel rendering off). `load-state`
+  clears the ring.
+- Cost is mostly resident memory; push is ~+0.22% of turbo-2 free-run.
+
+Agent recipe after a late human pause:
+
+```text
+1 pause
+2 wait-paused 2000
+3 frame-ring-info
+4 get-frame-at frame=<newest-from-info> format=indexed8
+5 history-find cycle=<cycle-from-that-frame> limit=64
+```
+
+Coop inbox: `scrub [count]` dumps PNGs of the retained window;
+`frame <n>` pulls one frame + its cycle for history (see coop-debug).
+
+### 6.7c VIC ring (why did that frame look wrong?)
+
+**C64M/6** — per-line end-of-line derived VIC state. The frame ring shows *that*
+a frame is wrong; this shows *why*: which sprites had fetched data, badline,
+and especially **sprite X including the `$D010` MSB actually latched for
+painting that line** (`spr_x=`). A one-frame left-edge flash is often latched
+X disagreeing with what the game wrote — pixels + CPU history alone cannot
+prove that; the VIC ring can.
+
+```text
+N vic-ring-info
+N vic-ring-record <on|off>
+N vic-ring-clear
+N vic-ring-find [frame=<n>] [raster=<line>|<first>-<last>] [limit=1..2048]
+```
+
+- Payload: counted `data vic-ring` of **newline key=value text** (agent-readable;
+  not HST1 binary). One record per raster line, oldest-first.
+- All find keys optional. Omit `frame=` to match a raster window **across**
+  retained frames (per-line effect over time).
+- Immediate answers, OK while running (own mutex); pause for a stable window.
+- `load-state` clears the ring.
+- Default budget **16 MiB** (~161k lines ≈ 500 PAL frames / ~10 s);
+  `[debug] vic_ring_memory_mb` (`0` disables — only way to recover the line cost).
+- Cost ~**2.64%** turbo-2 free-run; negligible at turbo 1.  
+  **`vic-ring-record off` stops storing but does not remove the per-line build
+  cost** — use budget `0` for free.
+
+Example record fields (abbrev.): `frame= raster= cycle= badline= spr_en=
+spr_vis= spr_act= spr_x=0050,... spr_y= spr_ptr=` — eight sprites, index 0 first.
+
+**Full forensic chain (one machine-cycle axis):**
+
+```text
+scrub / get-frame-at   → which frame, pixels, cycle=
+vic-ring-find frame=N  → latched spr_x / enable per line of that frame
+history-find cycle=…   → what the CPU wrote around that moment
+```
+
+Coop: `vic <frame> [first-last]` appends the text records into the snap.
+
+Default RAM for history + both rings is large (~400 MiB class). Lower budgets
+in `c64m.ini` `[debug]` if the host is tight.
 
 ### 6.8 Save a reproducible machine snapshot
 
@@ -352,7 +511,8 @@ Restore later with `load-state` + `wait-event load-state-complete`.
 4. Edit src/** (syntax per assembler-syntax.md).
 5. Re-boot: assemble reset=1 + pointer fix + paste RUN (agent_session --attach).
 6. find-symbol / break-exec / joystick N mask / get-memory as needed.
-7. Observe: get-cpu, get-memory, get-vic, get-frame, history-*.
+7. Observe: get-cpu, get-memory, get-vic, get-frame / get-frame-at,
+   vic-ring-find, history-*, break-create … when=… for nuanced stops.
 8. One kill criterion; one change; re-assemble with reset; re-measure.
 9. Ask human to re-test with tools/play.sh.
 10. quit-client; kill emulator process when the session ends.
@@ -396,6 +556,11 @@ offline `--prg --autorun`.
 | Keyboard Space matrix wrong | Space: PRA=`$7F` (row 7), PRB bit 4 (`$10`) — see `sys/const.asm` |
 | Second wait while one active | `error busy` — serialize waits |
 | `get-frame` at turbo 3 | Debug-only geometry; use turbo 1 or 2 |
+| Frame ring at turbo 3 | Does not record; lower turbo for visual truth |
+| Late pause, no ring scrub | Use `frame-ring-info` + `scrub` / `get-frame-at` — aftermath CPU alone misses one-frame glitches |
+| Wrong pixels, no VIC ring | After finding the bad frame, `vic <n>` / `vic-ring-find` for latched `spr_x` vs game `$D000`/`$D010` writes |
+| `vic-ring-record off` for speed | Does **not** remove line cost; set `vic_ring_memory_mb=0` |
+| `when=` with spaces | No whitespace inside the condition; `value` invalid on `exec` |
 | Client default port 17652 | Always `Ctl(port=6510)` for this project |
 | Edit `../c64m/` | **Never** — read-only reference only |
 | `c64masm -o build/railgunner.prg` | Writes **raw** (no load header). Use `make prg` / `build-prg.sh`. Make may skip rebuild; play RUN no-ops |
@@ -494,9 +659,13 @@ wait-paused [ms] | wait-running | wait-frame <delta> [ms] | wait-event <name> [m
 get-memory $addr <len> map|ram
 set-memory $addr <len> map|ram  + raw payload
 get-frame [format=indexed8|argb8888]
+get-frame-at frame=N|cycle=N [format=…]
+frame-ring-info | frame-ring-record on|off | frame-ring-clear
+vic-ring-info | vic-ring-find frame=N [raster=A-B] | vic-ring-record on|off
 joystick <1|2> <mask>
 set-turbo 1|2|3
-history-record on|off | history-find ... | history-read ...
+history-record on|off | history-find ... | history-read ... | history-info
+break-create <access> $addr actions=break when=<term>[,<term>…]
 save-state <path> | load-state <path>
 quit-client
 ```
@@ -523,17 +692,12 @@ upstream — do not delete history.
 
 ### ~~2026-07-28 — `lsr <zp>` / `lsr $nn` emits opcode only (no operand byte)~~
 
-**Fixed in c64m.** Root cause: `lsr` carried `width = 0` in the assembler opcode
-table (`src/tools/assembler/gperf.gperf` + generated `gperf.c`), the same field
-that tells `emit_opcode` how many operand bytes to write. Width `0` is the
-implied/accumulator width (default case emits no operand), so `lsr $nn` wrote a
-lone `$46`. Every other read-modify-write shift (`asl`/`rol`/`ror`, `inc`/`dec`)
-had `width = 8`; `lsr` is now `8` too. Accumulator mode (`lsr` / `lsr a`) was
-unaffected — it is special-cased in `is_implied_instruction` and never consults
-`width`. Regression test `test_shift_addressing_modes` (in
-`tests/tools/test_assembler_expressions.c`) locks down zeropage/absolute/
-accumulator for all four shifts; c64m suite 62/62. Verified end-to-end:
-`c64masm -v` on `lsr $03` now emits `46 03`.
+**Fixed in c64m 638d3c9** (with a related `ldx $nn,y` / `stx $nn,y` promotion
+bug). Root cause: `lsr` carried `width = 0` in the assembler opcode table, so
+`lsr $nn` wrote a lone `$46`. Also: zeropage,Y was always promoted to
+absolute,Y (`ldx $nn,y` grew `$B6`→`$BE`; `stx $nn,y` hard-errored). Standing
+`test_assembler_opcode_matrix` + gated regressions. Verified: `c64masm -v` on
+`lsr $03` → `46 03`.
 
 - **Severity:** blocks-work (silent wrong code).
 - **Did:** assembled `lsr tmp1` / `lsr $4d` / `lsr $03` in game `mul8x8` and in
@@ -545,15 +709,16 @@ accumulator for all four shifts; c64m suite 62/62. Verified end-to-end:
 - **Friction:** silent mis-assembly — no error, PRG “succeeds”, game logic
   reads as random ZP corruption. RailGunner symptom: wave kill quotas became
   `$FE/$FF/$BF`, wave never cleared, only top-half quads (W0 mask) forever.
-- **Workaround:** never `lsr <zp>`; use `lda zp / lsr a / sta zp`.
-- **Suggested improvement:** emit ZP operand for `lsr $nn` / `lsr symbol` (and
-  fail the assemble if operand is missing). Regression test: `lsr $02` →
-  `46 02`.
+- **Workaround (historical):** never `lsr <zp>`; use `lda zp / lsr a / sta zp`.
+- **Suggested improvement:** (landed) emit ZP operand; zp,Y only when the opcode
+  has it; coverage matrix.
 
 ### ~~2026-07-26 — ARGB framebuffer read closes the control connection~~
 
-**Triage/fix submitted upstream (c64m).** Leave struck until a RailGunner
-session re-verifies `get-frame format=argb8888` end-to-end; do not delete.
+**Resolved in c64m `9607995`.** The native indexed framebuffer now expands through
+the shared ARGB path, and nonblocking socket writes retry temporary backpressure.
+Leave this historical friction entry struck; a fresh end-to-end recheck is no
+longer a prerequisite for using the service.
 
 - **Severity:** slows-work.
 - **Did:** paused a visible c64m session, successfully read
@@ -678,3 +843,49 @@ ceremonial steps collapse to `assemble basic-run=1 reset=1 <src>`.
   the image *as a LOAD would* (fix BASIC pointers) and optionally `RUN`s it via
   the BASIC path — without the forbidden auto-run-PC poke. Removes a whole class
   of "why won't it start" mistakes.
+
+### 2026-07-28 — Purple Q1 pop on kill/despawn (slot reuse)
+
+**Fixed in RailGunner.** snap-011: purple A SoA Y `$4A`→`0` while VIC flashed
+Y=`$CB`. Cause: `retire_and_try_free` freed the slot same tick; spawn recycled
+it before the front plan dropped the old pose. Fix: always defer free to `reap`.
+
+### 2026-07-28 — One-frame player jump (mux missed raster)
+
+**Fixed in RailGunner.** Coop snap-009: scrub + VIC ring showed f1019 with
+wrong `spr_en`/`spr_vis` and player-looking X while SoA `obj_x` walked
+smoothly. Cause: mux command IRQ overrunning past the next job line skips
+that command for the frame. Fix: catch-up chain in `mux_irq` + clear/park
+sprite X/Y so stale lanes cannot paint.
+
+### 2026-07-28 — Main lag / mux PLAN_BUSY under load (game fix)
+
+**Fixed in RailGunner (not c64m).** Coop session snap-007: level 4, 6 mux
+commands, `logic_ticks_pending=$C9`, `mux_last_error=PLAN_BUSY`, frame ring
+showed motion freezes ~1–2 s before pause while cycle spacing stayed 19656.
+
+- **`game_init_enter`:** `objects::init` wiped `display_hz`; now SEI + re-detect
+  + `sprite_mux_irq::init`.
+- **`main_loop`:** drop logic-tick backlog (one real-time tick per loop) instead
+  of permanent lag.
+
+Retest: `make play` or `make coop`, push to multi-drone levels, watch for hitch.
+If hitch remains, measure pending again (should stay 0–2, not hundreds).
+
+### 2026-07-28 — Upstream dogfood wins (use these; do not re-discover)
+
+c64m landed the forensic stack this project was improvising around. Prefer these
+over ad-hoc workarounds; keep friction entries only for *remaining* pain.
+
+| Feature | Protocol | RailGunner use |
+|---------|----------|----------------|
+| Flight recorder `history-*` | C64M/3 | Bus/write forensics after freeze; `hist` in coop |
+| Guarded BP `when=` | C64M/4 | IRQ-only / raster-band / value-bit stops; coop `arm … when=` |
+| Frame ring `get-frame-at` | C64M/5 | One-frame glitches after late pause; coop `scrub` / `frame` |
+| VIC ring `vic-ring-find` | C64M/6 | Latched per-line `spr_x` / enable; coop `vic <frame>` |
+| `basic-run=1` assemble | earlier | `agent_session.py` boot — no pointer ceremony |
+| Assembler `locked` / `reclaim=` segments | earlier | Pin VIC regions; overlay title RAM intentionally |
+
+If a glitch is visual and the human paused late: **`scrub` → `frame n` →
+`vic n` → `hist` on that cycle**. If the glitch is “wrong write under a
+condition”: **`when=`** rather than raw address break + hope.

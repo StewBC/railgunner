@@ -140,17 +140,16 @@ Design forbids silent culls (good for determinism). Integration must ensure moti
 
 ---
 
-### P2 — `objects::init` while the raster IRQ is live is racy
+### ~~P2 — `objects::init` while the raster IRQ is live is racy~~ **fixed 2026-07-28**
 
-`game_init_enter` calls `objects::init` without `SEI` and without `sprite_mux_irq::init`. `objects::init` wipes **all nine pages** `$C000–$C8FF` (object tables, **both plans**, owner maps, frame counters).
+`game_init_enter` used to call `objects::init` without `SEI` / without
+`sprite_mux_irq::init` / without re-detecting PAL-NTSC. The nine-page wipe
+includes `display_hz` and mux IRQ scalars, so a new game left **`display_hz=0`**
+and could race a live raster IRQ.
 
-Cold start is fine (`cold_init` sequences pool → mux IRQ init → `irq_install` → `CLI`). Mid-session re-init can:
-
-- Zero the front plan under a running command handler.
-- Clear `mux_front_command_count` mid-frame.
-- Leave VIC sprites enabled until the next line-0 reset.
-
-**Suggestion:** `SEI`, disable sprites / re-init mux IRQ state, then `CLI`; or document that `objects::init` is cold/stage-only with IRQ already stopped.
+**Fix (`game_init.asm`):** under `SEI` — `objects::init` → `video::detect_standard`
+→ `video::init_sprite_palette` → `sprite_mux_irq::init` → `CLI`. Comment on
+`objects::init` documents the caller contract.
 
 ---
 
@@ -163,12 +162,71 @@ lda objects::mux_plan_ready
 bne demo_loop    ; wait until line 0 consumes prior publish
 ```
 
-Production `main_loop` does not. If `mux_objects_dirty` is set while `mux_plan_ready` is still 1, `build` returns `MUX_ERR_PLAN_BUSY`, clears `mux_build_valid_plan`, and retries next tick. Functionally OK, but:
-
-- Wastes a full build attempt path every tick while busy.
-- Couples “facing dirty every 15 frames” to plan-accept timing more than necessary.
+Production `main_loop` does not. If `mux_objects_dirty` is set while
+`mux_plan_ready` is still 1, `build` returns early with `MUX_ERR_PLAN_BUSY`
+(does **not** clear a pending `mux_build_valid_plan` — that stomp was fixed
+upstream of this review). Functionally OK; the early exit is cheap. Full rebuild
+still runs every tick when dirty and not busy.
 
 Minor; prefer the demo’s wait-or-skip pattern when integrating heavy AI.
+
+---
+
+### ~~P1 — Permanent main-loop lag under load (stall dogfood)~~ **fixed 2026-07-28**
+
+**Symptom (coop + frame ring):** under multi-drone load, motion stuttered
+(~2-frame freezes) while the host still painted at 50 Hz. Snap showed
+`logic_ticks_pending ≈ 200`, `mux_last_error = PLAN_BUSY`, `dirty=1`, 6-command
+plans.
+
+**Cause:** `main_loop` did `dec logic_ticks_pending` once per loop while the IRQ
+could `inc` every physical frame. When `mode_run` + mux build overran a frame,
+pending grew without bound → permanent slow-motion rather than dropped ticks.
+
+**Fix (`main.asm`):** real-time policy — if any tick is due, clear
+`logic_ticks_pending` and run **exactly one** logic update. Missed ticks are
+dropped; wall-clock pace is preserved. Prefer this over catch-up spirals.
+
+---
+
+### ~~P1 — One-frame player jump / ghost (missed mux raster)~~ **fixed 2026-07-28**
+
+**Symptom (coop scrub + VIC ring, snap-009 f1019–1021):** player appears to
+jump ~20px for one frame; dual green on H-rail + lower V-rail band. SoA
+`obj_x_lo` walked smoothly (+4); display did not. VIC: one frame
+`spr_en`/`spr_vis` selected a lane with player ptr at a stale X while another
+lane held a green B-drone at Y=`$BB`.
+
+**Cause:** if a mux command IRQ overruns past the **next** job’s compare line,
+`$D012` will not match again that frame — the next command is **skipped**. The
+rest of the frame keeps a partial enable mask / half-updated lanes → one-frame
+jump or ghost. Stale X/Y from prior frames on unused lanes made ghosts worse.
+
+**Fix (`mux_irq.asm`):**
+1. After programming the next job line, if current raster ≥ target, **run the
+   next command in the same IRQ** (missed-line catch-up). Job lines are
+   non-decreasing within a frame.
+2. Frame start: zero all eight sprite X/Y pairs after disable.
+3. Before reprogramming a lane: park that sprite’s Y at 0 while disabled.
+
+---
+
+### ~~P1 — Purple Q1 pop on despawn (same-tick slot reuse)~~ **fixed 2026-07-28**
+
+**Symptom (snap-011 f1661–62):** purple A in Q1 “pops forward then back.”
+SoA Y stayed `$4A` then `clear_slot` → `$00` at `$177C`; VIC one frame showed
+purple lane at **Y=`$CB` / ptr=`$CA`** (not the SoA pose). Red C composite
+centroid jumped when purple left.
+
+**Cause:** `retire_and_try_free` could **free the slot in the same logic tick**
+if it was absent from front/ready refs. `mode_run` then `alloc` recycled that
+slot for a new drone before the next line-0 plan swap; the next published plan
+snapped the recycled slot to the new spawn (different Y/ptr). Design §5.3
+forbids immediate reuse while a plan may still own the logical slot.
+
+**Fix (`objects.asm`):** `retire_and_try_free` only **retires** (clear RENDER,
+set RETIRING, dirty). Free always goes through **`reap`** at the start of the
+next logic tick (before spawn). `reap` also sets dirty when it frees.
 
 ---
 

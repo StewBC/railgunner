@@ -174,10 +174,7 @@ patch_plan:
     clc
     adc #>sprite_mux_data::plan0_cmd_color
     sta command::load_cmd_color + 2
-    lda irq_plan_delta
-    clc
-    adc #>sprite_mux_data::plan0_cmd_enable
-    sta command::load_cmd_enable + 2
+    ; cmd_enable is not loaded in the IRQ (incremental $D015 — see command).
     lda irq_plan_delta
     clc
     adc #>sprite_mux_data::plan0_cmd_xmsb
@@ -255,6 +252,14 @@ flush_lane_next:
     sta irq_shadow_yexp
     sta irq_shadow_multi
     sta irq_shadow_bgprio
+    ; Zero sprite X/Y so a missed enable bit or stale lane cannot paint
+    ; last frame's geometry (dogfood: one-frame ghost / jump).
+    ldx #0
+clear_spr_xy:
+    sta $D000, x
+    inx
+    cpx #16
+    bne clear_spr_xy
     lda #OBJECT_NONE
     ldx #0
 clear_owner_loop:
@@ -336,6 +341,13 @@ old_lane_attributed:
     and irq_shadow_enable
     sta irq_shadow_enable
     sta VIC_SPR_ENABLE
+    ; Park Y at 0 while reprogramming so a mid-handler glitch cannot show
+    ; the previous occupant at the old Y with a partial enable mask.
+    txa
+    asl a
+    tay
+    lda #0
+    sta $D001, y
     lda #OBJECT_NONE
     sta objects::hw_owner, x
     lda #0
@@ -405,9 +417,17 @@ load_cmd_bgprio:
     lda irq_interest
     sta objects::hw_interest, x
 
-    ldx irq_command_index
-load_cmd_enable:
-    lda sprite_mux_data::plan0_cmd_enable, x
+    ; Enable is rebuilt incrementally here, not replaced from plan cmd_enable.
+    ; Builder only ORs lane bits (monotonic); frame start clears $D015. Live
+    ; shadow = clear the lane we rewrite (above) + OR its bit after program.
+    ;
+    ; Replacing from plan0_cmd_enable was unsafe when that byte disagreed with
+    ; lanes already programmed this frame. Coop snap-013 ~f1160: en $05→$0B
+    ; dropped player s2 while Y/ptr still held the E-rail ship; same command
+    ; rewrote s0 to C-drone $C2 (brown pop / half-draw). Plan enable table is
+    ; still written by the builder for diagnostics / future checks.
+    lda irq_shadow_enable
+    ora irq_bit
     sta irq_shadow_enable
     sta VIC_SPR_ENABLE
 
@@ -419,10 +439,20 @@ load_cmd_enable:
     sta VIC_RASTER
     jmp KERNAL_IRQ_EXIT
 
+; Program compare for command X. If the beam is already at/past that line,
+; the VIC will not re-fire this frame — run the command in this IRQ instead.
+; (Job lines are non-decreasing within a frame, so "current >= target" means
+; missed; end-of-plan uses compare 0 and does not take this path.)
 schedule_line_for_x:
 load_cmd_line:
     lda sprite_mux_data::plan0_cmd_line, x
     sta VIC_RASTER
+    cmp VIC_RASTER                  ; A=target vs $D012 current (read ≠ write)
+    beq schedule_run_now            ; on the line — do not wait for re-IRQ
+    bcs schedule_wait               ; target > current — wait for raster IRQ
+schedule_run_now:
+    jmp command
+schedule_wait:
     jmp KERNAL_IRQ_EXIT
 .endproc
 

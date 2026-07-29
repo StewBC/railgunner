@@ -75,6 +75,12 @@ mux_objects_dirty:  .res 1
 
 ; Clear the entire $C000-$C8FF reserved runtime area, establish fixed player
 ; slot 0, and build a stack that allocates slots 1,2,3,... in that order.
+;
+; NOTE: This wipe includes video_standard / display_hz / logic_ticks_pending /
+; mux IRQ scalars. Callers that run after cold_init must re-run
+; video::detect_standard (and usually sprite_mux_irq::init) under SEI — see
+; game_init_enter. Leaving display_hz=0 makes the IRQ cadence wrong on NTSC
+; and was observed as lag dogfood on long sessions.
 .proc init
     lda #0
     sta ptr_lo
@@ -199,23 +205,17 @@ retire_done:
     rts
 .endproc
 
-; X=slot. Retire, then free immediately if the current plan does not reference
-; it (gameplay kills). Falls back to deferred reap if still on-screen in plan.
+; X=slot. Mark retiring and force a mux rebuild. Free is always deferred to
+; reap (never same-tick clear + free_stack push).
+;
+; Same-tick free allowed alloc to recycle the slot for a new drone before the
+; front plan stopped painting the old one; the next published plan then snapped
+; the recycled slot to the new spawn pose — dogfood "purple Q1 pop forward"
+; (VIC y $4A → $CB while clear_slot had only seen $4A then $00). Design §5.3:
+; retiring slots may still be on the immutable front plan for the rest of the
+; physical frame; immediate reuse is unsafe for collisions and display.
 .proc retire_and_try_free
-    jsr retire
-    jsr slot_referenced
-    bcs try_free_done
-    ; Not in front/ready plan — reclaim now so pool does not fill with zombies
-    jsr clear_slot
-    ldy free_count
-    txa
-    sta free_stack, y
-    inc free_count
-    lda #1
-    sta mux_objects_dirty
-try_free_done:
-    clc
-    rts
+    jmp retire
 .endproc
 
 ; Call after changing any render-visible field in an allocated slot. Movement
@@ -279,6 +279,9 @@ hide_next:
 .endproc
 
 ; Return retired, no-longer-displayed slots to the free stack.
+; Runs at the start of a logic tick (before mode_run spawn), so a slot freed
+; here cannot be re-allocated until the next tick — after at least one plan
+; build without it has had a chance to publish.
 .proc reap
     ldx #1
 reap_loop:
@@ -293,6 +296,9 @@ reap_loop:
     txa
     sta free_stack, y
     inc free_count
+    ; Rebuild so a freed slot never lingers in a half-built back plan.
+    lda #1
+    sta mux_objects_dirty
 reap_next:
     inx
     cpx #OBJECT_CAPACITY

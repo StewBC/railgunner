@@ -658,6 +658,10 @@ emit_plan_0:
 ; Deadlines are object_top-MUX_JOB_LINES, so Y order is deadline order. The
 ; original EDF selector always waited for the earliest-deadline job's release;
 ; this linear pass is exactly equivalent and removes another all-pairs scan.
+;
+; Jobs are packed as early as feasible (from line 28, gated by same-lane
+; release) so dense Y clusters still fit the 9-line serialized windows. Do not
+; force start=deadline: that rejects any two candidates within 9px of Y.
 .proc schedule_and_emit
     lda #MUX_FIRST_JOB_LINE
     sta mux_cursor

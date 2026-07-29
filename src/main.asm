@@ -54,7 +54,13 @@ main_loop:
     jsr objects::drain_irq_events
     lda objects::logic_ticks_pending
     beq main_loop                    ; NTSC: one physical frame in six is render-only
-    dec objects::logic_ticks_pending
+    ; Real-time policy: run exactly one logic tick, then drop any backlog.
+    ; Under load the main loop can take >1 frame; IRQ keeps incrementing
+    ; logic_ticks_pending. Draining only one per loop without clearing the
+    ; rest caused permanent lag (pending grew to hundreds; motion looked like
+    ; 25 Hz freezes). Prefer dropping missed ticks over slow-motion catch-up.
+    lda #0
+    sta objects::logic_ticks_pending
     jsr objects::reap
     jsr input_poll
     jsr mode_run

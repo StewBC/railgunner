@@ -17,8 +17,16 @@
     lda #1
     sta hud_status_dirty
 
+    ; objects::init wipes $C000–$C8FF (includes display_hz, mux IRQ bookkeeping).
+    ; Hold IRQs, re-detect video cadence, and re-init the mux IRQ state so a
+    ; new game does not inherit display_hz=0 / stale plans (stall dogfood).
+    sei
     jsr objects::init
+    jsr video::detect_standard
     jsr video::init_sprite_palette
+    jsr sprite_mux_irq::init
+    cli
+
     jsr rail::reset
     jsr cargo::init
 
