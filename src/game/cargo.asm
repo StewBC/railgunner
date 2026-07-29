@@ -265,10 +265,10 @@ ca_no:
     beq po_base
     ; stacked but not armed — show star light
     lda #SC_STAR
-    jmp po_put
+    jmp po_put_orange
 po_mine:
     lda #SC_MINE
-    jmp po_put
+    jmp po_put_orange
 po_base:
     ; restore elbow letter
     cpx #0
@@ -289,11 +289,18 @@ po_i:
     lda #SC_RAIL_I
 po_put:
     sta tmp0
+    lda #COL_GRAY
+    jmp po_put_color
+po_put_orange:
+    sta tmp0
+    lda #COL_ORANGE
+po_put_color:
+    pha
     ldx draw_i
     ldy draw_j
     lda tmp0
     jsr screen_put_xy
-    lda #COL_ORANGE
+    pla
     ldx draw_i
     ldy draw_j
     jmp screen_color_xy
@@ -304,7 +311,9 @@ po_put:
     ldy cargo_row
     lda #SC_CARGO_DOT
     jsr screen_put_xy
-    lda #COL_YELLOW
+    ; Cargo used to be the same yellow dot as a bullet, making a legitimate
+    ; C-drone deposit look like corrupted player fire.
+    lda #COL_ORANGE
     ldx cargo_col
     ldy cargo_row
     jmp screen_color_xy

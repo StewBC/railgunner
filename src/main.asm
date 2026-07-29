@@ -50,7 +50,11 @@ basic_next:
 start:
     jsr cold_init
 main_loop:
+    lda #PROFILE_MAIN_WAIT
+    sta objects::profile_marker
     jsr wait_frame
+    lda #PROFILE_MAIN_DRAIN
+    sta objects::profile_marker
     jsr objects::drain_irq_events
     lda objects::logic_ticks_pending
     beq main_loop                    ; NTSC: one physical frame in six is render-only
@@ -61,13 +65,23 @@ main_loop:
     ; 25 Hz freezes). Prefer dropping missed ticks over slow-motion catch-up.
     lda #0
     sta objects::logic_ticks_pending
+    lda #PROFILE_MAIN_REAP
+    sta objects::profile_marker
     jsr objects::reap
+    lda #PROFILE_MAIN_INPUT
+    sta objects::profile_marker
     jsr input_poll
+    lda #PROFILE_MAIN_MODE
+    sta objects::profile_marker
     jsr mode_run
+    lda #PROFILE_MAIN_BUILD_CHECK
+    sta objects::profile_marker
     lda objects::mux_objects_dirty
     beq main_loop
     jsr sprite_mux_build::build
     bcs mux_build_failed             ; keep prior plan; retry while dirty
+    lda #PROFILE_MAIN_PUBLISH
+    sta objects::profile_marker
     jsr sprite_mux_build::publish
     bcs mux_build_failed
     lda #0
@@ -77,6 +91,8 @@ mux_build_failed:
     ; PLAN_BUSY is normal while IRQ still holds ready plan — leave dirty set.
     ; Hard errors (deadline/lane) also leave dirty so we rebuild when geometry
     ; is legal again; never clear dirty on failure (that freezes sprites).
+    lda #PROFILE_MAIN_BUILD_FAIL
+    sta objects::profile_marker
     jmp main_loop
 
 .include "boot/init.asm"
@@ -97,6 +113,9 @@ mux_build_failed:
 .include "game/game_init.asm"
 .include "game/score.asm"
 .include "game/hud.asm"
+.include "game/objects.asm"
+.include "sprite/mux_build.asm"
+.include "sprite/mux_irq.asm"
 .include "game/rail.asm"
 .include "game/player.asm"
 .include "game/drones.asm"
@@ -108,9 +127,6 @@ mux_build_failed:
 .include "game/message.asm"
 .include "game/play.asm"
 .include "game/life.asm"
-.include "game/objects.asm"
-.include "sprite/mux_build.asm"
-.include "sprite/mux_irq.asm"
 
 ; ---------------------------------------------------------------------------
 ; Title graphics (source arrays; copied to $2000 / $0400 at runtime)

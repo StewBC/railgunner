@@ -858,9 +858,10 @@ smoothly. Cause: mux command IRQ overrunning past the next job line skips
 that command for the frame. Fix: catch-up chain in `mux_irq` + clear/park
 sprite X/Y so stale lanes cannot paint.
 
-### 2026-07-28 — Main lag / mux PLAN_BUSY under load (game fix)
+### 2026-07-28 — Main lag / mux PLAN_BUSY under load (partial game fix)
 
-**Fixed in RailGunner (not c64m).** Coop session snap-007: level 4, 6 mux
+**Backlog growth fixed; frame-budget overrun separately profiled.** Coop
+session snap-007: level 4, 6 mux
 commands, `logic_ticks_pending=$C9`, `mux_last_error=PLAN_BUSY`, frame ring
 showed motion freezes ~1–2 s before pause while cycle spacing stayed 19656.
 
@@ -869,8 +870,12 @@ showed motion freezes ~1–2 s before pause while cycle spacing stayed 19656.
 - **`main_loop`:** drop logic-tick backlog (one real-time tick per loop) instead
   of permanent lag.
 
-Retest: `make play` or `make coop`, push to multi-drone levels, watch for hitch.
-If hitch remains, measure pending again (should stay 0–2, not hundreds).
+That prevented permanent accumulated lag but did not make heavy ticks fit.
+Snap-021's phase markers measured a six-object mux build at about 14,600
+non-IRQ cycles, including 6,873 in the fixed 256-row Y bucket pass and 3,496
+in command emission. Gameplay used roughly another 7,000 cycles. The bucket
+pass, emission masks, and bullet draw address path were optimized afterward;
+repeat the phase capture under the same workload before calling 50 Hz fixed.
 
 ### 2026-07-28 — Upstream dogfood wins (use these; do not re-discover)
 

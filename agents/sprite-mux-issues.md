@@ -138,6 +138,15 @@ Examples that return `MUX_ERR_RASTER_DEADLINE` for the **whole** plan:
 
 Design forbids silent culls (good for determinism). Integration must ensure motion/spawn never introduce a single bad coordinate, or the whole mux freezes on the previous frame’s snapshot.
 
+**Production confirmation (coop snap-022):** retained images show every
+hardware sprite—not only the player—holding the exact same pixels from about
+frame 6211 through 6269, then all jumping to current positions at frame 6270.
+Character bullets continued from logical player coordinates during the freeze.
+This is the signature of whole-plan replay, consistent with a hard build
+rejection under the constraints above. The exact transient error was lost when
+the paused machine was resumed before VIC/SoA history was collected; reproduce
+and capture `mux_last_error` plus plan state before choosing the remediation.
+
 ---
 
 ### ~~P2 — `objects::init` while the raster IRQ is live is racy~~ **fixed 2026-07-28**
@@ -147,9 +156,50 @@ Design forbids silent culls (good for determinism). Integration must ensure moti
 includes `display_hz` and mux IRQ scalars, so a new game left **`display_hz=0`**
 and could race a live raster IRQ.
 
-**Fix (`game_init.asm`):** under `SEI` — `objects::init` → `video::detect_standard`
-→ `video::init_sprite_palette` → `sprite_mux_irq::init` → `CLI`. Comment on
-`objects::init` documents the caller contract.
+**Initial fix (`game_init.asm`):** under `SEI` — `objects::init` →
+`video::detect_standard` → `video::init_sprite_palette` →
+`sprite_mux_irq::init` → `CLI`.
+
+**Follow-up fix (2026-07-28):** that sequence was incomplete. Video detection
+can leave a raster IRQ pending while interrupts are masked; restoring interrupts
+without resetting/acknowledging the compare lets the handler treat the current
+nonzero raster as command 0 of an empty plan. The corrected order is
+`objects::init` → `sprite_mux_irq::init` → `video::detect_standard` → palette →
+`irq_install` → `CLI`. A guarded live breakpoint proved zero command entries
+with `mux_front_command_count=0` through title→PLAY.
+
+The same review restored the fixed MUX memory ABI after rail state had begun
+occupying `OBJECTS` first: pool `$C000`, plans `$C300/$C500`, scratch through
+`$C8FF`, with rail/cargo state following at `$C900`. Assembly guards now reject
+future drift. Retirement reference checks also mask IRQs while sampling the
+front and ready plans.
+
+---
+
+### ~~P1 — Catch-up command left a raster IRQ pending~~ **fixed 2026-07-28**
+
+**First symptom (coop snap-017, frames 2347–2353):** an off-right purple
+class-A drone appeared at X=43 while the player simultaneously wrapped 256
+pixels left. Both retained their low X bytes but lost their `$D010` bits.
+
+**Cause:** `schedule_run_now` can enter another command inline when its raster
+target is already at/past the beam. Programming an on-beam compare can latch a
+new raster source, but only the outer hardware IRQ entry acknowledged `$D019`.
+After the inline chain completed, RTI immediately re-entered the IRQ with the
+command cursor already at the plan count. The old shell inferred phase from
+the *current* `$D012` raster read and dispatched stale command 4: owner 5, lane
+1, X=$12B, Y=$DC, pointer `$C9`, color 4, X-MSB mask 0.
+
+**First follow-up:** deriving IRQ phase from
+`irq_command_index < mux_front_command_count` prevented the stale read, but the
+pending source then caused a premature second `frame_start` in mid-display.
+Coop snap-019 showed frame 1210's A drone cut off after two lines at raster 79,
+followed by the same plan running again from raster 95; frames 1221, 1222, and
+1228–1246 repeated the disappearance.
+
+**Complete fix (`mux_irq.asm`):** every `command` entry now acknowledges
+`$D019`, including inline catch-up entries. Cursor/count remains the robust
+phase discriminator, and mux init explicitly zeros the cursor.
 
 ---
 
@@ -254,7 +304,7 @@ Skipping off-screen / unsafe Y is convenient but differs from a hard `BAD_COORDI
 | Doc claim | Reality |
 |-----------|---------|
 | `objects-sprites.md` “source not yet implemented” | Implemented |
-| `sprite-mux-status.md` CODE ends at `$1C00` | CODE ends at **`$1C69`**; sprites live at `$3000`, so the old `$1C00` collision warning is outdated |
+| `sprite-mux-status.md` old CODE-end warning | Updated after the reset/layout follow-up; sprites remain fixed at `$3000` |
 | Demo PRGs “assemble” | Fixed — install path no longer shared with demos |
 
 ---
@@ -272,9 +322,12 @@ These were scrutinized and look correct relative to the design:
 - Gather flags: allocated + render, not retiring; X hi ≥ 2 off-screen; Y+height ≤ 262 common safe range; Y-expand → height 42.
 - Insertion sort by `(priority, Y, slot)` then greedy lane coloring with drone `min_lane`.
 - Neutral lane preference `ordinal & 7` with fallback to lowest free.
-- Bucket Y-order pass at `$C800` preserves priority within a scanline (verified by C/B/A tests).
+- Stable small-list Y sort preserves the prior priority/slot order within a
+  scanline; it replaced the fixed 256-bucket pass after profiling showed the
+  latter consumed about 6,900 cycles for six candidates.
 - Interest packing: `OBJF_BG/SS` bits 3–4 → `OBJE_*` via three `LSR`.
 - Publish critical section; IRQ accepts only at line 0; replay on miss.
+- IRQ phase is selected from command cursor/count, not the current raster read.
 - Command path: latch → attribute old owner → disable lane → program → set owner → enable; complete shared-register masks (no RMW on `$D010` etc.).
 - Retirement: deferred free + front/ready ref masks; slot 0 fixed.
 - PAL/NTSC logic tick accumulator (50 Hz normalized).

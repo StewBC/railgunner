@@ -33,6 +33,10 @@ plan0_ref2:           .res 1
 plan0_sequence:       .res 1
 .align 256
 
+.if plan0_cmd_line .ne (OBJECT_STATE + $0300)
+    .byte ERR_mux_plan0_must_start_at_OBJECT_STATE_plus_0300
+.endif
+
 ; Plan 1: $C500-$C6FF.
 plan1_cmd_line:       .res MUX_MAX_COMMANDS
 plan1_cmd_lane:       .res MUX_MAX_COMMANDS
@@ -78,11 +82,12 @@ build_priority:       .res OBJECT_CAPACITY
 build_job_release:    .res OBJECT_CAPACITY
 build_job_deadline:   .res OBJECT_CAPACITY
 build_job_line:       .res OBJECT_CAPACITY
-build_scheduled:      .res OBJECT_CAPACITY
+build_scheduled:      .res OBJECT_CAPACITY ; reserved former bucket links
 build_candidate_count:.res 1
 .align 256
 
-; $C800 scanline buckets used to derive Y order without a second O(n^2) sort.
+; $C800 reserved former scanline buckets. Keeping the page preserves the
+; established $C900 rail/cargo layout while the small-list sort is evaluated.
 build_page_8:         .res 256
 
 .endscope
@@ -156,8 +161,6 @@ safe_bottom:
     sta sprite_mux_data::build_priority, x
     lda #OBJECT_NONE
     sta sprite_mux_data::build_lane, x
-    lda #0
-    sta sprite_mux_data::build_scheduled, x
 
     ldy sprite_mux_data::build_candidate_count
     txa
@@ -366,59 +369,57 @@ assign_fail:
     rts
 .endproc
 
-; Reorder build_slots by (Y, priority, slot) in linear time. $C800 is a
-; 256-entry head table and build_scheduled temporarily holds next-slot+1.
+; Stable insertion-sort build_slots by Y. sort_candidates already established
+; (priority, Y, slot) order, so preserving equal-Y order yields the required
+; (Y, priority, slot) result.
+;
+; Candidate count is capped at 24 and is normally <= 6. The previous bucket
+; sort cleared and scanned all 256 Y buckets every build, costing ~6,900 cycles
+; for six candidates in coop snap-021.
 .proc order_candidates_by_y
-    ldx #0
-    lda #0
-clear_buckets:
-    sta sprite_mux_data::build_page_8, x
-    inx
-    bne clear_buckets
-
     lda sprite_mux_data::build_candidate_count
+    cmp #2
+    bcs y_sort_begin
+    rts
+y_sort_begin:
+    lda #1
     sta mux_i
-bucket_insert:
-    lda mux_i
-    beq bucket_scan_begin
-    dec mux_i
+y_sort_outer:
     ldy mux_i
     lda sprite_mux_data::build_slots, y
-    sta mux_current
+    sta mux_key
     tax
     lda objects::obj_y_int, x
-    tax
-    lda sprite_mux_data::build_page_8, x
-    ldy mux_current
-    sta sprite_mux_data::build_scheduled, y
-    tya
-    clc
-    adc #1
-    sta sprite_mux_data::build_page_8, x
-    jmp bucket_insert
+    sta mux_current_top
+    lda mux_i
+    sta mux_j
 
-bucket_scan_begin:
-    lda #0
-    sta mux_i
-    ldx #0
-bucket_scan:
-    lda sprite_mux_data::build_page_8, x
-bucket_chain:
-    beq bucket_next
-    sec
-    sbc #1
+y_sort_inner:
+    lda mux_j
+    beq y_sort_insert
     tay
-    sta mux_current
-    tya
-    ldy mux_i
+    dey
+    lda sprite_mux_data::build_slots, y
+    tax
+    lda objects::obj_y_int, x
+    cmp mux_current_top
+    bcc y_sort_insert
+    beq y_sort_insert                ; stable for equal Y
+
+    lda sprite_mux_data::build_slots, y
+    iny
+    sta sprite_mux_data::build_slots, y
+    dec mux_j
+    jmp y_sort_inner
+
+y_sort_insert:
+    ldy mux_j
+    lda mux_key
     sta sprite_mux_data::build_slots, y
     inc mux_i
-    ldy mux_current
-    lda sprite_mux_data::build_scheduled, y
-    jmp bucket_chain
-bucket_next:
-    inx
-    bne bucket_scan
+    lda mux_i
+    cmp sprite_mux_data::build_candidate_count
+    bcc y_sort_outer
     rts
 .endproc
 
@@ -485,37 +486,6 @@ window_fail:
     rts
 .endproc
 
-; Update a shadow mask: X=object slot, Y=lane, A=attribute bit (or $FF for XMSB).
-; Result is returned in A; caller supplies current shadow in mux_best_value.
-.proc mask_for_attr
-    sta mux_key
-    lda lane_bit_table, y
-    sta mux_bit
-    lda lane_clear_table, y
-    sta mux_clear
-    lda mux_best_value
-    and mux_clear
-    sta mux_best_value
-    lda mux_key
-    cmp #$ff
-    beq mask_x_msb
-    and objects::obj_sprite_attr, x
-    beq mask_done
-    lda mux_best_value
-    ora mux_bit
-    rts
-mask_x_msb:
-    lda objects::obj_x_hi, x
-    and #1
-    beq mask_done
-    lda mux_best_value
-    ora mux_bit
-    rts
-mask_done:
-    lda mux_best_value
-    rts
-.endproc
-
 ; Emit current object (mux_current) as command mux_k into the inactive plan.
 .proc emit_current
     ldx mux_current
@@ -524,35 +494,71 @@ mask_done:
     tay
     lda lane_bit_table, y
     sta mux_bit
+    lda lane_clear_table, y
+    sta mux_clear
     lda mux_shadow_enable
     ora mux_bit
     sta mux_shadow_enable
 
+    ; Replace this lane's five shadow bits. The former helper made five JSRs
+    ; and reloaded the lane tables and object attributes on every call.
     lda mux_shadow_xmsb
-    sta mux_best_value
-    lda #$ff
-    jsr mask_for_attr
+    and mux_clear
     sta mux_shadow_xmsb
+    lda objects::obj_x_hi, x
+    and #1
+    beq xmsb_done
+    lda mux_shadow_xmsb
+    ora mux_bit
+    sta mux_shadow_xmsb
+xmsb_done:
+
+    lda objects::obj_sprite_attr, x
+    sta mux_key
+
     lda mux_shadow_xexp
-    sta mux_best_value
-    lda #OBJA_X_EXPAND
-    jsr mask_for_attr
+    and mux_clear
     sta mux_shadow_xexp
+    lda mux_key
+    and #OBJA_X_EXPAND
+    beq xexp_done
+    lda mux_shadow_xexp
+    ora mux_bit
+    sta mux_shadow_xexp
+xexp_done:
+
     lda mux_shadow_yexp
-    sta mux_best_value
-    lda #OBJA_Y_EXPAND
-    jsr mask_for_attr
+    and mux_clear
     sta mux_shadow_yexp
+    lda mux_key
+    and #OBJA_Y_EXPAND
+    beq yexp_done
+    lda mux_shadow_yexp
+    ora mux_bit
+    sta mux_shadow_yexp
+yexp_done:
+
     lda mux_shadow_multi
-    sta mux_best_value
-    lda #OBJA_MULTICOLOR
-    jsr mask_for_attr
+    and mux_clear
     sta mux_shadow_multi
+    lda mux_key
+    and #OBJA_MULTICOLOR
+    beq multi_done
+    lda mux_shadow_multi
+    ora mux_bit
+    sta mux_shadow_multi
+multi_done:
+
     lda mux_shadow_bgprio
-    sta mux_best_value
-    lda #OBJA_BEHIND_BG
-    jsr mask_for_attr
+    and mux_clear
     sta mux_shadow_bgprio
+    lda mux_key
+    and #OBJA_BEHIND_BG
+    beq bgprio_done
+    lda mux_shadow_bgprio
+    ora mux_bit
+    sta mux_shadow_bgprio
+bgprio_done:
 
     ; Add owner to this plan's 24-bit reference mask.
     ldx mux_current
@@ -759,29 +765,49 @@ finish_common:
 
 ; Public build ABI: C clear complete inactive plan; C set A=MUX_ERR_*.
 .proc build
+    lda #PROFILE_MUX_GATE
+    sta objects::profile_marker
     lda objects::mux_plan_ready
     beq build_start
     ; Ready plan still waiting for line-0 swap — not a hard failure.
     ; Do NOT clear mux_build_valid_plan (a successful build may be waiting
     ; to publish once ready drops; stomping it caused permanent PLAN_BUSY).
+    lda #PROFILE_MUX_BUSY
+    sta objects::profile_marker
     lda #MUX_ERR_PLAN_BUSY
     sta objects::mux_last_error
     sec
     rts
 build_start:
+    lda #PROFILE_MUX_GATHER
+    sta objects::profile_marker
     jsr gather
     bcs build_fail
+    lda #PROFILE_MUX_SORT
+    sta objects::profile_marker
     jsr sort_candidates
+    lda #PROFILE_MUX_ASSIGN
+    sta objects::profile_marker
     jsr assign_lanes
     bcs build_fail
+    lda #PROFILE_MUX_Y_ORDER
+    sta objects::profile_marker
     jsr order_candidates_by_y
+    lda #PROFILE_MUX_WINDOWS
+    sta objects::profile_marker
     jsr build_job_windows
     bcs build_fail
+    lda #PROFILE_MUX_EMIT
+    sta objects::profile_marker
     jsr schedule_and_emit
     bcs build_fail
+    lda #PROFILE_MUX_FINISH
+    sta objects::profile_marker
     jmp finish_plan
 build_fail:
     sta objects::mux_last_error
+    lda #PROFILE_MUX_FAIL
+    sta objects::profile_marker
     ldx #OBJECT_NONE
     stx objects::mux_build_valid_plan
     sec

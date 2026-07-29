@@ -61,7 +61,9 @@
 ;   $C300-$C4FF   immutable plan 0
 ;   $C500-$C6FF   immutable plan 1
 ;   $C700-$C7D8   indexed builder arrays/count
-;   $C800-$C8FF   scanline bucket heads
+;   $C800-$C8FF   reserved former scanline bucket page
+;   $C900-$C9C6   rail damage + cargo state (outside objects::init wipe;
+;                  game_init_enter resets it through rail/cargo APIs)
 
 CODE_START      = $080d             ; SYS 2061
 TITLE_START     = $4000             ; title_bitmap source

@@ -72,6 +72,7 @@ POOL_REGIONS = {
     "objects::mux_objects_dirty": 1,
     "objects::mux_build_seq": 1,
     "objects::mux_plan_miss": 1,
+    "objects::profile_marker": 1,
     "mux_build_failed": 1,  # CODE flag if present
 }
 

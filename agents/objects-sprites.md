@@ -417,7 +417,10 @@ At raster line 0, in this order:
 6. Accept the published plan if ready; otherwise retain the current plan.
 7. Patch the command-reader operand high bytes for the chosen front plan.
 8. Publish that plan's reference mask for retirement checks.
-9. Reset the command cursor and all VIC sprite shadow masks.
+9. Reset the command cursor and all VIC sprite shadow masks. The cursor/count
+   relation is also the IRQ phase: cursor below count means command work;
+   cursor at count means physical-frame work. Do not infer this phase from the
+   current raster read, because a line-0 IRQ may be serviced after line 0.
 10. Advance physical-frame and 50 Hz logical-tick accounting.
 11. Signal the main loop that a physical frame began.
 12. Program the next command raster, or raster 0 of the next frame if the plan
@@ -661,11 +664,15 @@ If arithmetic wraps or `release_start > latest_start`, the plan is
 unschedulable.
 
 After coloring, build a second order by `(object_top, priority, logical_slot)`.
-The implementation clears 256 scanline heads at `$C800`, links the candidates
-through the 24-byte scratch array, and scans the heads once; this avoids a
-second insertion sort. Because every deadline is `object_top-MUX_JOB_LINES`,
-that order is also deadline order. Track the last logical slot assigned to
-each of the eight lanes to derive predecessor releases in one pass.
+The implementation uses a stable insertion sort by Y over the already
+`(priority, Y, slot)`-sorted candidate list. Stability preserves priority and
+slot order for equal Y. Candidate count is capped at 24 and is normally six or
+fewer; coop snap-021 showed that the former 256-bucket clear/scan cost about
+6,900 cycles for only six candidates. Because every deadline is
+`object_top-MUX_JOB_LINES`, the resulting order is also deadline order. Track
+the last logical slot assigned to each of the eight lanes to derive predecessor
+releases in one pass. `$C800` remains reserved for now so rail/cargo state stays
+at its established `$C900` address.
 
 Starting with a cursor at `MUX_FIRST_JOB_LINE`, visit that deadline order:
 
@@ -711,7 +718,7 @@ are snapshots; the IRQ does no object-table lookup.
 | `cmd_y` | `$D001 + 2*lane` value |
 | `cmd_ptr` | `$07F8 + lane` value |
 | `cmd_color` | `$D027 + lane` value |
-| `cmd_enable_mask` | complete `$D015` shadow after command |
+| `cmd_enable_mask` | complete `$D015` shadow after command (diagnostic; current IRQ enables the rewritten lane incrementally) |
 | `cmd_x_msb_mask` | complete `$D010` shadow after command |
 | `cmd_x_expand_mask` | complete `$D01D` shadow after command |
 | `cmd_y_expand_mask` | complete `$D017` shadow after command |
@@ -726,7 +733,9 @@ Plan metadata:
 - optional build sequence for diagnostics.
 
 The builder simulates commands in scheduled order and emits complete shared
-register masks. The IRQ never performs a shared-register read/modify/write.
+register masks. The IRQ writes the complete attribute masks and maintains
+`$D015` through its software shadow; it never reads a shared VIC register for
+read/modify/write.
 
 Plan 0 and plan 1 use the same offsets across two pages each. No command field
 array crosses a page.
@@ -740,7 +749,9 @@ sources; the mux polls the collision latches at ownership boundaries.
 
 For one command:
 
-1. Acknowledge raster bit 0 in `$D019`.
+1. Acknowledge raster bit 0 in `$D019`, even when entering the command inline
+   from missed-raster catch-up. A compare programmed on the current beam line
+   can latch a new source after the outer IRQ shell's acknowledgement.
 2. Read `$D01F`; OR it into `irq_bg_lane_mask`.
 3. Read `$D01E`; OR it into `irq_ss_lane_mask`.
 4. For the lane being replaced, attribute its accumulated bits to the **old**
@@ -752,7 +763,9 @@ For one command:
    color stores use fixed absolute addresses.
 8. Write the command's complete `$D010/$D01D/$D017/$D01C/$D01B` masks.
 9. Set `hw_owner[lane]` and `hw_interest[lane]` to the new command values.
-10. Write the final `$D015` enable mask.
+10. Set this lane in the software `$D015` shadow and write that shadow. The
+    complete plan enable byte remains available for diagnostics but is not
+    trusted to replace already-live lane bits.
 11. Advance the command cursor.
 12. Program `$D012` for the next command, or line 0 for the next frame. Keep
     raster compare bit 8 clear in the maintained `$D011` control shadow.
@@ -800,6 +813,12 @@ to the full KERNAL service at `$EA31` from every mux command. The game owns its
 frame clock and polls its own input, so stopping the KERNAL jiffy/keyboard IRQ
 service during gameplay is intentional. Disk/frontend code that later requires
 a different IRQ policy must explicitly suspend and restore this raster owner.
+
+The IRQ shell chooses frame-start versus command work from the command cursor:
+`irq_command_index >= mux_front_command_count` means frame-start; otherwise it
+means the next mux command. `$D012` reads the beam's current raster, not the
+programmed compare, and is therefore not a safe phase discriminator when IRQ
+service is delayed.
 
 One frame-start hook is reserved for future music. Music must run at the
 normalized cadence required by its driver and must be included in the

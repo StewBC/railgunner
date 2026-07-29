@@ -131,8 +131,9 @@ Ctrl-C stops the **watcher** only; the emulator window keeps running if
 3. **Hit pause immediately** (frontend pause key).
 4. Tell the agent in chat what you saw (quadrant Q1–Q4, which sprite, approx
    when: after kill, on mount, multi-drone, …).
-5. Leave the machine **paused** until the agent says to resume (or you unpause
-   in the UI — the watcher detects `state=running` and re-arms).
+5. Leave the machine **paused** while evidence is being collected. Only the
+   human decides when to resume; the agent must not infer permission from
+   finishing one line of analysis.
 
 ---
 
@@ -180,7 +181,7 @@ echo 'hist $D000 write 64' >> "$INBOX"
 echo 'dump $C078 24 map' >> "$INBOX"          # obj_flags (re-check symbols!)
 echo 'arm write $C120' >> "$INBOX"             # example: write trap
 echo 'arm write $D010 when=value!&1,mem($D000)>$F0' >> "$INBOX"
-echo resume >> "$INBOX"
+echo resume >> "$INBOX"                         # only on explicit human request
 ```
 
 | Command | Effect |
@@ -199,6 +200,13 @@ echo resume >> "$INBOX"
 
 `access`: `exec` \| `read` \| `write` \| `read-write`  
 Addresses: `$C078` or `0xC078`.
+
+**Hard state-ownership rule:** never send `resume` merely because analysis
+appears complete. A paused machine is a perishable forensic window: retained
+frames/VIC lines can roll off and history cursors become stale as soon as it
+runs. Send `resume` only when the human explicitly asks the agent to resume;
+otherwise report that evidence collection is complete and leave control to the
+human.
 
 **Guarded arms (`when=`):** up to 4 ANDed terms; no whitespace inside the
 condition. Same grammar as control-port `break-create` (see build-debug §6.5b).
@@ -234,7 +242,41 @@ Check scrub log for **`dropped=`**: non-zero means the glitch may have rolled
 off — raise `[debug] frame_ring_memory_mb` / `vic_ring_memory_mb` or pause
 faster. Frame ring does not record at turbo 3.
 
-### 5.4 Arm-and-reproduce (intermittent bugs)
+### 5.4 Phase profiling (missed 50 Hz deadlines)
+
+RailGunner writes one-byte phase IDs to `objects::profile_marker`. The flight
+recorder timestamps those stores, so profiling does not require breakpoints or
+a timer IRQ. Markers cover the main loop, play-mode subsystems, mux-builder
+passes, and mux IRQ work. The analyzer removes IRQ intervals from interrupted
+main/play/mux phases and reports both cycles and percentage of one PAL frame.
+
+Use a freshly rebuilt/relaunched coop binary, reproduce the slowdown under
+representative load, then pause:
+
+```bash
+# Resolve the address from this build; do not assume it is permanently $C279.
+rg 'objects::profile_marker' build/symbols.txt
+
+# While paused, append the newest 256 marker writes to the current snap.
+echo 'hist $C279 write 256' >> build/debug/coop_inbox
+
+# Analyze that evidence pack (latest snap by default, or pass one explicitly).
+tools/analyze_profile.py
+tools/analyze_profile.py build/debug/snap-021.txt
+```
+
+The phase IDs and instrumentation sites are in `src/sys/const.asm`. A 256-write
+capture spans several busy frames; repeat after changing the workload when a
+phase is data-dependent. The measurements include the six-cycle `LDA #id` /
+`STA abs` marker cost at each boundary, so treat differences of only a few
+cycles as instrumentation noise. Snap-022 averaged about 46 marker writes, or
+roughly 275 cycles (1.4% of a PAL frame), per busy frame. Keep the always-on
+markers while intermittent mux freezes remain under investigation; remove or
+compile-guard them before a final release timing pass. If a broad phase
+dominates, add temporary markers inside that subsystem rather than guessing
+from source size.
+
+### 5.5 Arm-and-reproduce (intermittent bugs)
 
 When the manual pause was too late **and** the ring did not catch a clear
 visual, or the bug is conditional:
@@ -253,7 +295,7 @@ visual, or the bug is conditional:
 Optional: `count write $ADDR when=…` first to see if the address is hot even
 without a visible glitch.
 
-### 5.5 After analysis
+### 5.6 After analysis
 
 - Prefer fixing the bug in a follow-up change (then rebuild + re-assemble).  
 - Do **not** commit coop docs/tools until the human confirms a successful
@@ -322,6 +364,8 @@ lower-left, **Q4** upper-left.
 - Do not edit `../c64m/` from a RailGunner session (boundary). Improve c64m via
   the friction log if the tool is awkward.  
 - Do not use turbo 3 for coop visual sessions (no live pixels, ring stalls).  
+- Do not send `resume` without an explicit human request; completing analysis
+  does not authorize changing the paused machine state.
 - Do not open a second control client while the watcher owns 6510.  
 - Do not save a guarded breakpoint from the **frontend** dialog — it clears
   `when=` (control-port / inbox only).

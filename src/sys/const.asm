@@ -364,6 +364,46 @@ MUX_ERR_COMMAND_CAPACITY = 5
 MUX_ERR_PLAN_BUSY       = 6
 MUX_ERR_BAD_COORDINATE  = 7
 
+; Coop phase profiler. Code writes these IDs to objects::profile_marker; the
+; c64m flight recorder supplies the cycle timestamp for every write.
+PROFILE_MAIN_WAIT        = $01
+PROFILE_MAIN_DRAIN       = $02
+PROFILE_MAIN_REAP        = $03
+PROFILE_MAIN_INPUT       = $04
+PROFILE_MAIN_MODE        = $05
+PROFILE_MAIN_BUILD_CHECK = $06
+PROFILE_MAIN_PUBLISH     = $07
+PROFILE_MAIN_BUILD_FAIL  = $08
+
+PROFILE_PLAY_PLAYER      = $20
+PROFILE_PLAY_DRONES      = $21
+PROFILE_PLAY_CARGO       = $22
+PROFILE_PLAY_PARCELS     = $23
+PROFILE_PLAY_BULLETS     = $24
+PROFILE_PLAY_COLLISION   = $25
+PROFILE_PLAY_WAVE_BANNER = $26
+PROFILE_PLAY_WAVE_CLEAR  = $27
+PROFILE_PLAY_SCORE       = $28
+PROFILE_PLAY_HUD         = $29
+PROFILE_PLAY_MODE_SET    = $2A
+PROFILE_PLAY_DONE        = $2B
+
+PROFILE_MUX_GATE         = $40
+PROFILE_MUX_GATHER       = $41
+PROFILE_MUX_SORT         = $42
+PROFILE_MUX_ASSIGN       = $43
+PROFILE_MUX_Y_ORDER      = $44
+PROFILE_MUX_WINDOWS      = $45
+PROFILE_MUX_EMIT         = $46
+PROFILE_MUX_FINISH       = $47
+PROFILE_MUX_BUSY         = $48
+PROFILE_MUX_FAIL         = $49
+
+PROFILE_IRQ_ENTER        = $E0
+PROFILE_IRQ_FRAME        = $E1
+PROFILE_IRQ_COMMAND      = $E2
+PROFILE_IRQ_EXIT         = $EF
+
 ; Ignore fire for a few frames after entering a menu (held-button bleed)
 MENU_FIRE_GUARD = 20
 

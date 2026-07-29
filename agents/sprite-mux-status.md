@@ -63,6 +63,27 @@ the orbit. Its ellipse covers X=54–290 and therefore crosses `$D010`.
   no sticky error.
 - Corrected a circle-table defect where X=228, 238, 247, and 255 incorrectly
   had the ninth X bit set. The mux `$D010` shadow/write path was not at fault.
+- Coop snaps 017/019 isolated a production-only catch-up IRQ leak. An inline
+  missed-raster command could latch a new `$D019` source without acknowledging
+  it, causing either a stale command or a second frame-start in mid-display.
+  Every command entry now acknowledges the source, and IRQ phase comes from
+  command cursor/count rather than the current raster read.
+- Coop snap-021 phase profiling proved the raster IRQ still held 50 Hz while a
+  successful six-object tick exceeded the PAL CPU budget. The mux build averaged
+  about 14,600 non-IRQ cycles: Y ordering 6,873 and emission 3,496. Gameplay
+  added roughly 7,000 cycles, led by bullets (2,469) and drones (1,923).
+  The fixed 256-row bucket pass is now a stable small-list insertion sort,
+  per-object shadow masks are updated without five helper calls, and bullet
+  screen/colour writes share one address calculation. Re-profile under the same
+  load before declaring steady 50 Hz. Snap-022 then measured Y ordering at
+  380 cycles and emission at 2,089, down from 6,873 and 3,496 respectively;
+  five of six sampled ticks published a plan and the main loop spent about
+  3,081 cycles waiting for the next frame.
+- Snap-022 also resolved an apparent stray-bullet/ZP-corruption report: recorder
+  writes identified the glyph as `SC_CARGO_DOT`, and cargo state advanced from
+  a C-drone impact to the hub at the intended four-tick cadence. Cargo is now
+  orange instead of bullet-yellow, and `paint_ghij` leaves unstacked hub letters
+  gray rather than recoloring all four after one deposit.
 
 ## Next stress tests
 
@@ -73,12 +94,12 @@ the orbit. Its ellipse covers X=54–290 and therefore crosses `$D010`.
 4. Exercise deliberate plan-busy, lane-capacity, and raster-deadline failures.
 5. Cover multicolor, expansion, and behind-background attribute changes.
 
-## Memory warning
+## Memory layout
 
-The current production `CODE` segment ends exactly at `$1C00`, where the static
-sprite segment begins. New production code cannot simply grow in place; free
-bytes or revise the memory map before adding more routines. For intentional
-runtime overlays of an emitted region (e.g. title image RAM reused as buffers),
-use assembler **reclaim** segments (`.segdef "N", reclaim="HOST"`) — see
-[`assembler-syntax.md`](assembler-syntax.md) §8; plain `noemit` overlaps are
-rejected.
+The production MUX layout is fixed and assembly-guarded: object pool `$C000`,
+plans `$C300/$C500`, builder scratch `$C700`, and a currently reserved former
+bucket page at `$C800`. Rail/cargo state follows at `$C900`; it must never be
+included before the MUX allocations. Runtime sprite art remains fixed at
+`$3000`, and the build script checks that `CODE` does not grow into it. For
+intentional runtime overlays of emitted data, use assembler **reclaim**
+segments — see [`assembler-syntax.md`](assembler-syntax.md) §8.

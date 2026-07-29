@@ -20,6 +20,7 @@
     sta objects::logic_ticks_pending
     sta objects::irq_frame_seq
     sta objects::main_frame_seq
+    sta irq_command_index
     lda #1
     sta objects::irq_event_read_id
     sta objects::mux_back_plan
@@ -39,11 +40,20 @@
 .endproc
 
 ; Hardware IRQ entry has already saved A/X/Y in the KERNAL prologue.
+; The command cursor, not the beam position, identifies the IRQ phase. A
+; line-0 raster IRQ can be serviced after the beam has advanced past line 0;
+; treating every nonzero current raster as a command then runs one stale
+; entry beyond the completed plan. Coop snap-017 did exactly that: count=4,
+; cursor=4, but stale command 4 briefly drew an off-right A drone at X=43 and
+; replaced $D010 with zero, wrapping the player left too.
 .proc handler
+    lda #PROFILE_IRQ_ENTER
+    sta objects::profile_marker
     lda #$01
     sta VIC_IRQ_STATUS
-    lda VIC_RASTER
-    beq handler_frame
+    ldx irq_command_index
+    cpx objects::mux_front_command_count
+    bcs handler_frame
     jmp command
 handler_frame:
     jmp frame_start
@@ -220,6 +230,8 @@ rotate_allowed:
 
 ; Raster line 0: retire prior ownership, rotate events/plans, and signal main.
 .proc frame_start
+    lda #PROFILE_IRQ_FRAME
+    sta objects::profile_marker
     jsr capture_collision_latches
     lda objects::irq_bg_lane_mask
     ora objects::irq_ss_lane_mask
@@ -311,6 +323,8 @@ no_logic_tick:
     jmp schedule_loaded_line
 next_frame_irq:
     ; Compare is already zero. Rewriting the current line would retrigger it.
+    lda #PROFILE_IRQ_EXIT
+    sta objects::profile_marker
     jmp KERNAL_IRQ_EXIT
 schedule_loaded_line:
     ; Patched to current plan in select_front_plan.
@@ -319,6 +333,16 @@ schedule_loaded_line:
 
 ; One timed lane-load command.
 .proc command
+    ; command can be entered directly from schedule_run_now when the next
+    ; compare is already at/past the beam. Re-ack here as well as in handler:
+    ; programming an on-beam compare can latch a new raster source during the
+    ; catch-up chain. Leaving it pending makes RTI immediately re-enter the IRQ
+    ; after the plan is complete (stale command before the cursor guard;
+    ; premature frame_start after it). Coop snap-019 f1210/1221/1222/1228-1246.
+    lda #PROFILE_IRQ_COMMAND
+    sta objects::profile_marker
+    lda #$01
+    sta VIC_IRQ_STATUS
     jsr capture_collision_latches
     ldx irq_command_index
 load_cmd_lane:
@@ -437,6 +461,8 @@ load_cmd_bgprio:
     bcc schedule_line_for_x
     lda #0
     sta VIC_RASTER
+    lda #PROFILE_IRQ_EXIT
+    sta objects::profile_marker
     jmp KERNAL_IRQ_EXIT
 
 ; Program compare for command X. If the beam is already at/past that line,
@@ -453,6 +479,8 @@ load_cmd_line:
 schedule_run_now:
     jmp command
 schedule_wait:
+    lda #PROFILE_IRQ_EXIT
+    sta objects::profile_marker
     jmp KERNAL_IRQ_EXIT
 .endproc
 

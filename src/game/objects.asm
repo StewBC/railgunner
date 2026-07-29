@@ -14,6 +14,9 @@ obj_y_int:          .res OBJECT_CAPACITY
 obj_sprite_ptr:     .res OBJECT_CAPACITY
 obj_sprite_color:   .res OBJECT_CAPACITY
 obj_sprite_attr:    .res OBJECT_CAPACITY
+.if obj_flags .ne OBJECT_STATE
+    .byte ERR_object_pool_must_start_at_OBJECT_STATE
+.endif
 .align 256
 
 ; $C100: future motion and main-thread event page.
@@ -65,6 +68,7 @@ mux_last_error:     .res 1
 mux_build_seq:      .res 1
 mux_lane_last:      .res MUX_HW_COUNT
 mux_objects_dirty:  .res 1
+profile_marker:     .res 1
 
 .align 256
 
@@ -77,10 +81,10 @@ mux_objects_dirty:  .res 1
 ; slot 0, and build a stack that allocates slots 1,2,3,... in that order.
 ;
 ; NOTE: This wipe includes video_standard / display_hz / logic_ticks_pending /
-; mux IRQ scalars. Callers that run after cold_init must re-run
-; video::detect_standard (and usually sprite_mux_irq::init) under SEI — see
-; game_init_enter. Leaving display_hz=0 makes the IRQ cadence wrong on NTSC
-; and was observed as lag dogfood on long sessions.
+; mux IRQ scalars. Call with IRQs disabled. Before restoring interrupts, a
+; runtime reset must re-run video::detect_standard, sprite_mux_irq::init, and
+; irq_install so the raster compare/pending source agree with the empty plan
+; (see game_init_enter). Leaving display_hz=0 breaks NTSC cadence.
 .proc init
     lda #0
     sta ptr_lo
@@ -227,8 +231,11 @@ retire_done:
 .endproc
 
 ; C set when slot X is referenced by the current front plan or a plan waiting
-; for the next line-0 swap. Clobbers A,Y,mux_bit.
+; for the next line-0 swap. The two domains are sampled with IRQs masked so a
+; line-0 plan swap cannot occur between their checks. Clobbers A,Y,mux_bit.
 .proc slot_referenced
+    php
+    sei
     lda object_slot_bit, x
     sta mux_bit
     ldy object_slot_byte, x
@@ -244,6 +251,7 @@ retire_done:
     lda sprite_mux_data::plan1_ref0, y
     and mux_bit
     bne referenced
+    plp
     clc
     rts
 check_ready_0:
@@ -251,9 +259,11 @@ check_ready_0:
     and mux_bit
     bne referenced
 not_referenced:
+    plp
     clc
     rts
 referenced:
+    plp
     sec
     rts
 .endproc
@@ -279,9 +289,9 @@ hide_next:
 .endproc
 
 ; Return retired, no-longer-displayed slots to the free stack.
-; Runs at the start of a logic tick (before mode_run spawn), so a slot freed
-; here cannot be re-allocated until the next tick — after at least one plan
-; build without it has had a chance to publish.
+; Runs at the start of a logic tick. A slot freed here may be allocated later
+; in the same mode_run, but only after an atomic check proves that neither the
+; front plan nor the line-0-ready plan still references its old identity.
 .proc reap
     ldx #1
 reap_loop:

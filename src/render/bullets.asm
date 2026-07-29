@@ -200,17 +200,19 @@ draw_base:
     tax
     lda tmp0
     jsr screen_put_xy
-    pla
-    tax
-    txa
-    pha
-    lda bullet_col, x
-    pha
-    ldy bullet_row, x
-    pla
-    tax
+
+    ; screen_put_xy leaves ptr_lo/hi on the cell. Reuse that address for
+    ; colour RAM instead of multiplying row*40 a second time for every bullet.
+    lda ptr_lo
+    clc
+    adc #<(COLOR_RAM - SCREEN_RAM)
+    sta ptr_lo
+    lda ptr_hi
+    adc #>(COLOR_RAM - SCREEN_RAM)
+    sta ptr_hi
     lda #BULLET_COLOR
-    jsr screen_color_xy
+    ldy #0
+    sta (ptr_lo), y
     pla
     tax
     rts
