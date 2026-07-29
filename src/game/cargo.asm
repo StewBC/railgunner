@@ -17,6 +17,7 @@ cargo_tgt_y:
 .proc init
     lda #$FF
     sta cargo_slot
+    sta ghij_last                   ; no deposit yet
     lda #0
     sta cargo_target
     sta ghij_rr
@@ -243,6 +244,7 @@ ds_done:
 .proc deposit_centre
     ldx ghij_rr
     jsr stack_one
+    stx ghij_last
     inx
     txa
     and #3
@@ -255,11 +257,12 @@ ds_done:
 .proc deposit_target
     ldx cargo_target
     jsr stack_one
+    stx ghij_last
     jsr paint_ghij
     jmp check_arm
 .endproc
 
-; X = stack index. Inc ghij_stack[X] (sat 255). Clobbers A.
+; X = stack index. Inc ghij_stack[X] (sat 255). Clobbers A; preserves X.
 .proc stack_one
     lda rail_data::ghij_stack, x
     clc
@@ -269,6 +272,36 @@ ds_done:
 so_store:
     sta rail_data::ghij_stack, x
     rts
+.endproc
+
+; Level clear reward: peel the most recently stacked cargo (one unit).
+; e.g. G,H,I each at 1 → restore I. No-op if nothing stacked.
+.proc reward_level_clear
+    lda ghij_last
+    cmp #4
+    bcs rlc_scan                    ; $FF or garbage → find any non-empty
+    tax
+    lda rail_data::ghij_stack, x
+    bne rlc_dec
+rlc_scan:
+    ; Walk G..J for a non-empty stack (prefer highest index = later RR)
+    ldx #3
+rlc_find:
+    lda rail_data::ghij_stack, x
+    bne rlc_dec
+    dex
+    bpl rlc_find
+    rts                             ; nothing to remove
+rlc_dec:
+    dec rail_data::ghij_stack, x
+    stx ghij_last                   ; still valid if count left; else ok
+    lda rail_data::ghij_stack, x
+    bne rlc_paint
+    lda #$FF
+    sta ghij_last
+rlc_paint:
+    jsr paint_ghij
+    jmp check_arm                   ; may disarm mines if we broke a full set
 .endproc
 
 ; All four hub tiles at ≥ K → mines + immediate detonation (player loses a life).

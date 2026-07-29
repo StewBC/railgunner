@@ -241,7 +241,7 @@ PLAYER_DIR_RIGHT        = 1
 PLAYER_DIR_LEFT         = 2
 PLAYER_DIR_UP           = 3
 PLAYER_DIR_DOWN         = 4
-SPR_COLOR_PLAYER        = COL_GREEN
+SPR_COLOR_PLAYER        = COL_PURPLE
 
 ; Attract loop: text ↔ graphics (PAL 50Hz × 15s)
 ATTRACT_SECONDS = 15
@@ -309,7 +309,7 @@ SPR_MC1_COLOR   = COL_CYAN          ; $D026 — bit-pair 11
 ; Per-kind individual colour (bit-pair 10 → $D027+n)
 SPR_COLOR_DRONE_C = COL_RED         ; small / tiny
 SPR_COLOR_DRONE_B = COL_GREEN       ; medium
-SPR_COLOR_DRONE_A = COL_PURPLE      ; large
+SPR_COLOR_DRONE_A = COL_BLUE        ; large
 
 ; VIC sprite pointers for drone frames (order: left, right, up, down)
 SPR_PTR_DRONE_C_LEFT  = $C0         ; $3000
@@ -332,7 +332,7 @@ SPR_PTR_PLAYER_1      = $F9         ; $3E40 player buffer 1
 ; Parcel / bonus (Step 9.1)
 SPR_COLOR_PARCEL_SCORE = COL_YELLOW ; unique colour = payload cue
 SPR_COLOR_CARGO        = COL_ORANGE ; same disc as parcel; cargo delivery cue
-PARCEL_SPEED           = 2          ; ~½ PLAYER_MOVE_STEP (4)
+PARCEL_SPEED           = 1          ; half of prior 2; easy intercept
 PARCEL_PAYLOAD_SCORE   = 0          ; 9.1 only; bit-flags later
 ; Soft collect AABB (sprite-relative pixels)
 PARCEL_HIT_X0          = 6

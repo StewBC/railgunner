@@ -162,6 +162,8 @@ nk_hud:
     lda #LEVEL_BANNER_FRAMES
     sta level_banner_t
     jsr message::show_rank_banner
+    ; Survive bonus: peel the last stacked cargo (e.g. G,H,I → drop I)
+    jsr cargo::reward_level_clear
 cc_done:
     rts
 .endproc

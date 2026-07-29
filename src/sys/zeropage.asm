@@ -74,6 +74,7 @@ parcel_dir:        .res 1           ; SPR_DIR_* travel for active parcel
 cargo_slot:        .res 1           ; object index, or $FF = none
 cargo_target:      .res 1           ; 0..3 = G,H,I,J destination this trip
 ghij_rr:           .res 1           ; 0..3 next stack tile to assign
+ghij_last:         .res 1           ; 0..3 last tile that received a stack ($FF = none)
 mine_armed:        .res 1           ; 1 = GHIJ full → detonate this frame
 
 ; Rank banner paint region (centred overlay; rest of HUD stays)
