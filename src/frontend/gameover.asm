@@ -1,4 +1,4 @@
-; Game over — show message; FIRE returns to title.
+; Game over — tallies + FIRE returns to title.
 ; High-score branch is a stub (always skip hiscore for scaffold).
 
 .proc gameover_enter
@@ -6,22 +6,7 @@
     sta VIC_BORDER
     jsr objects::hide_all
     jsr screen_clear
-
-    lda #<str_game_over
-    sta ptr_lo
-    lda #>str_game_over
-    sta ptr_hi
-    ldx #15
-    ldy #12
-    jsr screen_print
-
-    lda #<str_press_fire
-    sta ptr_lo
-    lda #>str_press_fire
-    sta ptr_hi
-    ldx #15
-    ldy #16
-    jsr screen_print
+    jsr tallies::paint_gameover
 
     ; Small delay before accepting fire (avoid instant skip)
     lda #30

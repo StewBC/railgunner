@@ -48,7 +48,10 @@ play (move + fire always, except game over)
 
 ### Rank banner
 
-- Full top line replaced for `LEVEL_BANNER_FRAMES` (~50 @ 50Hz ≈ 1s).
+- Centred overlay on the HUD top line (score / pilots stay); leading+trailing
+  pad spaces when room. Duration `LEVEL_BANNER_FRAMES` (75 ≈ 1.5s, 50% longer
+  than the original 50). Colour-cycles **once** through the high-score palette
+  (`score_color_table`, 10 colours × `BANNER_COLOR_HOLD` frames each).
 - Copy: praise + shortened rank (`str_rank_01`…`15`). Ladder: Private → … →
   Lt Col → Colonel → Brigadier → Maj Gen → General.
 - **LVL digit advances after banner**, not at start.
@@ -85,8 +88,8 @@ play (move + fire always, except game over)
 |--------|--------|
 | **A / B** | Multi-HP; on rail arrival → **rail damage** (core destroy → **game over**). |
 | **C** | No player HP. On rail arrival → **cargo** toward hub. |
-| **Cargo** | Char dot along arm → centre; stacks on **G,H,I,J** round-robin. |
-| **Mines** | When each of G,H,I,J has stacks ≥ **K** (`MINE_STACK_K`, default **1** → 4 cargo to arm), tiles show mine glyphs; **player in centre** → lose a life, stacks clear. |
+| **Cargo** | Orange parcel **sprite** (same disc as bonus parcel) flies to the next **G→H→I→J** hub tile; on arrival sprite vanishes and that tile stacks. |
+| **Mines / detonate** | When each of G,H,I,J has stacks ≥ **K** (`MINE_STACK_K`, default **1** → **4 landings**), tiles show mine glyphs and the **player loses a life immediately** (stacks clear). Second full round later if 4 feels short. |
 | **Lives 0** | Game over. |
 | **Health / ammo** | **Gone** (not deferred UI — removed from session model). |
 

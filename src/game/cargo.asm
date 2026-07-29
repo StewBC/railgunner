@@ -1,14 +1,24 @@
-; C cargo → GHIJ hub stacks → armed mines → life loss in centre.
+; C cargo → orange parcel sprite → one of GHIJ (round-robin) → arm → detonate.
 ; Stacks live in rail_data::ghij_stack[4] (rail.asm OBJECTS segment).
+; Four landings (K=1 on each of G,H,I,J) blow the player (lose a life).
 
 .segment "CODE_HI"
 .scope cargo
 
+; G H I J sprite top-left (disc centred on hub chars)
+cargo_tgt_x_lo:
+    .byte CARGO_TGT_X0, CARGO_TGT_X1, CARGO_TGT_X0, CARGO_TGT_X1
+cargo_tgt_x_hi:
+    .byte 0, 0, 0, 0
+cargo_tgt_y:
+    .byte CARGO_TGT_Y0, CARGO_TGT_Y0, CARGO_TGT_Y1, CARGO_TGT_Y1
+
 ; ---------------------------------------------------------------------------
 .proc init
+    lda #$FF
+    sta cargo_slot
     lda #0
-    sta cargo_active
-    sta cargo_timer
+    sta cargo_target
     sta ghij_rr
     sta mine_armed
     ldx #0
@@ -20,193 +30,248 @@ clr:
     rts
 .endproc
 
-; X = C drone that reached rail. Spawn cargo at impact, or deposit if busy.
+; X = C drone that reached rail. Spawn cargo sprite at impact, or deposit if busy.
 .proc on_c_impact
-    lda cargo_active
+    lda cargo_slot
+    cmp #$FF
     beq oci_start
-    ; Already a cargo — instant deposit (don't lose pressure)
-    jmp deposit_centre
+    jmp deposit_centre              ; already in flight — instant deposit
 
 oci_start:
-    lda #1
-    sta cargo_active
-    lda #CARGO_STEP_FRAMES
-    sta cargo_timer
-    lda objects::obj_user, x
-    sta cargo_approach
+    stx score_work0                 ; save drone slot (alloc clobbers X)
+    ; Claim next GHIJ now so concurrent pressure deposits skip this tile
+    lda ghij_rr
+    sta cargo_target
+    tax
+    inx
+    txa
+    and #3
+    sta ghij_rr
 
-    ; Char position from drone
-    lda objects::obj_user, x
-    cmp #DRONE_APPROACH_DOWN
-    beq oci_from_top
-    cmp #DRONE_APPROACH_UP
-    beq oci_from_bot
-    cmp #DRONE_APPROACH_RIGHT
-    beq oci_from_left
-    ; LEFT
-    lda #RAIL_COL_RIGHT
-    sta cargo_col
-    jsr drone_y_to_row
-    sta cargo_row
-    jmp oci_draw
+    jsr objects::alloc
+    bcs oci_instant
 
-oci_from_top:
-    lda #RAIL_ROW_TOP
-    sta cargo_row
-    jsr drone_x_to_col
-    sta cargo_col
-    jmp oci_draw
-oci_from_bot:
-    lda #RAIL_ROW_BOT
-    sta cargo_row
-    jsr drone_x_to_col
-    sta cargo_col
-    jmp oci_draw
-oci_from_left:
-    lda #RAIL_COL_LEFT
-    sta cargo_col
-    jsr drone_y_to_row
-    sta cargo_row
-oci_draw:
-    jsr draw_dot
-    rts
-.endproc
+    stx cargo_slot
+    lda #OBJ_BONUS                  ; front priority (parcel class); not a drone
+    sta objects::obj_kind, x
+    lda #SPR_PTR_PARCEL
+    sta objects::obj_sprite_ptr, x
+    lda #SPR_COLOR_CARGO
+    sta objects::obj_sprite_color, x
+    lda #0                          ; hires — own colour only
+    sta objects::obj_sprite_attr, x
 
-; X still drone — use its coords
-.proc drone_x_to_col
-    lda objects::obj_x_lo, x
-    clc
-    adc #DRONE_IMPACT_X_OFF
-    sta tmp0
-    lda objects::obj_x_hi, x
-    adc #0
-    sta tmp1
-    lda tmp0
-    sec
-    sbc #24
-    sta tmp0
-    lda tmp1
-    sbc #0
-    bcc dx0
-    lsr a
-    ror tmp0
-    lsr a
-    ror tmp0
-    lsr a
-    ror tmp0
-    lda tmp0
-    cmp #40
-    bcc dx_ok
-    lda #39
-dx_ok:
-    rts
-dx0:
     lda #0
+    sta objects::obj_x_frac, x
+    sta objects::obj_y_frac, x
+    sta objects::obj_vx_frac, x
+    sta objects::obj_vx_lo, x
+    sta objects::obj_vx_hi, x
+    sta objects::obj_vy_frac, x
+    sta objects::obj_vy_int, x
+
+    ; Copy spawn pose from the C drone
+    ldy score_work0
+    lda objects::obj_x_lo, y
+    sta objects::obj_x_lo, x
+    lda objects::obj_x_hi, y
+    and #1
+    sta objects::obj_x_hi, x
+    lda objects::obj_y_int, y
+    sta objects::obj_y_int, x
+
+    lda #(OBJF_ALLOCATED | OBJF_RENDER)
+    sta objects::obj_flags, x
+    jsr objects::mark_dirty
     rts
+
+oci_instant:
+    ; Pool full: undo claim and deposit immediately onto claimed tile
+    lda cargo_target
+    sta ghij_rr
+    jmp deposit_centre
 .endproc
 
-.proc drone_y_to_row
-    lda objects::obj_y_int, x
-    clc
-    adc #DRONE_IMPACT_Y_OFF
-    sec
-    sbc #50
-    bcc dy0
-    lsr a
-    lsr a
-    lsr a
-    cmp #SCREEN_H
-    bcc dy_ok
-    lda #SCREEN_H - 1
-dy_ok:
-    rts
-dy0:
-    lda #0
-    rts
-.endproc
-
+; ---------------------------------------------------------------------------
 .proc update
-    jsr check_player_mine
-    lda cargo_active
+    lda cargo_slot
+    cmp #$FF
     beq cu_done
-    dec cargo_timer
-    bne cu_done
-    lda #CARGO_STEP_FRAMES
-    sta cargo_timer
-    jsr erase_dot
-    jsr step_toward_centre
+    tax
+    lda objects::obj_flags, x
+    and #OBJF_ALLOCATED
+    bne cu_move
+    ; slot lost
+    lda #$FF
+    sta cargo_slot
+    rts
+
+cu_move:
+    jsr step_toward_target
     bcs cu_arrived
-    jsr draw_dot
+    jsr objects::mark_dirty
 cu_done:
     rts
 cu_arrived:
-    lda #0
-    sta cargo_active
-    jmp deposit_centre
+    jsr despawn_sprite
+    jmp deposit_target
 .endproc
 
-; C set = arrived at hub
-.proc step_toward_centre
-    lda cargo_approach
-    cmp #DRONE_APPROACH_DOWN
-    beq st_down
-    cmp #DRONE_APPROACH_UP
-    beq st_up
-    cmp #DRONE_APPROACH_RIGHT
-    beq st_right
-    ; LEFT: move left toward mid col
-    lda cargo_col
-    cmp #RAIL_COL_MID
-    beq st_here
-    bcc st_here
-    dec cargo_col
+; Move cargo toward cargo_tgt_*[cargo_target]. C set = arrived (within step).
+.proc step_toward_target
+    ldx cargo_slot
+    ldy cargo_target
+
+    ; --- X axis ---
+    lda objects::obj_x_hi, x
+    cmp cargo_tgt_x_hi, y
+    bne st_x_hi
+    lda objects::obj_x_lo, x
+    cmp cargo_tgt_x_lo, y
+    beq st_y
+    bcc st_x_inc
+    ; x > target: dec
+    lda objects::obj_x_lo, x
+    sec
+    sbc #CARGO_SPEED
+    sta objects::obj_x_lo, x
+    lda objects::obj_x_hi, x
+    sbc #0
+    and #1
+    sta objects::obj_x_hi, x
+    ; clamp if overshot
+    lda objects::obj_x_hi, x
+    cmp cargo_tgt_x_hi, y
+    bne st_y
+    lda objects::obj_x_lo, x
+    cmp cargo_tgt_x_lo, y
+    bcs st_y
+    lda cargo_tgt_x_lo, y
+    sta objects::obj_x_lo, x
+    lda cargo_tgt_x_hi, y
+    sta objects::obj_x_hi, x
+    jmp st_y
+st_x_inc:
+    lda objects::obj_x_lo, x
     clc
-    rts
-st_right:
-    lda cargo_col
-    cmp #RAIL_COL_MID
-    bcs st_here
-    inc cargo_col
+    adc #CARGO_SPEED
+    sta objects::obj_x_lo, x
+    lda objects::obj_x_hi, x
+    adc #0
+    and #1
+    sta objects::obj_x_hi, x
+    lda objects::obj_x_hi, x
+    cmp cargo_tgt_x_hi, y
+    bne st_y
+    lda objects::obj_x_lo, x
+    cmp cargo_tgt_x_lo, y
+    bcc st_y
+    beq st_y
+    lda cargo_tgt_x_lo, y
+    sta objects::obj_x_lo, x
+    lda cargo_tgt_x_hi, y
+    sta objects::obj_x_hi, x
+    jmp st_y
+st_x_hi:
+    ; hi differs: if our hi < target hi, increase; else decrease
+    bcc st_x_inc
+    lda objects::obj_x_lo, x
+    sec
+    sbc #CARGO_SPEED
+    sta objects::obj_x_lo, x
+    lda objects::obj_x_hi, x
+    sbc #0
+    and #1
+    sta objects::obj_x_hi, x
+
+st_y:
+    ldy cargo_target
+    lda objects::obj_y_int, x
+    cmp cargo_tgt_y, y
+    beq st_check
+    bcc st_y_inc
+    sec
+    sbc #CARGO_SPEED
+    sta objects::obj_y_int, x
+    cmp cargo_tgt_y, y
+    bcs st_check
+    lda cargo_tgt_y, y
+    sta objects::obj_y_int, x
+    jmp st_check
+st_y_inc:
     clc
-    rts
-st_down:
-    lda cargo_row
-    cmp #RAIL_ROW_MID
-    bcs st_here
-    inc cargo_row
-    clc
-    rts
-st_up:
-    lda cargo_row
-    cmp #RAIL_ROW_MID
-    beq st_here
-    bcc st_here
-    dec cargo_row
-    clc
-    rts
-st_here:
+    adc #CARGO_SPEED
+    sta objects::obj_y_int, x
+    cmp cargo_tgt_y, y
+    bcc st_check
+    beq st_check
+    lda cargo_tgt_y, y
+    sta objects::obj_y_int, x
+
+st_check:
+    ; Arrived when both axes match
+    ldy cargo_target
+    lda objects::obj_x_hi, x
+    cmp cargo_tgt_x_hi, y
+    bne st_moving
+    lda objects::obj_x_lo, x
+    cmp cargo_tgt_x_lo, y
+    bne st_moving
+    lda objects::obj_y_int, x
+    cmp cargo_tgt_y, y
+    bne st_moving
     sec
     rts
+st_moving:
+    clc
+    rts
 .endproc
 
+.proc despawn_sprite
+    lda cargo_slot
+    cmp #$FF
+    beq ds_done
+    tax
+    jsr objects::retire_and_try_free
+    lda #$FF
+    sta cargo_slot
+ds_done:
+    rts
+.endproc
+
+; Instant deposit onto next RR tile (busy cargo / pressure). Advances ghij_rr.
 .proc deposit_centre
     ldx ghij_rr
-    lda rail_data::ghij_stack, x
-    clc
-    adc #1
-    bcc dep_store
-    lda #255
-dep_store:
-    sta rail_data::ghij_stack, x
+    jsr stack_one
     inx
     txa
     and #3
     sta ghij_rr
     jsr paint_ghij
-    jsr check_arm
+    jmp check_arm
+.endproc
+
+; Sprite arrived: deposit onto the tile claimed at spawn (cargo_target).
+.proc deposit_target
+    ldx cargo_target
+    jsr stack_one
+    jsr paint_ghij
+    jmp check_arm
+.endproc
+
+; X = stack index. Inc ghij_stack[X] (sat 255). Clobbers A.
+.proc stack_one
+    lda rail_data::ghij_stack, x
+    clc
+    adc #1
+    bcc so_store
+    lda #255
+so_store:
+    sta rail_data::ghij_stack, x
     rts
 .endproc
 
+; All four hub tiles at ≥ K → mines + immediate detonation (player loses a life).
 .proc check_arm
     ldx #0
 ca_loop:
@@ -219,10 +284,27 @@ ca_loop:
     lda #1
     sta mine_armed
     jsr paint_ghij
-    rts
+    jmp detonate
 ca_no:
     lda #0
     sta mine_armed
+    rts
+.endproc
+
+; Blow the player: clear hub, lose a life (or game over).
+.proc detonate
+    jsr clear_stacks
+    lda lives
+    beq det_go
+    dec lives
+    lda #1
+    sta hud_status_dirty
+    lda lives
+    beq det_go
+    rts
+det_go:
+    lda #MODE_GAME_OVER
+    sta pending_mode
     rts
 .endproc
 
@@ -306,86 +388,11 @@ po_put_color:
     jmp screen_color_xy
 .endproc
 
-.proc draw_dot
-    ldx cargo_col
-    ldy cargo_row
-    lda #SC_CARGO_DOT
-    jsr screen_put_xy
-    ; Cargo used to be the same yellow dot as a bullet, making a legitimate
-    ; C-drone deposit look like corrupted player fire.
-    lda #COL_ORANGE
-    ldx cargo_col
-    ldy cargo_row
-    jmp screen_color_xy
-.endproc
-
-.proc erase_dot
-    ; restore rail char under cargo (approx by row/col)
-    lda cargo_row
-    cmp #RAIL_ROW_TOP
-    beq ed_top
-    cmp #RAIL_ROW_BOT
-    beq ed_bot
-    cmp #RAIL_ROW_MID
-    beq ed_mid
-    lda #SC_SPACE
-    jmp ed_put
-ed_top:
-    lda #SC_RAIL_D
-    jmp ed_put
-ed_bot:
-    lda #SC_RAIL_F
-    jmp ed_put
-ed_mid:
-    lda cargo_col
-    cmp #RAIL_COL_LEFT
-    beq ed_a
-    cmp #RAIL_COL_RIGHT
-    beq ed_c
-    lda #SC_RAIL_E
-    jmp ed_put
-ed_a:
-    lda #SC_RAIL_A
-    jmp ed_put
-ed_c:
-    lda #SC_RAIL_C
-ed_put:
-    ldx cargo_col
-    ldy cargo_row
-    jsr screen_put_xy
-    lda #COL_GRAY
-    ldx cargo_col
-    ldy cargo_row
-    jmp screen_color_xy
-.endproc
-
-; If mines armed and player in centre → lose life
-.proc check_player_mine
-    lda mine_armed
-    beq cpm_done
-    jsr player::at_intersection
-    bcc cpm_done
-    ; Clear stacks / disarm
-    jsr clear_stacks
-    lda lives
-    beq cpm_go
-    dec lives
-    lda #1
-    sta hud_status_dirty
-    lda lives
-    beq cpm_go
-    rts
-cpm_go:
-    lda #MODE_GAME_OVER
-    sta pending_mode
-cpm_done:
-    rts
-.endproc
-
 .proc clear_stacks
     lda #0
     sta mine_armed
-    sta cargo_active
+    jsr despawn_sprite
+    lda #0
     ldx #0
 cs_loop:
     sta rail_data::ghij_stack, x

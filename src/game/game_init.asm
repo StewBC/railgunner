@@ -5,6 +5,7 @@
     sta VIC_BORDER
 
     jsr score::reset
+    jsr tallies::reset
 
     lda #START_LIVES
     sta lives

@@ -166,10 +166,11 @@ cc_done:
     rts
 .endproc
 
-; Tick banner; on expiry advance level and restore HUD.
+; Tick banner colour wheel; on expiry advance level and restore HUD.
 .proc update_banner
     lda level_banner_t
     beq ub_done
+    jsr message::tick_banner_color
     dec level_banner_t
     bne ub_done
     jsr advance_level

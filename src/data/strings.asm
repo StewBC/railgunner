@@ -96,6 +96,26 @@ str_press_fire:
 str_game_over:
     .byte "GAME OVER", 0
 
+; Game-over tallies (numbers filled in by tallies::paint_gameover)
+str_tallies:
+    .byte "TALLIES:", 0
+str_survived_pre:
+    .byte "YOU SURVIVED ", 0
+str_survived_post:
+    .byte " ATTACK WAVES", 0
+str_fired_pre:
+    .byte "YOU FIRED: ", 0
+str_fired_post:
+    .byte " BULLETS", 0
+str_destroyed:
+    .byte "DESTROYED:", 0
+str_class_a:
+    .byte "CLASS A ", 0
+str_class_b:
+    .byte "CLASS B ", 0
+str_class_c:
+    .byte "CLASS C ", 0
+
 str_hiscore:
     .byte "HIGH SCORES", 0
 

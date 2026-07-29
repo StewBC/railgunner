@@ -26,6 +26,16 @@ level_kills:    .res 1              ; kills this level toward level_quota
 level_quota:    .res 1              ; kills required to complete level
 level_banner_t: .res 1              ; 0=play; >0 rank banner frames left (spawn paused)
 
+; Session tallies (game over). 16-bit lo,hi each; saturate at $FFFF.
+tally_shots0:   .res 1              ; bullets successfully launched
+tally_shots1:   .res 1
+tally_kill_a0:  .res 1              ; class A drones destroyed
+tally_kill_a1:  .res 1
+tally_kill_b0:  .res 1
+tally_kill_b1:  .res 1
+tally_kill_c0:  .res 1
+tally_kill_c1:  .res 1
+
 ; Player (logical slot 0; position also in objects:: SoA)
 player_rail:    .res 1              ; PLAYER_RAIL_H or PLAYER_RAIL_V
 player_rest_dir:.res 1              ; SPR_DIR_* rest aim (U/D on H, L/R on V)
@@ -60,14 +70,15 @@ parcel_flip:       .res 1           ; global end flip-flop (0/1)
 parcel_drop_mask:  .res 1           ; PARCEL_DROP_T1/T2 already fired this level
 parcel_dir:        .res 1           ; SPR_DIR_* travel for active parcel
 
-; C cargo in transit (char cell); GHIJ stacks in rail_data
-cargo_active:      .res 1           ; 0 = none
-cargo_col:         .res 1
-cargo_row:         .res 1
-cargo_timer:       .res 1           ; steps countdown
-cargo_approach:    .res 1           ; DRONE_APPROACH_* toward centre
-ghij_rr:           .res 1           ; 0..3 next stack tile
-mine_armed:        .res 1           ; 1 = centre is lethal
+; C cargo sprite in transit → one of GHIJ; stacks in rail_data
+cargo_slot:        .res 1           ; object index, or $FF = none
+cargo_target:      .res 1           ; 0..3 = G,H,I,J destination this trip
+ghij_rr:           .res 1           ; 0..3 next stack tile to assign
+mine_armed:        .res 1           ; 1 = GHIJ full → detonate this frame
+
+; Rank banner paint region (centred overlay; rest of HUD stays)
+banner_col:        .res 1           ; first column of banner (incl. pad spaces)
+banner_len:        .res 1           ; width of coloured/padded banner text
 
 ; Mode-local timers / scratch
 mode_timer:     .res 1

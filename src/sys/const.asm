@@ -157,7 +157,11 @@ MODE_TITLE      = MODE_TITLE_TEXT
 START_LIVES     = 3                 ; PILOTS; max HUD_LIVES_MAX_SHOW (4)
 START_LEVEL     = 1
 MAX_LEVEL       = 15
-LEVEL_BANNER_FRAMES = 50            ; ~1s rank banner (no skip)
+; Rank banner: was 50 (~1s); 50% longer + clean 10-colour wheel (high-score palette)
+LEVEL_BANNER_FRAMES = 75            ; ~1.5s (PAL 50Hz)
+BANNER_NUM_COLORS   = 10            ; score_color_table length
+BANNER_COLOR_HOLD   = 7             ; LEVEL_BANNER_FRAMES / BANNER_NUM_COLORS (int)
+BANNER_PAD_SPACES   = 2             ; leading+trailing spaces when room
 LEVEL_BAR_CELLS     = 8
 LEVEL_BAR_STEPS     = 32            ; 8 cells × 4 UDG steps
 
@@ -177,11 +181,16 @@ WAVE_CD_MIN_FLOOR = 12
 WAVE_CD_SPAN_MIN  = 10
 WAVE_MAX_ACTIVE_CAP = 10
 
-; C cargo → GHIJ mines. K stacks on each of G,H,I,J to arm (total cargo 4K).
-CARGO_STEP_FRAMES = 4
+; C cargo (orange parcel sprite) → GHIJ hub stacks. K per tile to arm;
+; default K=1 → 4 landings arm mines and detonate (player loses a life).
+CARGO_SPEED       = 2               ; px/frame toward assigned G/H/I/J
 MINE_STACK_K      = 1
-SC_CARGO_DOT      = $2E
 SC_MINE           = $2A
+; Sprite top-left so parcel disc centres on GHIJ char cells (see cargo.asm)
+CARGO_TGT_X0      = 160             ; G col18
+CARGO_TGT_X1      = 176             ; H col20
+CARGO_TGT_Y0      = 140             ; rows 12 (G/H)
+CARGO_TGT_Y1      = 156             ; rows 14 (I/J)
 
 ; Pixel inset for drone→col (matches rail::apply_ab_hit body align)
 DRONE_IMPACT_X_OFF = 4
@@ -322,6 +331,7 @@ SPR_PTR_PLAYER_1      = $F9         ; $3E40 player buffer 1
 
 ; Parcel / bonus (Step 9.1)
 SPR_COLOR_PARCEL_SCORE = COL_YELLOW ; unique colour = payload cue
+SPR_COLOR_CARGO        = COL_ORANGE ; same disc as parcel; cargo delivery cue
 PARCEL_SPEED           = 2          ; ~½ PLAYER_MOVE_STEP (4)
 PARCEL_PAYLOAD_SCORE   = 0          ; 9.1 only; bit-flags later
 ; Soft collect AABB (sprite-relative pixels)

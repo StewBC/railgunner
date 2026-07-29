@@ -751,6 +751,8 @@ cad_n:
     rts
 abh_kill:
     ldx mode_state
+    jsr tallies::note_kill          ; session A/B/C destroy counts
+    ldx mode_state
     jsr waves::note_kill
     ldx mode_state
     jsr objects::retire_and_try_free

@@ -112,6 +112,7 @@ mux_build_failed:
 .include "frontend/hiscore.asm"
 .include "game/game_init.asm"
 .include "game/score.asm"
+.include "game/tallies.asm"
 .include "game/hud.asm"
 .include "game/objects.asm"
 .include "sprite/mux_build.asm"

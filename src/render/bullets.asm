@@ -315,6 +315,7 @@ slot_found:
     lda #BULLET_CELL_TICKS
     sta fire_lock
     jsr draw_slot
+    jsr tallies::note_shot
     rts
 .endproc
 
