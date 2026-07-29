@@ -55,11 +55,11 @@ oci_start:
     stx cargo_slot
     lda #OBJ_BONUS                  ; front priority (parcel class); not a drone
     sta objects::obj_kind, x
-    lda #SPR_PTR_PARCEL
+    lda #SPR_PTR_CARGO
     sta objects::obj_sprite_ptr, x
     lda #SPR_COLOR_CARGO
     sta objects::obj_sprite_color, x
-    lda #0                          ; hires — own colour only
+    lda #0                          ; hires disc — own colour only
     sta objects::obj_sprite_attr, x
 
     lda #0

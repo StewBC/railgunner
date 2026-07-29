@@ -12,7 +12,7 @@
 .segdef "CODE", $080d               ; low code — keep below CHARSET $2800
 .segdef "TITLE", $4000              ; hires source (bitmap + colours)
 .segdef "DATA", $6328               ; strings/tables + sprite frame source
-.segdef "CODE_HI", $7000            ; overflow game logic (rail, future bulk)
+.segdef "CODE_HI", $7200            ; overflow game logic (after DATA; was $7000)
 .segdef "OBJECTS", $C000, noemit
 
 ; ---------------------------------------------------------------------------

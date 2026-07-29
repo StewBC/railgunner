@@ -7,7 +7,7 @@
 ;   CODE      $080d   low executable (must end before CHARSET $2800)
 ;   TITLE     $4000   title hires source (bitmap + colour matrix)
 ;   DATA      $6328   strings / tables / sprite frame source
-;   CODE_HI   $7000   overflow game logic (rail damage, future bulk)
+;   CODE_HI   $7200   overflow game logic (rail damage, cargo; after DATA)
 ;   OBJECTS   $C000   noemit graphical-object/mux runtime state
 ;
 ; VIC bank 0 runtime (not PRG-resident source):
@@ -73,5 +73,5 @@ SPRITE_BLOCK    = $3000
 PLAYER_BUF_0    = $3E00
 PLAYER_BUF_1    = $3E40
 OBJECT_STATE    = $C000
-SPRITE_FRAMES_BYTES = 13 * 64       ; drones + parcel (player bufs zeroed)
+SPRITE_FRAMES_BYTES = 18 * 64       ; 12 drones + cargo disc + 5 add_*
 BITMAP_END      = $3F40             ; first free after 8000-byte bitmap

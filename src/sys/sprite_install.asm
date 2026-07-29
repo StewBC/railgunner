@@ -8,7 +8,7 @@
 
 ; Copy spr_frames_src into SPRITE_BLOCK and clear player compositing buffers.
 ; Call on stage enter (title bitmap wipes $2000–$3F3F).
-; Exact byte count (13×64 = 832; not a whole number of pages).
+; Exact byte count (SPRITE_FRAMES_BYTES; not necessarily whole pages).
 .proc install_sprite_frames
     lda #<spr_frames_src
     sta ptr_lo

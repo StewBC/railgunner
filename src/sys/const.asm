@@ -324,14 +324,21 @@ SPR_PTR_DRONE_A_LEFT  = $C8         ; $3200
 SPR_PTR_DRONE_A_RIGHT = $C9         ; $3240
 SPR_PTR_DRONE_A_UP    = $CA         ; $3280
 SPR_PTR_DRONE_A_DOWN  = $CB         ; $32C0
-SPR_PTR_PARCEL        = $CC         ; $3300 — hires disc (own colour)
+SPR_PTR_CARGO         = $CC         ; $3300 — hires disc (cargo only)
+SPR_PTR_ADD_SCORE     = $CD         ; $3340 — add_score.png (score parcel)
+SPR_PTR_ADD_REPAIR    = $CE         ; $3380 — add_repair.png (future)
+SPR_PTR_ADD_EXTRA     = $CF         ; $33C0 — add_extra.png (future life)
+SPR_PTR_ADD_CLEAR     = $D0         ; $3400 — add_clear.png (future cargo clear)
+SPR_PTR_ADD_2X        = $D1         ; $3440 — add_2x.png (future score ×2)
+; Live score parcel still uses SPR_PTR_PARCEL as the score pickup art
+SPR_PTR_PARCEL        = SPR_PTR_ADD_SCORE
 
 SPR_PTR_PLAYER_0      = $F8         ; $3E00 player buffer 0
 SPR_PTR_PLAYER_1      = $F9         ; $3E40 player buffer 1
 
-; Parcel / bonus (Step 9.1)
-SPR_COLOR_PARCEL_SCORE = COL_YELLOW ; unique colour = payload cue
-SPR_COLOR_CARGO        = COL_ORANGE ; same disc as parcel; cargo delivery cue
+; Parcel / bonus (Step 9.1 + power-up art reserved)
+SPR_COLOR_PARCEL_SCORE = COL_YELLOW ; unique colour = score pickup cue
+SPR_COLOR_CARGO        = COL_ORANGE ; cargo disc unique colour
 PARCEL_SPEED           = 1          ; half of prior 2; easy intercept
 PARCEL_PAYLOAD_SCORE   = 0          ; 9.1 only; bit-flags later
 ; Soft collect AABB (sprite-relative pixels)

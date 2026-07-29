@@ -164,11 +164,11 @@ upd_done:
 
     lda #OBJ_BONUS
     sta objects::obj_kind, x
-    lda #SPR_PTR_PARCEL
+    lda #SPR_PTR_ADD_SCORE          ; add_score.png (MC-encoded)
     sta objects::obj_sprite_ptr, x
     lda #SPR_COLOR_PARCEL_SCORE
     sta objects::obj_sprite_color, x
-    lda #0                          ; hires — unique colour only
+    lda #OBJA_MULTICOLOR            ; converter output is multicolour pairs
     sta objects::obj_sprite_attr, x
     lda #PARCEL_PAYLOAD_SCORE
     sta objects::obj_reserved, x
