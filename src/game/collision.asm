@@ -55,11 +55,11 @@ upd_next:
     rts
 .endproc
 
-; Mode 0: $D01F latch = candidate only (bullet chars OR rail). Disambiguate:
-;   1) soft bullet AABB → score, consume bullet, retire (no rail damage)
-;   2) else soft rail under hitbox → real rail arrival (C blast / A/B damage)
-;   3) else ignore (spurious latch — e.g. bullet hit without AABB match while
-;      still high above the rail; must NOT call rail_arrival_retire)
+; Mode 0: $D01F latch is only a candidate (bullet glyph OR rail glyph OR HUD
+; letters that share rail screen-codes). Never act on latch alone:
+;   1) soft bullet AABB → destroy bullet, score/HP, retire (NO cargo)
+;   2) else soft rail (geometry + rail glyph) → cargo / A/B rail damage
+;   3) else ignore (spurious latch)
 .proc mode_hw_only
     ldx mode_state
     lda objects::obj_pending_events, x
@@ -68,18 +68,20 @@ upd_next:
     jsr test_bullets                ; C clear + X = bullet slot
     bcs hw_try_rail
     jsr bullets::destroy
-    jsr drones::apply_bullet_hit    ; score + multi-HP; retire at 0
+    jsr drones::apply_bullet_hit    ; score + multi-HP; retire at 0 — no cargo
     rts
 hw_try_rail:
     ldx mode_state
-    jsr test_rail                   ; C clear = rail char under tight hitbox
-    bcs hw_done                     ; no rail contact — do not damage rail
+    jsr test_rail                   ; C clear = on-cross rail under hitbox
+    bcs hw_done                     ; not on rail — latch was noise
     jsr rail_arrival_retire
 hw_done:
     rts
 .endproc
 
-; Confirmed rail contact: C → player blast; A/B → rail cells; then retire.
+; Confirmed rail contact: C → cargo delivery; A/B → rail cells; then retire.
+; (Legacy apply_c_blast_full was a no-op after health removal and skipped cargo —
+;  HW latch often fires before drones::check_rail_arrival Y/X thresholds.)
 .proc rail_arrival_retire
     ldx mode_state
     lda objects::obj_kind, x
@@ -93,7 +95,7 @@ hw_done:
 ra_c:
     txa
     pha
-    jsr player::apply_c_blast_full
+    jsr cargo::on_c_impact          ; orange cargo sprite → GHIJ (or instant stack)
     pla
     tax
     jmp ra_free
@@ -387,7 +389,13 @@ tb_next_j:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Rail: any dash/vbar under tight hitbox char cells. C clear = rail hit.
+; Rail under tight hitbox. C clear = rail hit.
+;
+; Two gates (both required):
+;   1) Geometry: cell on the playfield cross (not free field / not HUD).
+;   2) Tile set: screen code is a *rail tile* (see is_rail_tile) — not "is it
+;      a letter". Interim draw still uses SC_RAIL_A..J ($01..$0A) as stand-ins
+;      that happen to look like A–J; production is SC_UDG_RAIL0.. + damage alts.
 ; ---------------------------------------------------------------------------
 .proc test_rail
     ldx mode_state
@@ -458,14 +466,13 @@ tr_col:
     lda draw_j
     cmp #SCREEN_H
     bcs tr_cn
+    jsr cell_on_rail_cross
+    bcs tr_cn
     ldx draw_i
     ldy draw_j
     jsr screen_get_xy
-    cmp #SC_RAIL_FIRST
-    bcc tr_cn
-    cmp #SC_RAIL_LAST + 1
+    jsr is_rail_tile
     bcs tr_cn
-    ; A–J rail tiles (placeholders or UDGs)
     jmp tr_hit
 tr_cn:
     inc draw_i
@@ -487,6 +494,53 @@ tr_row_more:
     jmp tr_row
 tr_hit:
     clc
+    rts
+.endproc
+
+; draw_i=col, draw_j=row. C clear = cell is on H band or V band of the cross.
+.proc cell_on_rail_cross
+    lda draw_j
+    cmp #RAIL_ROW_TOP
+    bcc cr_try_v
+    cmp #RAIL_ROW_BOT + 1
+    bcc cr_yes                      ; rows 12..14 = full H-rail
+cr_try_v:
+    lda draw_i
+    cmp #RAIL_COL_LEFT
+    bcc cr_no
+    cmp #RAIL_COL_RIGHT + 1
+    bcs cr_no
+cr_yes:
+    clc
+    rts
+cr_no:
+    sec
+    rts
+.endproc
+
+; A = screen code. C clear = this is a rail *tile* (any appearance).
+; Valid set:
+;   interim stand-ins  SC_RAIL_A..J     ($01..$0A) — look like A–J, are tiles
+;   production normal  SC_UDG_RAIL0..   ($C1..$CA) — a–j UDGs (reserved)
+;   production damage  SC_UDG_DMG1/2    ($CB..$D6) — a–f scar alts (reserved)
+; Geometry already forbids HUD; this set is what counts once draw flips to UDGs.
+.proc is_rail_tile
+    ; Interim placeholders (today's playfield draw)
+    cmp #SC_RAIL_FIRST
+    bcc irt_udg
+    cmp #SC_RAIL_LAST + 1
+    bcc irt_yes
+irt_udg:
+    ; Continuous reserved block $C1..$D6 (10 normal + 6 dmg1 + 6 dmg2)
+    cmp #SC_UDG_RAIL0
+    bcc irt_no
+    cmp #SC_UDG_DMG2 + 6            ; first code after dmg2 = $D7 (bar)
+    bcs irt_no
+irt_yes:
+    clc
+    rts
+irt_no:
+    sec
     rts
 .endproc
 
