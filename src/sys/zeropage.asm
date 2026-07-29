@@ -43,6 +43,13 @@ player_swing_t: .res 1              ; 0 = at rest; else mid-swing frames remaini
 player_swing_to:.res 1              ; rest facing after mid frame expires
 player_move_dir:.res 1              ; PLAYER_DIR_*; last travel (coast through centre)
 player_cross_decided: .res 1        ; 1 = centre eval done this rail-walk; clear off intersection
+; Death sequence (cargo mine / rail collapse). Nonzero = ignore input; drones inert at rail.
+player_dead:    .res 1              ; 0 = alive; 1 = exploding / hold
+death_phase:    .res 1              ; 0..6 explode steps; DEATH_HOLD_PHASE = hold
+death_timer:    .res 1              ; frames left in current phase
+death_fatal:    .res 1              ; 1 = game over after hold; 0 = respawn level
+death_flash:    .res 1              ; 0 = COL_RED, 1 = COL_LT_RED (fatal hold banner)
+death_flash_t:  .res 1              ; frames until next colour toggle
 
 ; Launcher — dice composer (level quota + random cooldown)
 rng_state:         .res 1           ; 8-bit LFSR seed (never leave 0 long)

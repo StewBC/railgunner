@@ -86,8 +86,33 @@ spr_add_clear:
 spr_add_2x:
     .incbin "../../assets/sprites/add_2x.bin"
 
-; 12 drones + cargo disc + 5 add_* = 18 frames
-SPR_FRAMES_SRC_SIZE = 18 * 64
+; --- Player death explosion (explode_player_*.png) → ptr $D2–$D4 ---
+.align 64
+spr_explode_1:
+    .incbin "../../assets/sprites/explode_player_1.bin"
+spr_explode_2:
+    .incbin "../../assets/sprites/explode_player_2.bin"
+spr_explode_3:
+    .incbin "../../assets/sprites/explode_player_3.bin"
+
+; --- Drone death explosion → ptr $D5–$DA ---
+; Vertical (DOWN/UP approach): explode_dv_*; horizontal (LEFT/RIGHT): explode_dh_*
+.align 64
+spr_explode_dv_1:
+    .incbin "../../assets/sprites/explode_dv_1.bin"
+spr_explode_dv_2:
+    .incbin "../../assets/sprites/explode_dv_2.bin"
+spr_explode_dv_3:
+    .incbin "../../assets/sprites/explode_dv_3.bin"
+spr_explode_dh_1:
+    .incbin "../../assets/sprites/explode_dh_1.bin"
+spr_explode_dh_2:
+    .incbin "../../assets/sprites/explode_dh_2.bin"
+spr_explode_dh_3:
+    .incbin "../../assets/sprites/explode_dh_3.bin"
+
+; 12 drones + cargo + 5 add + 3 player explode + 6 drone explode = 27 frames
+SPR_FRAMES_SRC_SIZE = 27 * 64
 
 ; --- Player facings (copied into PLAYER_BUF_0 / $3E00 on demand) ---
 ; Not installed into $3000; slot 0 uses SPR_PTR_PLAYER_0 ($F8).

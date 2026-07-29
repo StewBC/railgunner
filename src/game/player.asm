@@ -35,6 +35,12 @@
     sta player_swing_to
     sta player_move_dir             ; PLAYER_DIR_NONE until first travel
     sta player_cross_decided
+    sta player_dead
+    sta death_phase
+    sta death_timer
+    sta death_fatal
+    sta death_flash
+    sta death_flash_t
 
     ldx #0
     lda #OBJ_PLAYER
@@ -67,8 +73,200 @@
 ; Per logic tick while MODE_PLAY
 ; ---------------------------------------------------------------------------
 .proc update
+    lda player_dead
+    bne death_tick
     jsr update_barrel
     jsr update_move
+    rts
+.endproc
+
+; ---------------------------------------------------------------------------
+; Begin death sequence. A = 0 respawn after hold; A ≠ 0 → game over after hold.
+; Idempotent while already dead.
+; ---------------------------------------------------------------------------
+.proc begin_death
+    ldx player_dead
+    bne bd_done
+    sta death_fatal
+    lda #1
+    sta player_dead
+    lda #0
+    sta death_phase
+    lda #DEATH_EXPLODE_HOLD
+    sta death_timer
+    jsr show_explode_frame
+bd_done:
+    rts
+.endproc
+
+.proc begin_death_respawn
+    lda #0
+    jmp begin_death
+.endproc
+
+.proc begin_death_fatal
+    lda #1
+    jmp begin_death
+.endproc
+
+; Advance explode sequence 1-2-3-2-3-2-1 then hold; then respawn or game over.
+.proc death_tick
+    lda death_phase
+    cmp #DEATH_HOLD_PHASE
+    bne dt_no_flash
+    jsr death_go_flash_tick         ; hold: pulse RIP / GAME OVER banner
+dt_no_flash:
+    dec death_timer
+    bne dt_done
+    lda death_phase
+    cmp #DEATH_HOLD_PHASE
+    beq dt_finish                   ; hold expired
+    cmp #DEATH_EXPLODE_STEPS - 1    ; just finished last step (frame 1)
+    beq dt_start_hold
+    inc death_phase
+    jsr show_explode_frame
+    lda #DEATH_EXPLODE_HOLD
+    sta death_timer
+dt_done:
+    rts
+dt_start_hold:
+    ; Hide explode sprite — hold is banner + field only
+    lda #DEATH_HOLD_PHASE
+    sta death_phase
+    lda #DEATH_HOLD_FRAMES
+    sta death_timer
+    ldx #0
+    lda #OBJF_ALLOCATED             ; keep slot; no render
+    sta objects::obj_flags, x
+    jsr objects::mark_dirty
+    ; Hold banner: GAME OVER (fatal) or RIP PILOT (respawn)
+    lda #0
+    sta death_flash                 ; start "dark" phase of flash
+    lda #DEATH_GO_FLASH_FRAMES
+    sta death_flash_t
+    jsr paint_death_banner
+    rts
+dt_finish:
+    jmp finish_death
+.endproc
+
+; Toggle banner colour every DEATH_GO_FLASH_FRAMES (~0.25s).
+.proc death_go_flash_tick
+    dec death_flash_t
+    bne dgf_done
+    lda #DEATH_GO_FLASH_FRAMES
+    sta death_flash_t
+    lda death_flash
+    eor #1
+    sta death_flash
+    jsr paint_death_banner_color
+dgf_done:
+    rts
+.endproc
+
+; Print hold banner on HUD row, then colour it (fatal vs life-loss).
+.proc paint_death_banner
+    lda death_fatal
+    beq pdb_rip
+    lda #<str_game_over_banner
+    sta ptr_lo
+    lda #>str_game_over_banner
+    sta ptr_hi
+    jmp pdb_print
+pdb_rip:
+    lda #<str_rip_pilot_banner
+    sta ptr_lo
+    lda #>str_rip_pilot_banner
+    sta ptr_hi
+pdb_print:
+    ldx #DEATH_BANNER_COL
+    ldy #HUD_ROW
+    jsr screen_print
+    jmp paint_death_banner_color
+.endproc
+
+.proc paint_death_banner_color
+    lda death_fatal
+    beq pdc_rip
+    ; GAME OVER: red / light red
+    lda death_flash
+    beq pdc_go_dark
+    lda #COL_LT_RED
+    jmp pdc_paint
+pdc_go_dark:
+    lda #COL_RED
+    jmp pdc_paint
+pdc_rip:
+    ; RIP PILOT: dark gray / white
+    lda death_flash
+    beq pdc_rip_dark
+    lda #COL_WHITE
+    jmp pdc_paint
+pdc_rip_dark:
+    lda #COL_DK_GRAY
+pdc_paint:
+    sta score_work2
+    lda death_fatal
+    beq pdc_len_rip
+    ldy #DEATH_GO_BANNER_LEN
+    jmp pdc_len_ok
+pdc_len_rip:
+    ldy #DEATH_RIP_BANNER_LEN
+pdc_len_ok:
+    ldx #DEATH_BANNER_COL
+pdc_loop:
+    sty score_work1
+    stx score_work0
+    lda score_work2
+    ldy #HUD_ROW
+    jsr screen_color_xy
+    ldx score_work0
+    inx
+    ldy score_work1
+    dey
+    bne pdc_loop
+    rts
+.endproc
+
+; death_phase 0..6 → sequence 1,2,3,2,3,2,1 on player object.
+.proc show_explode_frame
+    ldx #0
+    ldy death_phase
+    lda explode_seq, y              ; 0..2 art index
+    tay
+    lda explode_ptr_tbl, y
+    sta objects::obj_sprite_ptr, x
+    lda #SPR_COLOR_EXPLODE
+    sta objects::obj_sprite_color, x
+    lda #OBJA_MULTICOLOR
+    sta objects::obj_sprite_attr, x
+    lda #(OBJF_ALLOCATED | OBJF_RENDER)
+    sta objects::obj_flags, x
+    jsr objects::mark_dirty
+    rts
+.endproc
+
+; Step order: frame 1,2,3,2,3,2,1 (0-based art indices)
+explode_seq:
+    .byte 0, 1, 2, 1, 2, 1, 0
+explode_ptr_tbl:
+    .byte SPR_PTR_EXPLODE_1, SPR_PTR_EXPLODE_2, SPR_PTR_EXPLODE_3
+
+; Hold done: game over, or restart current level spawn state + player pose.
+.proc finish_death
+    lda death_fatal
+    bne fd_game_over
+    jsr drones::clear_field
+    jsr cargo::despawn_sprite
+    jsr waves::load                 ; kills/spawner/parcels-due; not rail scars
+    jsr init                        ; start pose + clear death flags
+    jsr message::restore_hud_line   ; wipe RIP PILOT banner
+    rts
+fd_game_over:
+    lda #0
+    sta player_dead                 ; allow mode switch cleanly
+    lda #MODE_GAME_OVER
+    sta pending_mode
     rts
 .endproc
 

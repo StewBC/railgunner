@@ -21,9 +21,9 @@ Canvas policy:
     12×21 when possible).
 
 Colour → bit-pair roles (stable, frequency-based):
-  most common opaque  → 10 (sprite colour)
-  2nd most common     → 01 (MC1)
-  3rd most common     → 11 (MC2)
+  most common opaque  → 10 (sprite colour, $D027+n)
+  2nd most common     → 11 (MC2 / $D026 — game: yellow)
+  3rd most common     → 01 (MC1 / $D025 — game: dark gray)
 
 Usage:
   tools/png_to_c64_sprite.py assets/sprites/drone1_tiny_native.png
@@ -168,8 +168,9 @@ def build_colour_map(
     else:
         primary = [c for c, _ in ranked]
 
-    # Roles: sprite, MC1, MC2 in frequency order.
-    role_order = [BP_SPRITE, BP_MC1, BP_MC2]
+    # Roles: unique first; 2nd colour → $D026 (MC2); 3rd → $D025 (MC1).
+    # Matches game palette: SPR_MC1_COLOR yellow, SPR_MC0_COLOR dark gray.
+    role_order = [BP_SPRITE, BP_MC2, BP_MC1]
     colour_to_bp: dict[tuple[int, int, int], int] = {}
     role_table: list[tuple[tuple[int, int, int], int, int]] = []
     for i, rgb in enumerate(primary):

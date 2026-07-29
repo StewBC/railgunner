@@ -33,6 +33,10 @@ clr:
 
 ; X = C drone that reached rail. Spawn cargo sprite at impact, or deposit if busy.
 .proc on_c_impact
+    lda player_dead
+    beq oci_live
+    rts                             ; dying: no cargo
+oci_live:
     lda cargo_slot
     cmp #$FF
     beq oci_start
@@ -324,20 +328,23 @@ ca_no:
     rts
 .endproc
 
-; Blow the player: clear hub, lose a life (or game over).
+; Blow the player: clear hub, start death sequence (respawn or game over).
 .proc detonate
+    lda player_dead
+    bne det_done                    ; already dying
     jsr clear_stacks
     lda lives
-    beq det_go
+    beq det_fatal                   ; no lives left
     dec lives
     lda #1
     sta hud_status_dirty
     lda lives
-    beq det_go
+    beq det_fatal
+    jsr player::begin_death_respawn
+det_done:
     rts
-det_go:
-    lda #MODE_GAME_OVER
-    sta pending_mode
+det_fatal:
+    jsr player::begin_death_fatal
     rts
 .endproc
 

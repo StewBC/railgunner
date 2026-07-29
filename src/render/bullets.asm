@@ -220,6 +220,10 @@ draw_base:
 
 ; ---------------------------------------------------------------------------
 .proc try_fire
+    lda player_dead
+    beq tf_alive
+    rts
+tf_alive:
     lda fire_lock
     beq fire_unlocked
     rts

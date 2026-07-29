@@ -43,6 +43,8 @@ play_logic:
     jsr waves::update_banner
     lda pending_mode
     bne play_hud
+    lda player_dead
+    bne play_hud                    ; no level-clear while dying
     lda #PROFILE_PLAY_WAVE_CLEAR
     sta objects::profile_marker
     jsr waves::check_clear

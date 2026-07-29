@@ -21,9 +21,14 @@ upd_loop:
     bcc upd_next
     cmp #OBJ_BONUS
     bcs upd_next
+    lda objects::obj_anim_state, x
+    bmi upd_dying                   ; bit7 = explode sequence
     jsr integrate_slot
     jsr clamp_to_approach
     jsr check_rail_arrival
+    jmp upd_next
+upd_dying:
+    jsr death_tick
 upd_next:
     inx
     cpx #OBJECT_CAPACITY
@@ -759,6 +764,9 @@ cad_n:
 .endproc
 
 .proc apply_bullet_hit
+    ldx mode_state
+    lda objects::obj_anim_state, x
+    bmi abh_done                    ; already exploding — ignore further hits
     jsr score::add_hit
     ldx mode_state
     lda objects::obj_reserved, x
@@ -767,6 +775,7 @@ cad_n:
     sbc #1
     sta objects::obj_reserved, x
     beq abh_kill
+abh_done:
     rts
 abh_kill:
     ldx mode_state
@@ -774,9 +783,82 @@ abh_kill:
     ldx mode_state
     jsr waves::note_kill
     ldx mode_state
+    jmp begin_explode
+.endproc
+
+; X = drone slot just killed. Stop motion, play 3 explode frames, then retire.
+.proc begin_explode
+    lda #0
+    sta objects::obj_vx_frac, x
+    sta objects::obj_vx_lo, x
+    sta objects::obj_vx_hi, x
+    sta objects::obj_vy_frac, x
+    sta objects::obj_vy_int, x
+    ; No more BG/rail latch interest while exploding
+    lda objects::obj_flags, x
+    and #($FF ^ OBJF_BG_INTEREST)
+    ora #OBJF_RENDER
+    sta objects::obj_flags, x
+    lda #DRONE_DYING_BIT            ; phase 0 | dying
+    sta objects::obj_anim_state, x
+    lda #DEATH_EXPLODE_HOLD
+    sta objects::obj_reserved, x    ; frame timer (was HP)
+    lda #SPR_COLOR_EXPLODE
+    sta objects::obj_sprite_color, x
+    lda #OBJA_MULTICOLOR
+    sta objects::obj_sprite_attr, x
+    jsr show_explode_frame
+    jsr objects::mark_dirty
+    rts
+.endproc
+
+; X = dying drone. Advance explode; retire after frame 3's hold (no extra hold).
+.proc death_tick
+    dec objects::obj_reserved, x
+    bne dtk_done
+    lda objects::obj_anim_state, x
+    and #$7F
+    cmp #2
+    bcs dtk_retire                  ; finished frame 3
+    clc
+    adc #1
+    ora #DRONE_DYING_BIT
+    sta objects::obj_anim_state, x
+    jsr show_explode_frame
+    lda #DEATH_EXPLODE_HOLD
+    sta objects::obj_reserved, x
+dtk_done:
+    rts
+dtk_retire:
     jsr objects::retire_and_try_free
     rts
 .endproc
+
+; X = drone; obj_anim_state low bits = phase 0..2; approach in obj_user.
+.proc show_explode_frame
+    lda objects::obj_user, x
+    cmp #DRONE_APPROACH_RIGHT
+    bcc sef_vert                    ; DOWN=0, UP=1 → vertical
+    ; LEFT/RIGHT → horizontal table
+    lda objects::obj_anim_state, x
+    and #$7F
+    tay
+    lda explode_dh_tbl, y
+    jmp sef_put
+sef_vert:
+    lda objects::obj_anim_state, x
+    and #$7F
+    tay
+    lda explode_dv_tbl, y
+sef_put:
+    sta objects::obj_sprite_ptr, x
+    rts
+.endproc
+
+explode_dv_tbl:
+    .byte SPR_PTR_EXPLODE_DV_1, SPR_PTR_EXPLODE_DV_2, SPR_PTR_EXPLODE_DV_3
+explode_dh_tbl:
+    .byte SPR_PTR_EXPLODE_DH_1, SPR_PTR_EXPLODE_DH_2, SPR_PTR_EXPLODE_DH_3
 
 ; ===========================================================================
 ; Motion / arrival (unchanged logic)
@@ -847,6 +929,12 @@ arr_left:
     rts
 
 arr_hit:
+    ; Exploding drones: just remove (no damage / cargo).
+    lda objects::obj_anim_state, x
+    bmi arr_retire
+    ; While player is dying: retire at rail with no damage / no cargo.
+    lda player_dead
+    bne arr_retire
     lda objects::obj_kind, x
     cmp #OBJ_DRONE_C
     beq arr_c
@@ -871,6 +959,24 @@ arr_ab:
 arr_retire:
     jsr objects::retire_and_try_free
 arr_done:
+    rts
+.endproc
+
+; Retire every allocated non-player object (respawn / level restart).
+.proc clear_field
+    ldx #1
+cf_loop:
+    lda objects::obj_flags, x
+    and #OBJF_ALLOCATED
+    beq cf_next
+    jsr objects::retire_and_try_free
+cf_next:
+    inx
+    cpx #OBJECT_CAPACITY
+    bne cf_loop
+    lda #$FF
+    sta cargo_slot
+    sta parcel_slot
     rts
 .endproc
 

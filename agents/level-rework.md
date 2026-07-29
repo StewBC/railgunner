@@ -91,7 +91,8 @@ play (move + fire always, except game over)
 | **Cargo** | Orange parcel **sprite** (same disc as bonus parcel) flies to the next **G→H→I→J** hub tile; on arrival sprite vanishes and that tile stacks. |
 | **Level-clear cargo peel** | On level clear (rank banner start): remove **one** stack from the **most recently** deposited GHIJ tile (survive bonus). |
 | **Mines / detonate** | When each of G,H,I,J has stacks ≥ **K** (`MINE_STACK_K`, default **1** → **4 landings**), tiles show mine glyphs and the **player loses a life immediately** (stacks clear). Second full round later if 4 feels short. |
-| **Lives 0** | Game over. |
+| **Death sequence** | Ignore input; play explode frames (~0.5s) then hold (~1s). Drones still move but deal no rail damage / cargo. Then: lives left → restart **current level** spawn (kills/spawner; rail scars stay); no lives or rail collapse → game over. |
+| **Lives 0** | Game over (after death sequence). |
 | **Health / ammo** | **Gone** (not deferred UI — removed from session model). |
 
 Shield / ammo parcel types from the original brief remain **future content**;

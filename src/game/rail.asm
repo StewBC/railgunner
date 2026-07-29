@@ -311,9 +311,10 @@ deh_destroy:
     lda #3
     sta rail_data::dmg_e, x
     jsr draw_e
-    ; Full core collapse → game over (lives reserved for centre mines)
-    lda #MODE_GAME_OVER
-    sta pending_mode
+    ; Full core collapse → death sequence then game over (not instant mode_set)
+    lda player_dead
+    bne deh_rts
+    jsr player::begin_death_fatal
 deh_rts:
     rts
 .endproc
@@ -408,8 +409,9 @@ dbv_destroy:
     lda #3
     sta rail_data::dmg_vb, x
     jsr draw_vb
-    lda #MODE_GAME_OVER
-    sta pending_mode
+    lda player_dead
+    bne dbv_rts
+    jsr player::begin_death_fatal
 dbv_rts:
     rts
 .endproc

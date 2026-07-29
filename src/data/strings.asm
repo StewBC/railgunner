@@ -95,6 +95,11 @@ str_press_fire:
 
 str_game_over:
     .byte "GAME OVER", 0
+; Death-hold HUD banners — 4 spaces each side, centred (col 11)
+str_game_over_banner:
+    .byte "    GAME OVER    ", 0          ; 17 chars
+str_rip_pilot_banner:
+    .byte "    RIP  PILOT    ", 0         ; 18 chars (extra space for balance)
 
 ; Game-over tallies (numbers filled in by tallies::paint_gameover)
 str_tallies:

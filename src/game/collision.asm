@@ -29,6 +29,8 @@ upd_loop:
     bcc upd_next
     cmp #OBJ_BONUS
     bcs upd_next
+    lda objects::obj_anim_state, x
+    bmi upd_next                    ; exploding: no more hits
 
     stx mode_state
 
@@ -93,6 +95,8 @@ hw_done:
     beq ra_ab
     jmp ra_free
 ra_c:
+    lda player_dead
+    bne ra_free                     ; dying: no cargo
     txa
     pha
     jsr cargo::on_c_impact          ; orange cargo sprite → GHIJ (or instant stack)
@@ -100,6 +104,8 @@ ra_c:
     tax
     jmp ra_free
 ra_ab:
+    lda player_dead
+    bne ra_free                     ; dying: no rail damage
     txa
     pha
     jsr rail::apply_ab_hit

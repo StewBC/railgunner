@@ -303,8 +303,8 @@ OBJ_ERR_PLAYER_FIXED = 2
 ; Source: DATA segment (src/data/sprites.asm). Pointer = address / 64.
 ; ---------------------------------------------------------------------------
 ; Shared multicolour pair (all MC sprites; set once per stage / cold init)
-SPR_MC0_COLOR   = COL_DK_GRAY       ; $D025 — bit-pair 01
-SPR_MC1_COLOR   = COL_CYAN          ; $D026 — bit-pair 11
+SPR_MC0_COLOR   = COL_DK_GRAY       ; $D025 — bit-pair 01 (3rd-most in PNGs)
+SPR_MC1_COLOR   = COL_YELLOW        ; $D026 — bit-pair 11 (2nd-most in PNGs)
 
 ; Per-kind individual colour (bit-pair 10 → $D027+n)
 SPR_COLOR_DRONE_C = COL_RED         ; small / tiny
@@ -330,14 +330,37 @@ SPR_PTR_ADD_REPAIR    = $CE         ; $3380 — add_repair.png (future)
 SPR_PTR_ADD_EXTRA     = $CF         ; $33C0 — add_extra.png (future life)
 SPR_PTR_ADD_CLEAR     = $D0         ; $3400 — add_clear.png (future cargo clear)
 SPR_PTR_ADD_2X        = $D1         ; $3440 — add_2x.png (future score ×2)
+SPR_PTR_EXPLODE_1     = $D2         ; $3480 — player death frame 1
+SPR_PTR_EXPLODE_2     = $D3         ; $34C0 — player death frame 2
+SPR_PTR_EXPLODE_3     = $D4         ; $3500 — player death frame 3
+SPR_PTR_EXPLODE_DV_1  = $D5         ; vertical drone explode 1
+SPR_PTR_EXPLODE_DV_2  = $D6
+SPR_PTR_EXPLODE_DV_3  = $D7
+SPR_PTR_EXPLODE_DH_1  = $D8         ; horizontal drone explode 1
+SPR_PTR_EXPLODE_DH_2  = $D9
+SPR_PTR_EXPLODE_DH_3  = $DA
 ; Live score parcel still uses SPR_PTR_PARCEL as the score pickup art
 SPR_PTR_PARCEL        = SPR_PTR_ADD_SCORE
 
 SPR_PTR_PLAYER_0      = $F8         ; $3E00 player buffer 0
 SPR_PTR_PLAYER_1      = $F9         ; $3E40 player buffer 1
 
+; Death sequence (player explode pattern 1-2-3-2-3-2-1, then hold).
+DEATH_EXPLODE_FRAMES  = 3           ; distinct art frames
+DEATH_EXPLODE_STEPS   = 7           ; 1,2,3,2,3,2,1
+DEATH_EXPLODE_HOLD    = 8           ; frames per step (~0.16s)
+DEATH_HOLD_PHASE      = 7           ; death_phase value during post-explode hold
+DEATH_HOLD_FRAMES     = 100         ; ~2s after explode sequence (player only)
+DEATH_GO_FLASH_FRAMES = 12          ; ~0.25s @ 50Hz; light/dark ×2 over hold
+DEATH_BANNER_COL      = 11          ; both banners start here
+DEATH_GO_BANNER_LEN   = 17          ; "    GAME OVER    "
+DEATH_RIP_BANNER_LEN  = 18          ; "    RIP  PILOT    "
+SPR_COLOR_EXPLODE     = COL_RED
+; obj_anim_state bit7 set while drone plays explode; low 2 bits = phase 0..2
+DRONE_DYING_BIT       = $80
+
 ; Parcel / bonus (Step 9.1 + power-up art reserved)
-SPR_COLOR_PARCEL_SCORE = COL_YELLOW ; unique colour = score pickup cue
+SPR_COLOR_PARCEL_SCORE = COL_PURPLE ; unique colour (accent is shared yellow)
 SPR_COLOR_CARGO        = COL_ORANGE ; cargo disc unique colour
 PARCEL_SPEED           = 1          ; half of prior 2; easy intercept
 PARCEL_PAYLOAD_SCORE   = 0          ; 9.1 only; bit-flags later
