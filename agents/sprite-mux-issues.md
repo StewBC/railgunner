@@ -147,6 +147,23 @@ rejection under the constraints above. The exact transient error was lost when
 the paused machine was resumed before VIC/SoA history was collected; reproduce
 and capture `mux_last_error` plus plan state before choosing the remediation.
 
+**Planner root cause and drone-spawn safety fixed 2026-07-29:**
+snap-001 preserved the exact transition. Slot 5 spawned a C at Y=`$68` while
+slots 6/2/1 were B/B/C at Y=`$47/$54/$67`. Jobs at lines 28, 37, and 93 left
+the global cursor at 102, beyond the new C's deadline 95; every build returned
+`MUX_ERR_RASTER_DEADLINE` and replayed the old plan while character bullets
+advanced. This was a false rejection, not VIC-II capacity: five objects were
+being packed into reused low lanes while three hardware sprites sat unused.
+
+The builder now assigns distinct lanes whenever candidate count is at most
+eight. For true multiplexed sets, the scheduler fills a future-release idle gap
+with ready work instead of blindly jumping past it. The visible
+`sprite_mux_deadline` regression reproduced the captured five objects and
+reported lines `28,37,46,55,64`, lanes `2,3,0,1,4`, and error 0.
+`spawn_drone` also retains prospective build/rollback as a safety net for
+genuinely illegal plans. General hard failures from motion or non-drone
+graphical spawners remain visible through the fail-closed policy.
+
 ---
 
 ### ~~P2 — `objects::init` while the raster IRQ is live is racy~~ **fixed 2026-07-28**

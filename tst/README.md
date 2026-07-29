@@ -58,3 +58,16 @@ tst/play_sprite_mux_circle.sh --video NTSC
 Both demos share `sprite_mux_demo_runtime.asm`, which owns only test
 presentation and initialization; the pool, builder, IRQ executor, collision
 handoff, and video-standard code are included directly from `src/`.
+
+## Five-object deadline regression
+
+`sprite_mux_deadline.asm` reproduces coop snap-001's B/B/C/C/player geometry at
+Y=`$47/$54/$67/$68/$92`. All five objects fit in the VIC-II's eight hardware
+sprites. A blue border proves the low-count unique-lane path builds a valid
+plan; the former aggressive lane reuse plus linear scheduler produced a red
+`MUX_ERR_RASTER_DEADLINE`.
+
+```bash
+tst/build_sprite_mux_deadline.sh
+tst/play_sprite_mux_deadline.sh
+```

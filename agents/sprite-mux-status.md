@@ -22,6 +22,8 @@ layer battle-hardened.
 - 16.8 X and 8.8 Y storage; VIC snapshots use 9-bit X and 8-bit Y.
 - Double-buffered immutable raster command plans.
 - Dynamic Y sorting and reassignment of the eight hardware sprites.
+- Candidate sets of eight or fewer use distinct hardware lanes; low-count
+  scenes never create needless lane-reuse deadlines.
 - C/B/A drone priority coloring, where C is front/small, B medium, A back/large.
 - Neutral objects prefer `candidate ordinal & 7`, then fall back to the lowest
   legal lane. This compact round-robin bias avoids preventable rapid reuse of
@@ -30,6 +32,12 @@ layer battle-hardened.
 - PAL/NTSC detection with gameplay motion normalized to 50 logic ticks/second.
 - Safe failure with the prior immutable plan retained when a layout cannot meet
   lane or raster-deadline constraints.
+- Prospective drone-spawn admission: the complete candidate render set is built
+  before the spawn returns success. A deadline/lane/busy rejection clears the
+  never-published object and restores its exact free-stack entry, so gameplay
+  cannot keep advancing a drone that froze the prior sprite plan.
+- Release-aware job scheduling fills idle time with ready work before jumping
+  forward to a future lane-reuse release.
 
 ## Demonstrations
 
@@ -84,6 +92,16 @@ the orbit. Its ellipse covers X=54–290 and therefore crosses `$D010`.
   a C-drone impact to the hub at the intended four-tick cadence. Cargo is now
   orange instead of bullet-yellow, and `paint_ghij` leaves unstacked hub letters
   gray rather than recoloring all four after one deposit.
+- Coop snap-001 on 2026-07-29 captured a whole-plan replay from frames
+  5388–about 5470. Slot 5 spawned a C at Y=`$68` into B/B/C geometry at
+  Y=`$47/$54/$67`: serialized jobs at 28, 37, and 93 advanced the next start
+  to 102, past the new C's deadline 95 despite three unused VIC-II lanes.
+  The root planner fix gives all five candidates distinct lanes and fills
+  release gaps before waiting. The visible standalone regression produced
+  command lines `28,37,46,55,64`, lanes `2,3,0,1,4`, and
+  `mux_last_error=0`. A separate visible 14-object circle run held command
+  count 14 and error 0 after another 200 frames. Prospective spawn admission
+  remains as a safety net.
 
 ## Next stress tests
 
@@ -91,7 +109,9 @@ the orbit. Its ellipse covers X=54–290 and therefore crosses `$D010`.
    prove the event reaches the old logical owner exactly once.
 2. Churn allocation and freeing in arbitrary order across all 24 slots.
 3. Move overlapping C/B/A objects through one another and assert lane priority.
-4. Exercise deliberate plan-busy, lane-capacity, and raster-deadline failures.
+4. Exercise deliberate plan-busy, lane-capacity, and raster-deadline failures,
+   including rejected prospective spawns; prove free count, prior plan, and
+   subsequent successful spawns remain correct.
 5. Cover multicolor, expansion, and behind-background attribute changes.
 
 ## Memory layout

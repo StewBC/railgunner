@@ -614,6 +614,12 @@ Lane assignment is rebuilt whenever render-visible object state is dirty. A
 logical object is not promised the same hardware sprite number in consecutive
 published plans.
 
+When the complete candidate set has eight or fewer objects, the production
+builder treats every earlier candidate as a lane conflict and assigns each
+logical object a distinct hardware sprite. There is no reason to manufacture a
+lane-reuse deadline while VIC-II lanes remain free; C/B/A ordering is still
+preserved by the same priority-first assignment.
+
 ---
 
 ## 10. Raster programming jobs
@@ -674,7 +680,11 @@ the last logical slot assigned to each of the eight lanes to derive predecessor
 releases in one pass. `$C800` remains reserved for now so rail/cargo state stays
 at its established `$C900` address.
 
-Starting with a cursor at `MUX_FIRST_JOB_LINE`, visit that deadline order:
+Starting with a cursor at `MUX_FIRST_JOB_LINE`, select the earliest-deadline
+unscheduled job. If it is ready, schedule it. If its release is in the future,
+first fill the idle gap with the earliest-deadline ready job that finishes
+entirely before that release; otherwise advance to the release. For the selected
+job:
 
 ```text
 job_start = max(cursor, release_start)
@@ -684,7 +694,9 @@ cursor = job_start + MUX_JOB_LINES
 
 This intentionally serializes lane-load handlers. It may reject a theoretically
 possible cycle-perfect schedule, but it is deterministic, testable, and safe
-for wave data to target.
+for wave data to target. Filling release gaps matters: the old linear walk could
+jump to a late lane-reuse job while another lane was ready, then reject that
+ready job after the cursor passed its deadline.
 
 ### 10.3 Why spawn layout matters
 

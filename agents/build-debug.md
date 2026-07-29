@@ -690,6 +690,26 @@ reproducible (exact command + response). Mark severity (papercut / slows-work /
 blocks-work). Cross off (`~~struck~~ fixed in c64m <ref>`) when resolved
 upstream — do not delete history.
 
+### 2026-07-29 — Coop automatic range traces use an unsupported `history-find end=`
+
+- **Severity:** slows-work.
+- **Did:** paused a C64M/6 coop session and let `coop_watch.py` create its normal
+  evidence pack, including configured sprite-register and object-SoA write
+  ranges.
+- **c64m did:** every automatic range returned
+  `error bad-args unknown history option` because the watcher sent commands such
+  as `history-find address=53248 ... end=53294`. The documented C64M/6
+  `history-find` grammar has no `end` key.
+- **Friction:** the evidence pack looked complete but all automatic recent-write
+  sections were empty during a transient mux-plan failure. Diagnosis required
+  many manual single-address `hist` inbox commands while the machine remained
+  paused.
+- **Workaround:** use exact-address `hist $ADDR write N` commands; correlate
+  them with a pulled frame's machine cycle.
+- **Suggested improvement:** either add an address-range option to
+  `history-find`, or have the generic coop watcher query/filter supported
+  addresses without emitting `end=`.
+
 ### ~~2026-07-28 — `lsr <zp>` / `lsr $nn` emits opcode only (no operand byte)~~
 
 **Fixed in c64m 638d3c9** (with a related `ldx $nn,y` / `stx $nn,y` promotion

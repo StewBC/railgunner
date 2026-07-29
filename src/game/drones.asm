@@ -418,6 +418,25 @@ sd_flags:
     lda #(OBJF_ALLOCATED | OBJF_RENDER | OBJF_BG_INTEREST)
     sta objects::obj_flags, x
     jsr objects::mark_dirty
+
+    ; A prospective spawn must not make the complete render set
+    ; unschedulable. The mux fails closed by replaying its prior immutable
+    ; plan, so committing an invalid spawn would freeze every hardware sprite
+    ; while bullets and gameplay continued. Build once with the candidate
+    ; present; on any failure (including a busy back-plan handoff), restore
+    ; the freshly allocated slot and let the normal cooldown defer the spawn.
+    txa
+    pha
+    jsr sprite_mux_build::build
+    bcc sd_admitted
+    pla
+    tax
+    jsr objects::discard_new
+    sec
+    rts
+sd_admitted:
+    pla
+    tax
     clc
     rts
 .endproc

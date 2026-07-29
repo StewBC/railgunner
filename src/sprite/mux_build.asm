@@ -271,6 +271,14 @@ assign_scan_previous:
     lda sprite_mux_data::build_slots, y
     tax
 
+    ; At eight or fewer candidates there is no reason to multiplex a lane.
+    ; Treat every prior candidate as a conflict so each object gets a distinct
+    ; hardware sprite. This avoids manufacturing reuse deadlines while VIC-II
+    ; lanes are still free.
+    lda sprite_mux_data::build_candidate_count
+    cmp #(MUX_HW_COUNT + 1)
+    bcc assign_overlap
+
     ; Mux-safe lane conflict (not just pixel overlap). Same-lane reuse needs
     ; upper_bottom + MUX_LANE_SEP <= lower_top (release vs deadline). Pixel-
     ; separated sprites in that dead zone used to share a lane then die in
@@ -661,13 +669,11 @@ emit_plan_0:
     rts
 .endproc
 
-; Deadlines are object_top-MUX_JOB_LINES, so Y order is deadline order. The
-; original EDF selector always waited for the earliest-deadline job's release;
-; this linear pass is exactly equivalent and removes another all-pairs scan.
-;
-; Jobs are packed as early as feasible (from line 28, gated by same-lane
-; release) so dense Y clusters still fit the 9-line serialized windows. Do not
-; force start=deadline: that rejects any two candidates within 9px of Y.
+; Deadlines are object_top-MUX_JOB_LINES, so build_slots Y order is EDF order.
+; A lane-reuse job can have a late release even when a later-deadline job on a
+; different lane is ready now. Do useful work that fits wholly in that idle gap
+; before jumping to the future release. The old linear walk jumped immediately,
+; then rejected the ready job after the cursor had passed its deadline.
 .proc schedule_and_emit
     lda #MUX_FIRST_JOB_LINE
     sta mux_cursor
@@ -684,22 +690,99 @@ emit_plan_0:
     sta mux_shadow_multi
     sta mux_shadow_bgprio
 
+    ; build_scheduled is indexed by logical object slot.
+    lda #0
+    sta mux_j
+    lda sprite_mux_data::build_candidate_count
+    beq schedule_outer
+schedule_clear:
+    ldy mux_j
+    lda sprite_mux_data::build_slots, y
+    tax
+    lda #0
+    sta sprite_mux_data::build_scheduled, x
+    inc mux_j
+    lda mux_j
+    cmp sprite_mux_data::build_candidate_count
+    bcc schedule_clear
+
 schedule_outer:
     lda mux_i
     cmp sprite_mux_data::build_candidate_count
-    bcc schedule_have
+    bcc schedule_find_first
     clc
     rts
-schedule_have:
+
+; Find the earliest-deadline unscheduled job.
+schedule_find_first:
+    lda #0
+    sta mux_j
+schedule_find_loop:
+    ldy mux_j
+    lda sprite_mux_data::build_slots, y
+    tax
+    lda sprite_mux_data::build_scheduled, x
+    beq schedule_first_found
+    inc mux_j
+    jmp schedule_find_loop
+
+schedule_first_found:
+    stx mux_best_slot
+    lda sprite_mux_data::build_job_release, x
+    cmp mux_cursor
+    bcc schedule_use_first
+    beq schedule_use_first
+
+    ; The EDF job is released in the future. If one complete ready job fits
+    ; before that release, schedule the earliest-deadline such job now.
+    sta mux_best_value
+    cmp sprite_mux_data::build_job_deadline, x
+    bcc schedule_gap_room
+    beq schedule_gap_room
+    jmp schedule_fail
+
+schedule_gap_room:
+    lda mux_cursor
+    clc
+    adc #MUX_JOB_LINES
+    bcs schedule_wait_first
+    cmp mux_best_value
+    bcc schedule_scan_gap
+    beq schedule_scan_gap
+
+schedule_wait_first:
+    lda mux_best_value
+    sta mux_cursor
+schedule_use_first:
+    ldx mux_best_slot
+    jmp schedule_have_slot
+
+schedule_scan_gap:
+    inc mux_j
+schedule_gap_loop:
+    lda mux_j
+    cmp sprite_mux_data::build_candidate_count
+    bcs schedule_wait_first
     tay
     lda sprite_mux_data::build_slots, y
-    sta mux_current
     tax
+    lda sprite_mux_data::build_scheduled, x
+    bne schedule_gap_next
+    lda sprite_mux_data::build_job_release, x
+    cmp mux_cursor
+    bcc schedule_have_slot
+    beq schedule_have_slot
+schedule_gap_next:
+    inc mux_j
+    jmp schedule_gap_loop
+
+schedule_have_slot:
+    stx mux_current
     lda mux_cursor
     cmp sprite_mux_data::build_job_release, x
-    bcs have_job_start
+    bcs schedule_have_start
     lda sprite_mux_data::build_job_release, x
-have_job_start:
+schedule_have_start:
     cmp sprite_mux_data::build_job_deadline, x
     bcc job_start_ok
     beq job_start_ok
@@ -713,6 +796,9 @@ job_start_ok:
 cursor_ok:
     sta mux_cursor
     jsr emit_current
+    ldx mux_current
+    lda #1
+    sta sprite_mux_data::build_scheduled, x
     inc mux_i
     inc mux_k
     jmp schedule_outer

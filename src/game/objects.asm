@@ -187,6 +187,23 @@ pool_full:
     rts
 .endproc
 
+; X=freshly allocated slot which has not appeared in a published plan.
+; Roll back that allocation after prospective render admission fails. Because
+; alloc popped this slot only after reap proved it unreferenced, returning it
+; immediately restores the exact free-stack state without retirement.
+.proc discard_new
+    jsr clear_slot
+    ldy free_count
+    txa
+    sta free_stack, y
+    inc free_count
+    ; The failed prospective build invalidated its back plan. Rebuild the
+    ; remaining live set at the normal frame-end build point.
+    lda #1
+    sta mux_objects_dirty
+    rts
+.endproc
+
 ; X=slot. Destruction is deferred until no front/pending plan references it.
 .proc retire
     cpx #0
