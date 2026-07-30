@@ -13,7 +13,7 @@
 .segdef "CHARSET", $2800            ; 2K RAM font (futura 0..63 + UDG overlays at install)
 .segdef "TITLE", $4000              ; hires source (bitmap + colours)
 .segdef "DATA", $6328               ; strings/tables + sprite frame source
-.segdef "CODE_HI", $7400            ; overflow game logic (after DATA + sprite frames)
+.segdef "CODE_HI", $7500            ; overflow game logic (after DATA + sprite frames)
 .segdef "OBJECTS", $C000, noemit
 
 ; ---------------------------------------------------------------------------
@@ -110,7 +110,6 @@ mux_build_failed:
 .include "frontend/story.asm"
 .include "frontend/instructions.asm"
 .include "frontend/gameover.asm"
-.include "frontend/hiscore.asm"
 .include "game/game_init.asm"
 .include "game/score.asm"
 .include "game/tallies.asm"
@@ -129,6 +128,8 @@ mux_build_failed:
 .include "game/message.asm"
 .include "game/play.asm"
 .include "game/life.asm"
+; Hiscore entry is large; lives in CODE_HI (file sets the segment).
+.include "frontend/hiscore.asm"
 
 ; ---------------------------------------------------------------------------
 ; Character set (VIC text font @ $2800 — load in place, no ROM copy)

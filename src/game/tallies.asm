@@ -101,7 +101,9 @@ GO_LABEL_END    = 15                ; last column of right-aligned labels
 GO_VALUE_COL    = 21                ; first column of values
 
 .proc paint_gameover
-    ; --- GAME OVER ---
+    ; --- GAME OVER (red) or VICTORY! (green) after clearing L15 ---
+    lda victory
+    bne pg_victory
     lda #<str_game_over
     sta ptr_lo
     lda #>str_game_over
@@ -112,6 +114,19 @@ GO_VALUE_COL    = 21                ; first column of values
     lda #COL_RED
     ldy #GO_ROW_GAMEOVER
     jsr screen_color_row
+    jmp pg_results
+pg_victory:
+    lda #<str_victory
+    sta ptr_lo
+    lda #>str_victory
+    sta ptr_hi
+    ldx #16                         ; "VICTORY!" = 8 → centre col 16
+    ldy #GO_ROW_GAMEOVER
+    jsr screen_print
+    lda #COL_GREEN
+    ldy #GO_ROW_GAMEOVER
+    jsr screen_color_row
+pg_results:
 
     ; --- YOUR RESULTS ---
     lda #<str_go_results
@@ -157,13 +172,18 @@ GO_VALUE_COL    = 21                ; first column of values
     ldy #GO_ROW_RANK
     jsr screen_color_row
 
-    ; --- WAVES SURVIVED (completed waves = level-1) ---
+    ; --- WAVES SURVIVED (completed = level-1; victory = full 15) ---
     lda #<str_go_waves
     sta ptr_lo
     lda #>str_go_waves
     sta ptr_hi
     ldy #GO_ROW_WAVES
     jsr print_label_ra
+    lda victory
+    beq go_w_normal
+    lda #MAX_LEVEL                  ; cleared L15
+    jmp go_wput
+go_w_normal:
     lda level
     beq go_w0
     sec

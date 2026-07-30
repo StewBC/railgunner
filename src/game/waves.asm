@@ -196,19 +196,19 @@ ub_done:
 .proc advance_level
     lda level
     cmp #MAX_LEVEL
-    bcs adv_cap
+    bcs adv_victory                 ; finished L15 banner → victory game-over
     inc level
-    jmp adv_load
-adv_cap:
-    ; endless at max intensity for now (victory hook later)
-    lda #MAX_LEVEL
-    sta level
-adv_load:
     lda #0
     sta level_kills
     sta level_banner_t
     jsr load                        ; new quota + parcels reset + spawn params
     jsr message::restore_hud_line
+    rts
+adv_victory:
+    lda #1
+    sta victory
+    lda #MODE_GAME_OVER
+    sta pending_mode                ; applied end of play_update
     rts
 .endproc
 

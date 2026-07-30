@@ -97,11 +97,23 @@ str_press_fire:
 
 str_game_over:
     .byte "GAME OVER", 0
+str_victory:
+    .byte "VICTORY!", 0
 ; Death-hold HUD banners — 4 spaces each side, centred (col 11)
 str_game_over_banner:
     .byte "    GAME OVER    ", 0          ; 17 chars
 str_rip_pilot_banner:
     .byte "    RIP  PILOT    ", 0         ; 18 chars (extra space for balance)
+
+; High-score entry chrome (mutable name at HS_PROMPT_NAME_OFF on str_hs_prompt).
+str_hs_congrats:
+    .byte "CONGRATULATIONS PILOT!", 0
+str_hs_new_score:
+    .byte "YOU HAVE A NEW HIGH SCORE", 0
+str_hs_prompt:
+    .byte "ENTER YOUR NAME PILOT: A--", 0
+str_hs_help:
+    .byte "UP/DOWN TO CHANGE, FIRE TO SELECT.", 0
 
 ; Game-over results (tallies::paint_gameover). Labels right-align to col 15.
 str_go_results:
@@ -208,13 +220,30 @@ level_kill_quota_tbl:
 ;   SHOTS 5 digits zero-padded (session shots; tally is u16 → max 65535)
 ;   SCORE 6 digits zero-padded (cap 999999)
 ;
-; Mutable fields (future entry / load-save write in place):
+; Mutable fields (entry / future load-save write in place):
 ; ---------------------------------------------------------------------------
 HS_INITIALS_OFF = 4
 HS_WAVE_OFF     = 11                ; centred in WAVE field (cols 10..13)
 HS_SHOTS_OFF    = 16
 HS_SCORE_OFF    = 23
 HS_LINE_LEN     = 29
+
+; Shared table layout (title + hiscore entry)
+HS_ROW_HEROES   = 2
+HS_ROW_HEAD     = 4                 ; blank row 3 under heroes
+HS_ROW_SCORE0   = 5                 ; scores occupy rows 5..14
+; Entry-only rows (under table; title menu uses 16+ for FIRE/STORY/…)
+; Table ends row 14 → 2 blank rows → NEW at 17; prompt 19; help on bottom.
+HS_ROW_NEW      = 17                ; YOU HAVE A NEW HIGH SCORE
+HS_ROW_PROMPT   = 19                ; ENTER YOUR NAME PILOT: xxx
+HS_ROW_HELP     = 24                ; UP/DOWN… (bottom line)
+HS_ROW_CONGRATS = 0                 ; same row as title "RAIL GUNNER"
+HS_COL_TABLE    = 5                 ; 29-char lines centred
+HS_COL_HEROES   = 14
+HS_COL_CONGRATS = 9                 ; 22 chars
+HS_COL_NEW      = 8                 ; 24 chars
+HS_COL_PROMPT   = 7                 ; 26 chars
+HS_COL_HELP     = 3                 ; 34 chars
 
 str_hs_header:
     .byte " #  NAME  WAVE  SHOTS   SCORE", 0

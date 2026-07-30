@@ -37,6 +37,15 @@ tally_kill_b0:  .res 1
 tally_kill_b1:  .res 1
 tally_kill_c0:  .res 1
 tally_kill_c1:  .res 1
+victory:        .res 1              ; 1 = cleared L15 → VICTORY! on game-over screen
+
+; Hiscore entry (MODE_HISCORE)
+hs_rank:        .res 1              ; 0..9 row being edited
+hs_cursor:      .res 1              ; 0..2 active initial
+hs_char_idx:    .res 1              ; index into hs_charset
+hs_phase:       .res 1              ; 0 = typing, 1 = post-entry hold
+hs_dirs_prev:   .res 1              ; prior input_dirs (release / dir change)
+hs_repeat_t:    .res 1              ; auto-repeat countdown (0 = idle)
 
 ; Player (logical slot 0; position also in objects:: SoA)
 player_rail:    .res 1              ; PLAYER_RAIL_H or PLAYER_RAIL_V

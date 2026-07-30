@@ -8,7 +8,7 @@
 ;   CHARSET   $2800   2K VIC text font (0..63 text + $40..$6E UDG pack, baked)
 ;   TITLE     $4000   title hires source (bitmap + colour matrix)
 ;   DATA      $6328   strings / tables / sprite frame source
-;   CODE_HI   $7400   overflow game logic (rail damage, cargo; after DATA)
+;   CODE_HI   $7500   overflow game logic (rail damage, cargo; after DATA)
 ;   OBJECTS   $C000   noemit graphical-object/mux runtime state
 ;
 ; VIC bank 0:

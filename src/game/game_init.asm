@@ -15,6 +15,7 @@
     sta level_kills
     sta level_banner_t
     sta pending_mode
+    sta victory
     sta kill_extra_cnt
     sta parcel_flags
     sta power_2x

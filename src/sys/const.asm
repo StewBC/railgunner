@@ -496,6 +496,17 @@ SC_DASH         = $2D
 SC_ZERO         = $30
 SC_VBAR         = $5D
 SC_HASH         = $23
+SC_LEFT_ARROW   = $1F               ; ← (Z+5); hiscore backspace glyph
+PET_LEFT_ARROW  = $5F               ; PETSCII/source byte for ← in strings
+
+; Hiscore entry
+HS_CHARSET_LEN  = 39                ; A–Z . 0–9 space ←
+HS_CHAR_BACK    = 38                ; index of ← in hs_charset
+HS_HOLD_FRAMES  = 50                ; ~1s @ 50Hz after 3rd initial
+HS_PROMPT_NAME_OFF = 23             ; "ENTER YOUR NAME PILOT: " then name
+; Up/down auto-repeat (classic: long first delay, then steady scroll)
+HS_REPEAT_DELAY = 22                ; frames before first auto-step (~0.44s @ 50Hz)
+HS_REPEAT_RATE  = 5                 ; frames between steps while held
 
 ; ---------------------------------------------------------------------------
 ; UDG pack @ $40 (48 slots, full — life is last)

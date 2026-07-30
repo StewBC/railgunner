@@ -180,12 +180,18 @@ addr_add_base:
 .endproc
 
 ; Map accumulator ASCII letter form → screen code (uppercase set).
+; Also: PETSCII left-arrow $5F → screen $1F (Z+5 glyph in standard set).
 .proc ascii_to_screen
     cmp #' '
     bne not_space
     lda #SC_SPACE
     rts
 not_space:
+    cmp #$5F                        ; ← back-arrow (hiscore entry)
+    bne not_larrow
+    lda #SC_LEFT_ARROW
+    rts
+not_larrow:
     cmp #'0'
     bcc a2s_done
     cmp #'9' + 1
