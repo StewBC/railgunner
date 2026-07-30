@@ -224,6 +224,10 @@ draw_base:
     beq tf_alive
     rts
 tf_alive:
+    lda deploy_timer                ; no fire during reserve peel / no ship yet
+    beq tf_deployed
+    rts
+tf_deployed:
     lda fire_lock
     beq fire_unlocked
     rts
