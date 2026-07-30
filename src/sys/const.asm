@@ -154,9 +154,14 @@ MODE_TITLE      = MODE_TITLE_TEXT
 ; ---------------------------------------------------------------------------
 ; Session defaults (roadmap placeholders)
 ; ---------------------------------------------------------------------------
-START_LIVES     = 3                 ; PILOTS; max HUD_LIVES_MAX_SHOW (4)
+; lives ZP = reserve ships on HUD (not the ship on the board).
+; New game: START_LIVES icons shown, then deploy peels one → START_LIVES-1 reserve.
+START_LIVES     = 3                 ; pre-deploy HUD count
+MAX_RESERVE_LIVES = 4               ; hard cap on reserve (extra life)
+DEPLOY_HOLD_FRAMES = 45             ; ~0.9s @ 50Hz: show reserves, then peel
 START_LEVEL     = 1
 MAX_LEVEL       = 15
+EXTRA_KILL_EVERY = 100              ; session kills → extra_due (mod counter)
 ; Rank banner: was 50 (~1s); 50% longer + clean 10-colour wheel (high-score palette)
 LEVEL_BANNER_FRAMES = 75            ; ~1.5s (PAL 50Hz)
 BANNER_NUM_COLORS   = 10            ; score_color_table length
@@ -307,9 +312,13 @@ SPR_MC0_COLOR   = COL_DK_GRAY       ; $D025 — bit-pair 01 (3rd-most in PNGs)
 SPR_MC1_COLOR   = COL_YELLOW        ; $D026 — bit-pair 11 (2nd-most in PNGs)
 
 ; Per-kind individual colour (bit-pair 10 → $D027+n)
-SPR_COLOR_DRONE_C = COL_RED         ; small / tiny
-SPR_COLOR_DRONE_B = COL_GREEN       ; medium
-SPR_COLOR_DRONE_A = COL_BLUE        ; large
+; A/B unique colour = remaining HP (3 blue / 2 green / 1 cyan). C fixed red.
+SPR_COLOR_DRONE_C = COL_RED         ; small / tiny (1 HP, no ladder)
+SPR_COLOR_HP3     = COL_BLUE        ; 3 HP left (full A)
+SPR_COLOR_HP2     = COL_GREEN       ; 2 HP left (full B or damaged A)
+SPR_COLOR_HP1     = COL_CYAN        ; 1 HP left (last shot)
+SPR_COLOR_DRONE_B = SPR_COLOR_HP2   ; spawn B at full HP
+SPR_COLOR_DRONE_A = SPR_COLOR_HP3   ; spawn A at full HP
 
 ; VIC sprite pointers for drone frames (order: left, right, up, down)
 SPR_PTR_DRONE_C_LEFT  = $C0         ; $3000
@@ -359,11 +368,29 @@ SPR_COLOR_EXPLODE     = COL_RED
 ; obj_anim_state bit7 set while drone plays explode; low 2 bits = phase 0..2
 DRONE_DYING_BIT       = $80
 
-; Parcel / bonus (Step 9.1 + power-up art reserved)
-SPR_COLOR_PARCEL_SCORE = COL_PURPLE ; unique colour (accent is shared yellow)
-SPR_COLOR_CARGO        = COL_ORANGE ; cargo disc unique colour
+; Parcel / bonus types + unique colours (shared MC accent is yellow)
+PARCEL_TYPE_POINTS     = 0          ; add_score — cheap points
+PARCEL_TYPE_SCORE2X    = 1          ; add_2x black — 2 points per hit
+PARCEL_TYPE_POWER2X    = 2          ; add_2x cyan — 2 HP per hit
+PARCEL_TYPE_CLEAR      = 3          ; add_clear brown — wipe GHIJ on next centre
+PARCEL_TYPE_EXTRA      = 4          ; add_extra green — +1 reserve
+PARCEL_TYPE_REPAIR     = 5          ; add_repair lt-gray — timed heal marks
+
+SPR_COLOR_PARCEL_SCORE   = COL_PURPLE
+SPR_COLOR_PARCEL_SCORE2X = COL_BLACK
+SPR_COLOR_PARCEL_POWER2X = COL_CYAN
+SPR_COLOR_PARCEL_CLEAR   = COL_BROWN
+SPR_COLOR_PARCEL_EXTRA   = COL_GREEN
+SPR_COLOR_PARCEL_REPAIR  = COL_LT_GRAY
+SPR_COLOR_CARGO          = COL_ORANGE
+
+; Sticky policy flags (parcel_flags ZP) — not a deep queue
+PARCEL_FLAG_CLEAR       = %00000001
+PARCEL_FLAG_REPAIR      = %00000010
+PARCEL_FLAG_EXTRA       = %00000100
+PARCEL_FLAG_BLOCK_CLEAR = %00001000 ; set after clear sent; cleared on next non-clear
+
 PARCEL_SPEED           = 1          ; half of prior 2; easy intercept
-PARCEL_PAYLOAD_SCORE   = 0          ; 9.1 only; bit-flags later
 ; Soft collect AABB (sprite-relative pixels)
 PARCEL_HIT_X0          = 6
 PARCEL_HIT_X1          = 17
@@ -372,6 +399,11 @@ PARCEL_HIT_Y1          = 14
 ; Kill-progress drop marks (2 per *level*)
 PARCEL_DROP_T1         = %00000001  ; ~1/3 of level debt
 PARCEL_DROP_T2         = %00000010  ; ~2/3 of level debt
+; Power/score 2× last until level banner ends (cleared in waves::load)
+; Repair mark window then one-step heal on marked tiles
+REPAIR_MARK_FRAMES     = 150        ; ~3s @ 50Hz (tune in R10)
+COL_RAIL               = COL_DK_GRAY
+COL_RAIL_HEAL_MARK     = COL_LT_GRAY
 
 ; Direction index for future table lookups (matches left/right/up/down order)
 SPR_DIR_LEFT    = 0

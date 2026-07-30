@@ -397,13 +397,13 @@ h14_put:
     cmp #40
     bcc h14
 
-    ; Colour whole rail structure mid-gray (screen_color_row clobbers Y —
-    ; row index must live in draw_i, not Y).
+    ; Colour whole rail structure dark gray (repair marks use light gray).
+    ; screen_color_row clobbers Y — row index must live in draw_i, not Y.
     lda #1
     sta draw_i
 rail_col_rows:
     ldy draw_i
-    lda #COL_GRAY
+    lda #COL_RAIL
     jsr screen_color_row
     inc draw_i
     lda draw_i

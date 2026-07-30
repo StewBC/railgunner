@@ -125,10 +125,8 @@ str_hiscore:
     .byte "HIGH SCORES", 0
 
 ; Top HUD (exactly 40 cols) — live fields later overwrite in place:
-;   000000  H:######## A:######## L:01  AAAA
-;   score   H: health  A: ammo    L:lv  lives
-; # / A stand in for future UDG bar and life icons.
-; Lives right-aligned: 3 start lives → " AAA" (last life always col 39).
+;   000000 - LVL 01 - ######## - PILOTS:AAAA
+; PILOTS = reserve only (active ship not counted). Max 4. Start: 3 peel → 2.
 str_hud:
     .byte "000000 - LVL 01 - ######## - PILOTS:AAAA", 0
 str_hud_placeholder = str_hud

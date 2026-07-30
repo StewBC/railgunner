@@ -1,9 +1,7 @@
-; Bonus parcel delivery (Step 9.1).
-; Opposite-arm spawn, kill-progress dues, one live + sticky due bit,
-; score-only payload (5*level via table). Soft collect vs player.
-;
-; Cadence: exactly TWO parcels per *level* (not per wave), at ~⅓ and ~⅔ of
-; the level's total kill debt (sum of all wave quotas for this level).
+; Bonus parcel delivery.
+; Opposite-arm spawn, 2 drops/level at ~⅓ and ~⅔ of level_quota.
+; Type priority: clear → repair → extra → filler (50% points / 25% power2x / 25% score2x).
+; Sticky due bits in parcel_flags (not a deep queue).
 
 .scope parcels
 
@@ -16,10 +14,12 @@
     sta parcel_flip
     sta parcel_drop_mask
     sta parcel_dir
+    sta parcel_flags
+    sta parcel_type
     rts
 .endproc
 
-; New level: reset drop marks only (parcels in flight keep running).
+; New level: reset drop marks only (in-flight parcels + due flags keep).
 .proc level_reset
     lda #0
     sta parcel_due
@@ -81,6 +81,14 @@ t2_div:
     lda parcel_drop_mask
     ora #PARCEL_DROP_T2
     sta parcel_drop_mask
+    ; Even levels: second parcel is repair (sticky if clear steals the slot)
+    lda level
+    and #1
+    bne t2_req                      ; odd level → no repair arm
+    lda parcel_flags
+    ora #PARCEL_FLAG_REPAIR
+    sta parcel_flags
+t2_req:
     jsr request_drop
 ok_done:
     rts
@@ -162,15 +170,13 @@ upd_done:
     bcs ts_fail
     stx parcel_slot
 
+    jsr choose_type                 ; → parcel_type + art/colour on slot
+    ldx parcel_slot
     lda #OBJ_BONUS
     sta objects::obj_kind, x
-    lda #SPR_PTR_ADD_SCORE          ; add_score.png (MC-encoded)
-    sta objects::obj_sprite_ptr, x
-    lda #SPR_COLOR_PARCEL_SCORE
-    sta objects::obj_sprite_color, x
-    lda #OBJA_MULTICOLOR            ; converter output is multicolour pairs
+    lda #OBJA_MULTICOLOR
     sta objects::obj_sprite_attr, x
-    lda #PARCEL_PAYLOAD_SCORE
+    lda parcel_type
     sta objects::obj_reserved, x
 
     lda #0
@@ -194,6 +200,125 @@ ts_fail:
     lda #1
     sta parcel_due
     sec
+    rts
+.endproc
+
+; Priority: clear → repair → extra → filler (50% points, 25% power, 25% score2x).
+.proc choose_type
+    ; --- clear (unless blocked after a prior clear) ---
+    lda parcel_flags
+    and #PARCEL_FLAG_BLOCK_CLEAR
+    bne ct_repair
+    jsr cargo_pressure              ; A = count of GHIJ with stack ≥ 1
+    cmp #3
+    bcs ct_force_clear
+    cmp #2
+    bcc ct_repair
+    ; 2 hubs loaded → 50%
+    jsr drones::rng8
+    and #1
+    beq ct_repair
+ct_force_clear:
+    lda #PARCEL_TYPE_CLEAR
+    sta parcel_type
+    lda parcel_flags
+    and #($FF ^ PARCEL_FLAG_CLEAR)
+    ora #PARCEL_FLAG_BLOCK_CLEAR     ; next parcel cannot be clear
+    sta parcel_flags
+    jmp ct_art
+
+ct_repair:
+    lda parcel_flags
+    and #PARCEL_FLAG_REPAIR
+    beq ct_extra
+    lda #PARCEL_TYPE_REPAIR
+    sta parcel_type
+    lda parcel_flags
+    and #($FF ^ (PARCEL_FLAG_REPAIR | PARCEL_FLAG_BLOCK_CLEAR))
+    sta parcel_flags
+    jmp ct_art
+
+ct_extra:
+    lda parcel_flags
+    and #PARCEL_FLAG_EXTRA
+    beq ct_filler
+    ; Cap: 4 reserve — drop flag, fall through to filler
+    lda lives
+    cmp #MAX_RESERVE_LIVES
+    bcc ct_extra_ok
+    lda parcel_flags
+    and #($FF ^ PARCEL_FLAG_EXTRA)
+    sta parcel_flags
+    jmp ct_filler
+ct_extra_ok:
+    lda #PARCEL_TYPE_EXTRA
+    sta parcel_type
+    lda parcel_flags
+    and #($FF ^ (PARCEL_FLAG_EXTRA | PARCEL_FLAG_BLOCK_CLEAR))
+    sta parcel_flags
+    jmp ct_art
+
+ct_filler:
+    ; 50% points, 25% power 2x, 25% score 2x
+    jsr drones::rng8
+    cmp #128
+    bcs ct_fill_2x
+    lda #PARCEL_TYPE_POINTS
+    sta parcel_type
+    jmp ct_fill_done
+ct_fill_2x:
+    jsr drones::rng8
+    and #1
+    beq ct_fill_power
+    lda #PARCEL_TYPE_SCORE2X
+    sta parcel_type
+    jmp ct_fill_done
+ct_fill_power:
+    lda #PARCEL_TYPE_POWER2X
+    sta parcel_type
+ct_fill_done:
+    lda parcel_flags
+    and #($FF ^ PARCEL_FLAG_BLOCK_CLEAR)
+    sta parcel_flags
+ct_art:
+    ldx parcel_slot
+    ldy parcel_type
+    lda type_ptr_tbl, y
+    sta objects::obj_sprite_ptr, x
+    lda type_color_tbl, y
+    sta objects::obj_sprite_color, x
+    rts
+
+type_ptr_tbl:
+    .byte SPR_PTR_ADD_SCORE         ; POINTS
+    .byte SPR_PTR_ADD_2X            ; SCORE2X
+    .byte SPR_PTR_ADD_2X            ; POWER2X
+    .byte SPR_PTR_ADD_CLEAR         ; CLEAR
+    .byte SPR_PTR_ADD_EXTRA         ; EXTRA
+    .byte SPR_PTR_ADD_REPAIR        ; REPAIR
+
+type_color_tbl:
+    .byte SPR_COLOR_PARCEL_SCORE
+    .byte SPR_COLOR_PARCEL_SCORE2X
+    .byte SPR_COLOR_PARCEL_POWER2X
+    .byte SPR_COLOR_PARCEL_CLEAR
+    .byte SPR_COLOR_PARCEL_EXTRA
+    .byte SPR_COLOR_PARCEL_REPAIR
+.endproc
+
+; A = number of GHIJ tiles with stack ≥ 1 (0..4)
+.proc cargo_pressure
+    ldy #0
+    ldx #0
+cp_loop:
+    lda rail_data::ghij_stack, x
+    beq cp_next
+    iny
+cp_next:
+    inx
+    cpx #4
+    bcc cp_loop
+    tya
     rts
 .endproc
 
@@ -503,7 +628,45 @@ aia_done:
 .endproc
 
 .proc award_payload
-    ; 9.1: score only — +(5*level) from table
+    lda parcel_type
+    cmp #PARCEL_TYPE_SCORE2X
+    beq ap_score2x
+    cmp #PARCEL_TYPE_POWER2X
+    beq ap_power2x
+    cmp #PARCEL_TYPE_CLEAR
+    beq ap_clear
+    cmp #PARCEL_TYPE_EXTRA
+    beq ap_extra
+    cmp #PARCEL_TYPE_REPAIR
+    beq ap_repair
+    ; POINTS — +(5*level) from table
+    jmp ap_points
+
+ap_score2x:
+    lda #1
+    sta score_2x
+    rts
+ap_power2x:
+    lda #1
+    sta power_2x
+    rts
+ap_clear:
+    lda #1
+    sta clear_armed                 ; wipe on next centre pass
+    rts
+ap_extra:
+    lda lives
+    cmp #MAX_RESERVE_LIVES
+    bcs ap_done
+    inc lives
+    lda #1
+    sta hud_status_dirty
+ap_done:
+    rts
+ap_repair:
+    jmp rail::begin_repair
+
+ap_points:
     lda level
     beq ap_l1
     cmp #MAX_LEVEL + 1

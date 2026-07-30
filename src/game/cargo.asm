@@ -329,17 +329,13 @@ ca_no:
 .endproc
 
 ; Blow the player: clear hub, start death sequence (respawn or game over).
+; lives = reserve only. Die with 0 reserve → game over; else respawn peels one.
 .proc detonate
     lda player_dead
     bne det_done                    ; already dying
     jsr clear_stacks
     lda lives
-    beq det_fatal                   ; no lives left
-    dec lives
-    lda #1
-    sta hud_status_dirty
-    lda lives
-    beq det_fatal
+    beq det_fatal                   ; no reserve → last ship just died
     jsr player::begin_death_respawn
 det_done:
     rts

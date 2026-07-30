@@ -129,6 +129,8 @@ stm_done:
 
 ; A = 0 if level quota met or banner/spawn pause, else nonzero
 .proc kills_remaining
+    lda deploy_timer
+    bne kr_no                       ; hold spawns until deploy peel done
     lda level_banner_t
     bne kr_no
     lda level_kills
@@ -767,14 +769,25 @@ cad_n:
     ldx mode_state
     lda objects::obj_anim_state, x
     bmi abh_done                    ; already exploding — ignore further hits
-    jsr score::add_hit
+    jsr score::add_hit              ; 1 pt (or 2 if score_2x); not per HP
     ldx mode_state
-    lda objects::obj_reserved, x
+    ; Damage: 1 normally, 2 if power_2x (separate from score_2x)
+    lda #1
+    ldy power_2x
+    beq abh_dmg
+    lda #2
+abh_dmg:
+    sta tmp0                        ; damage this hit
+    lda objects::obj_reserved, x    ; HP
     beq abh_kill
     sec
-    sbc #1
+    sbc tmp0
+    bcs abh_store
+    lda #0
+abh_store:
     sta objects::obj_reserved, x
     beq abh_kill
+    jsr color_for_hp                ; A/B recolour; C unchanged
 abh_done:
     rts
 abh_kill:
@@ -784,6 +797,34 @@ abh_kill:
     jsr waves::note_kill
     ldx mode_state
     jmp begin_explode
+.endproc
+
+; X = drone slot. Set unique colour from remaining HP for A/B; C stays red.
+.proc color_for_hp
+    lda objects::obj_kind, x
+    cmp #OBJ_DRONE_C
+    beq cfh_done
+    cmp #OBJ_DRONE_A
+    bcc cfh_done
+    cmp #OBJ_BONUS
+    bcs cfh_done
+    lda objects::obj_reserved, x
+    cmp #3
+    bcc cfh_2
+    lda #SPR_COLOR_HP3
+    jmp cfh_set
+cfh_2:
+    cmp #2
+    bcc cfh_1
+    lda #SPR_COLOR_HP2
+    jmp cfh_set
+cfh_1:
+    lda #SPR_COLOR_HP1
+cfh_set:
+    sta objects::obj_sprite_color, x
+    jsr objects::mark_dirty
+cfh_done:
+    rts
 .endproc
 
 ; X = drone slot just killed. Stop motion, play 3 explode frames, then retire.

@@ -57,11 +57,28 @@ play (move + fire always, except game over)
 - **LVL digit advances after banner**, not at start.
 - No FIRE skip.
 
-### Parcels (unchanged intent from 9.1)
+### Lives (reserve model)
 
-- At most **two** per level, at ~⅓ and ~⅔ of **level_quota**.
-- Opposite arm, global end flip-flop, score-only payload (`5 × level` table).
+- `lives` ZP = **reserve** ships on the HUD (max **4**). The ship on the board is not an icon.
+- New game: show **3** icons, no player → **deploy peel** (one icon leaves, player appears) → **2** reserve.
+- Death with reserve **> 0** → explode/hold → restart current level spawn → **deploy peel** (reserve−1).
+- Death with reserve **0** → game over. Rail core collapse → game over (no reserve spend).
+- Extra-life parcel: +1 reserve if below cap.
+
+### Parcels (types + due bits)
+
+- At most **two** per level, at ~⅓ and ~⅔ of **level_quota**. Opposite arm, flip-flop.
 - In-flight parcels **keep running** across level boundary (no auto-award on clear).
+- **Priority** when spawning: **clear → repair → extra → filler**.
+- **Clear:** if ≥3 GHIJ tiles have cargo, force clear; if 2, 50%. After a clear is *sent*, next parcel cannot be clear. Pickup **arms** wipe; **next centre pass** clears all stacks/mines (even if 4 mines armed).
+- **Repair:** even levels, **second** parcel arms `repair_due` (sticky if clear steals). Pickup → mark window (~3s, light-gray tiles walked); timer end → each marked tile heals **1** damage step.
+- **Extra:** every **100** session kills sets `extra_due`. If reserve already 4 at spawn time, drop flag → filler.
+- **Filler:** 50% points (`5×level`), 25% **power 2×** (cyan `add_2x`, 2 HP/hit), 25% **score 2×** (black `add_2x`, 2 pts/hit). Both 2× last until **level end** (and clear on death).
+- Colours: points purple, score2× black, power2× cyan, clear brown, extra green, repair light gray. Rails **dark gray**.
+
+### A/B HP colour
+
+- Remaining HP paints unique sprite colour: **3 blue / 2 green / 1 cyan**. C stays red.
 
 ---
 
@@ -76,7 +93,7 @@ play (move + fire always, except game over)
 | `000000` | Score |
 | `LVL nn` | Level (post-banner) |
 | `########` | Level progress (full → empty) |
-| `PILOTS:AAAA` | Lives (up to 4 `A` icons) |
+| `PILOTS:AAAA` | **Reserve** lives (up to 4 `A` icons) |
 
 **Removed:** health bar, ammo bar, health/ammo mechanics.
 
@@ -86,17 +103,14 @@ play (move + fire always, except game over)
 
 | Threat | Effect |
 |--------|--------|
-| **A / B** | Multi-HP; on rail arrival → **rail damage** (core destroy → **game over**). |
+| **A / B** | Multi-HP (colour ladder); on rail arrival → **rail damage** (core destroy → **game over**). |
 | **C** | No player HP. On rail arrival → **cargo** toward hub. |
-| **Cargo** | Orange parcel **sprite** (same disc as bonus parcel) flies to the next **G→H→I→J** hub tile; on arrival sprite vanishes and that tile stacks. |
+| **Cargo** | Orange parcel **sprite** flies to the next **G→H→I→J** hub tile; on arrival sprite vanishes and that tile stacks. |
 | **Level-clear cargo peel** | On level clear (rank banner start): remove **one** stack from the **most recently** deposited GHIJ tile (survive bonus). |
-| **Mines / detonate** | When each of G,H,I,J has stacks ≥ **K** (`MINE_STACK_K`, default **1** → **4 landings**), tiles show mine glyphs and the **player loses a life immediately** (stacks clear). Second full round later if 4 feels short. |
-| **Death sequence** | Ignore input; play explode frames (~0.5s) then hold (~1s). Drones still move but deal no rail damage / cargo. Then: lives left → restart **current level** spawn (kills/spawner; rail scars stay); no lives or rail collapse → game over. |
-| **Lives 0** | Game over (after death sequence). |
+| **Mines / detonate** | When each of G,H,I,J has stacks ≥ **K** (`MINE_STACK_K`, default **1** → **4 landings**), tiles show mine glyphs and the player dies (stacks clear). Reserve left → respawn peel; else game over. |
+| **Death sequence** | Ignore input; explode then hold. Then: reserve left → restart **current level** spawn + deploy peel; no reserve or rail collapse → game over. |
+| **Reserve 0 + death** | Game over (after death sequence). |
 | **Health / ammo** | **Gone** (not deferred UI — removed from session model). |
-
-Shield / ammo parcel types from the original brief remain **future content**;
-repair still makes sense with rail damage.
 
 ---
 
@@ -139,8 +153,9 @@ repair still makes sense with rail damage.
 | **R6** | Rail core collapse → game over | **done** |
 | **R7** | Parcels on level_quota | **done** |
 | **R8** | C cargo → GHIJ stacks → mines → lives | **done** (basic) |
+| **R8b** | Reserve lives + deploy peel; A/B HP colour; full parcel types | **done** |
 | **R9** | Sets + fairness gate (A/B close-shave scheduling) | **todo** — design postponed |
-| **R10** | Fun tune (quotas, banner time, density, `MINE_STACK_K`) | **todo** |
+| **R10** | Fun tune (quotas, banner time, density, `MINE_STACK_K`, repair window) | **todo** |
 | **R11** | Victory / boss hooks (e.g. after 5 / 10 / 15) | **todo** |
 
 ### Suggested next order

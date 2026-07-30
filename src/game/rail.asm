@@ -29,6 +29,13 @@ dmg_vb: .res SCREEN_H              ; mid core B   (col RAIL_COL_MID)
 dmg_vc: .res SCREEN_H              ; right outer C (col RAIL_COL_RIGHT)
 ; G/H/I/J cargo stacks (0=G,1=H,2=I,3=J)
 ghij_stack: .res 4
+; Repair (7b): tiles marked during repair_timer; heal 1 step when timer ends
+heal_mark_d:  .res SCREEN_W
+heal_mark_e:  .res SCREEN_W
+heal_mark_f:  .res SCREEN_W
+heal_mark_va: .res SCREEN_H
+heal_mark_vb: .res SCREEN_H
+heal_mark_vc: .res SCREEN_H
 .endscope
 
 .segment "CODE_HI"
@@ -41,6 +48,9 @@ clr_h:
     sta rail_data::dmg_d, x
     sta rail_data::dmg_e, x
     sta rail_data::dmg_f, x
+    sta rail_data::heal_mark_d, x
+    sta rail_data::heal_mark_e, x
+    sta rail_data::heal_mark_f, x
     inx
     cpx #SCREEN_W
     bne clr_h
@@ -50,9 +60,217 @@ clr_v:
     sta rail_data::dmg_va, x
     sta rail_data::dmg_vb, x
     sta rail_data::dmg_vc, x
+    sta rail_data::heal_mark_va, x
+    sta rail_data::heal_mark_vb, x
+    sta rail_data::heal_mark_vc, x
     inx
     cpx #SCREEN_H
     bne clr_v
+    rts
+.endproc
+
+; Zero heal marks only (no damage change). Used on death / new game.
+.proc clear_heal_marks
+    ldx #0
+    txa
+chm_h:
+    sta rail_data::heal_mark_d, x
+    sta rail_data::heal_mark_e, x
+    sta rail_data::heal_mark_f, x
+    inx
+    cpx #SCREEN_W
+    bne chm_h
+    ldx #0
+    txa
+chm_v:
+    sta rail_data::heal_mark_va, x
+    sta rail_data::heal_mark_vb, x
+    sta rail_data::heal_mark_vc, x
+    inx
+    cpx #SCREEN_H
+    bne chm_v
+    rts
+.endproc
+
+; Start mark window after repair parcel pickup.
+.proc begin_repair
+    jsr clear_heal_marks
+    lda #REPAIR_MARK_FRAMES
+    sta repair_timer
+    rts
+.endproc
+
+; Per-frame while alive: mark player tiles; on timer expiry heal 1 step.
+.proc repair_tick
+    lda repair_timer
+    beq rt_done
+    jsr mark_player_tiles
+    dec repair_timer
+    bne rt_done
+    jsr apply_heal_marks
+rt_done:
+    rts
+.endproc
+
+; Mark D/E/F at player col (H) or A/B/C at player row (V); paint lt-gray.
+.proc mark_player_tiles
+    lda player_rail
+    cmp #PLAYER_RAIL_V
+    beq mpt_v
+    ; H-rail: column from player body centre
+    ldx #0
+    lda objects::obj_x_lo, x
+    clc
+    adc #12
+    sta tmp0
+    lda objects::obj_x_hi, x
+    adc #0
+    sta tmp1
+    jsr player::px_to_col
+    tax
+    cpx #SCREEN_W
+    bcs mpt_done
+    lda #1
+    sta rail_data::heal_mark_d, x
+    sta rail_data::heal_mark_e, x
+    sta rail_data::heal_mark_f, x
+    stx draw_i
+    jsr paint_mark_h
+    rts
+mpt_v:
+    ldx #0
+    lda objects::obj_y_int, x
+    clc
+    adc #10
+    sec
+    sbc #50
+    lsr a
+    lsr a
+    lsr a
+    tax
+    cpx #SCREEN_H
+    bcs mpt_done
+    lda #1
+    sta rail_data::heal_mark_va, x
+    sta rail_data::heal_mark_vb, x
+    sta rail_data::heal_mark_vc, x
+    stx draw_i
+    jsr paint_mark_v
+mpt_done:
+    rts
+.endproc
+
+.proc paint_mark_h
+    ldx draw_i
+    ldy #RAIL_ROW_TOP
+    lda #COL_RAIL_HEAL_MARK
+    jsr screen_color_xy
+    ldx draw_i
+    ldy #RAIL_ROW_MID
+    lda #COL_RAIL_HEAL_MARK
+    jsr screen_color_xy
+    ldx draw_i
+    ldy #RAIL_ROW_BOT
+    lda #COL_RAIL_HEAL_MARK
+    jmp screen_color_xy
+.endproc
+
+.proc paint_mark_v
+    ldy draw_i
+    ldx #RAIL_COL_LEFT
+    lda #COL_RAIL_HEAL_MARK
+    jsr screen_color_xy
+    ldy draw_i
+    ldx #RAIL_COL_MID
+    lda #COL_RAIL_HEAL_MARK
+    jsr screen_color_xy
+    ldy draw_i
+    ldx #RAIL_COL_RIGHT
+    lda #COL_RAIL_HEAL_MARK
+    jmp screen_color_xy
+.endproc
+
+; Walk every marked tile back one damage step (0 stays 0); clear marks.
+.proc apply_heal_marks
+    ldx #0
+ahm_h:
+    stx draw_i
+    lda rail_data::heal_mark_d, x
+    beq ahm_he
+    lda rail_data::dmg_d, x
+    beq ahm_hd0
+    dec rail_data::dmg_d, x
+ahm_hd0:
+    jsr draw_d
+    ldx draw_i
+    lda #0
+    sta rail_data::heal_mark_d, x
+ahm_he:
+    lda rail_data::heal_mark_e, x
+    beq ahm_hf
+    lda rail_data::dmg_e, x
+    beq ahm_he0
+    dec rail_data::dmg_e, x
+ahm_he0:
+    jsr draw_e
+    ldx draw_i
+    lda #0
+    sta rail_data::heal_mark_e, x
+ahm_hf:
+    lda rail_data::heal_mark_f, x
+    beq ahm_hn
+    lda rail_data::dmg_f, x
+    beq ahm_hf0
+    dec rail_data::dmg_f, x
+ahm_hf0:
+    jsr draw_f
+    ldx draw_i
+    lda #0
+    sta rail_data::heal_mark_f, x
+ahm_hn:
+    inx
+    cpx #SCREEN_W
+    bne ahm_h
+
+    ldx #0
+ahm_v:
+    stx draw_i
+    lda rail_data::heal_mark_va, x
+    beq ahm_vb
+    lda rail_data::dmg_va, x
+    beq ahm_va0
+    dec rail_data::dmg_va, x
+ahm_va0:
+    jsr draw_va
+    ldx draw_i
+    lda #0
+    sta rail_data::heal_mark_va, x
+ahm_vb:
+    lda rail_data::heal_mark_vb, x
+    beq ahm_vc
+    lda rail_data::dmg_vb, x
+    beq ahm_vb0
+    dec rail_data::dmg_vb, x
+ahm_vb0:
+    jsr draw_vb
+    ldx draw_i
+    lda #0
+    sta rail_data::heal_mark_vb, x
+ahm_vc:
+    lda rail_data::heal_mark_vc, x
+    beq ahm_vn
+    lda rail_data::dmg_vc, x
+    beq ahm_vc0
+    dec rail_data::dmg_vc, x
+ahm_vc0:
+    jsr draw_vc
+    ldx draw_i
+    lda #0
+    sta rail_data::heal_mark_vc, x
+ahm_vn:
+    inx
+    cpx #SCREEN_H
+    bne ahm_v
     rts
 .endproc
 
@@ -567,6 +785,6 @@ b_glyph:
 c_glyph:
     .byte SC_RAIL_C, SC_ZERO+1, SC_ZERO+2, SC_SPACE
 dmg_color:
-    .byte COL_GRAY, COL_ORANGE, COL_BROWN, COL_DK_GRAY
+    .byte COL_RAIL, COL_ORANGE, COL_BROWN, COL_DK_GRAY
 
 .endscope

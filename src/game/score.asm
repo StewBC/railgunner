@@ -16,11 +16,16 @@
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Award SCORE_HIT_POINTS for one registered bullet hit. Caps at 999999.
+; Award SCORE_HIT_POINTS for one registered bullet hit (×2 if score_2x).
+; Power 2× does NOT change this — that is damage only. Caps at 999999.
 ; Sets score_dirty. Clobbers A.
 ; ---------------------------------------------------------------------------
 .proc add_hit
     lda #SCORE_HIT_POINTS
+    ldy score_2x
+    beq ah_go
+    asl a                           ; 2 points per hit while score_2x
+ah_go:
     jmp add_n
 .endproc
 

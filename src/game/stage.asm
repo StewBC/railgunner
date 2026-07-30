@@ -18,11 +18,12 @@
     jsr bullets::init
     jsr video::init_sprite_palette
     jsr video::install_sprite_frames
-    jsr player::init
     jsr drones::init
     jsr cargo::init
     jsr parcels::init
     jsr waves::load
+    ; lives already START_LIVES (pre-deploy). Peel one icon → player appears.
+    jsr player::begin_deploy
 
     jsr hud::paint_full_line
     jsr hud_color_static

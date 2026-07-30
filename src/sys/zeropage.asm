@@ -20,11 +20,13 @@ score_work0:    .res 1              ; paint scratch (not tmp* — put_xy clobber
 score_work1:    .res 1
 score_work2:    .res 1
 hud_status_dirty: .res 1            ; nonzero → rewrite level / progress / lives
-lives:          .res 1
+lives:          .res 1              ; RESERVE ships (HUD); active ship not counted
+deploy_timer:   .res 1              ; 0=playing; >0 frames until peel + show player
 level:          .res 1
 level_kills:    .res 1              ; kills this level toward level_quota
 level_quota:    .res 1              ; kills required to complete level
 level_banner_t: .res 1              ; 0=play; >0 rank banner frames left (spawn paused)
+kill_extra_cnt: .res 1              ; 0..EXTRA_KILL_EVERY-1; wrap → extra due
 
 ; Session tallies (game over). 16-bit lo,hi each; saturate at $FFFF.
 tally_shots0:   .res 1              ; bullets successfully launched
@@ -76,6 +78,13 @@ parcel_due:        .res 1           ; sticky bit: spawn when free
 parcel_flip:       .res 1           ; global end flip-flop (0/1)
 parcel_drop_mask:  .res 1           ; PARCEL_DROP_T1/T2 already fired this level
 parcel_dir:        .res 1           ; SPR_DIR_* travel for active parcel
+parcel_flags:      .res 1           ; PARCEL_FLAG_* due bits + block_clear
+parcel_type:       .res 1           ; PARCEL_TYPE_* of live parcel
+power_2x:          .res 1           ; nonzero = 2 HP per hit until level end
+score_2x:          .res 1           ; nonzero = 2 pts per hit until level end
+clear_armed:       .res 1           ; pickup: wipe GHIJ on next centre pass
+repair_timer:      .res 1           ; >0 = mark window; 0 idle
+player_was_centre: .res 1           ; edge detect for clear_armed
 
 ; C cargo sprite in transit → one of GHIJ; stacks in rail_data
 cargo_slot:        .res 1           ; object index, or $FF = none

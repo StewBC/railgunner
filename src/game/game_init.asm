@@ -8,13 +8,21 @@
     jsr tallies::reset
 
     lda #START_LIVES
-    sta lives
+    sta lives                       ; pre-deploy count; peel → reserve
     lda #START_LEVEL
     sta level
     lda #0
     sta level_kills
     sta level_banner_t
     sta pending_mode
+    sta kill_extra_cnt
+    sta parcel_flags
+    sta power_2x
+    sta score_2x
+    sta clear_armed
+    sta repair_timer
+    sta deploy_timer
+    sta player_was_centre
     lda #1
     sta hud_status_dirty
 

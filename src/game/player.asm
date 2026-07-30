@@ -41,6 +41,8 @@
     sta death_fatal
     sta death_flash
     sta death_flash_t
+    sta deploy_timer
+    sta player_was_centre
 
     ldx #0
     lda #OBJ_PLAYER
@@ -69,14 +71,78 @@
     rts
 .endproc
 
+; Reserve model: show HUD lives (incl. ship about to deploy), hide player,
+; after DEPLOY_HOLD_FRAMES peel one reserve icon and reveal the ship.
+.proc begin_deploy
+    jsr init
+    ldx #0
+    lda #OBJF_ALLOCATED             ; pose ready, not drawn yet
+    sta objects::obj_flags, x
+    jsr objects::mark_dirty
+    lda #DEPLOY_HOLD_FRAMES
+    sta deploy_timer
+    lda #1
+    sta hud_status_dirty
+    rts
+.endproc
+
+.proc deploy_tick
+    dec deploy_timer
+    bne dep_done
+    ; Peel one ship from reserve → board
+    lda lives
+    beq dep_show                    ; should not happen; still show player
+    dec lives
+    lda #1
+    sta hud_status_dirty
+dep_show:
+    ldx #0
+    lda #SPR_COLOR_PLAYER
+    sta objects::obj_sprite_color, x
+    lda #(OBJF_ALLOCATED | OBJF_RENDER)
+    sta objects::obj_flags, x
+    jsr install_frame_for_rest
+    jsr objects::mark_dirty
+dep_done:
+    rts
+.endproc
+
 ; ---------------------------------------------------------------------------
 ; Per logic tick while MODE_PLAY
 ; ---------------------------------------------------------------------------
 .proc update
     lda player_dead
     bne death_tick
+    lda deploy_timer
+    beq upd_live
+    jmp deploy_tick
+upd_live:
     jsr update_barrel
     jsr update_move
+    jsr check_clear_centre          ; clear parcel: wipe GHIJ on centre edge
+    jsr rail::repair_tick           ; mark tiles / apply heal window
+    rts
+.endproc
+
+; Rising edge of centre intersection while clear_armed → wipe cargo hubs.
+.proc check_clear_centre
+    jsr at_intersection
+    bcc ccc_out
+    lda player_was_centre
+    bne ccc_done                    ; still in centre
+    lda clear_armed
+    beq ccc_mark
+    lda #0
+    sta clear_armed
+    jsr cargo::clear_stacks
+ccc_mark:
+    lda #1
+    sta player_was_centre
+ccc_done:
+    rts
+ccc_out:
+    lda #0
+    sta player_was_centre
     rts
 .endproc
 
@@ -252,14 +318,20 @@ explode_seq:
 explode_ptr_tbl:
     .byte SPR_PTR_EXPLODE_1, SPR_PTR_EXPLODE_2, SPR_PTR_EXPLODE_3
 
-; Hold done: game over, or restart current level spawn state + player pose.
+; Hold done: game over, or restart current level spawn + deploy peel from reserve.
 .proc finish_death
     lda death_fatal
     bne fd_game_over
     jsr drones::clear_field
     jsr cargo::despawn_sprite
+    lda #0
+    sta clear_armed                 ; abandon pending clear on death
+    sta power_2x
+    sta score_2x
+    sta repair_timer
+    jsr rail::clear_heal_marks
     jsr waves::load                 ; kills/spawner/parcels-due; not rail scars
-    jsr init                        ; start pose + clear death flags
+    jsr begin_deploy                ; peel next reserve → board
     jsr message::restore_hud_line   ; wipe RIP PILOT banner
     rts
 fd_game_over:

@@ -24,6 +24,8 @@ ld_cap:
     sta level_kills
     sta level_banner_t
     sta piggy_timer
+    sta power_2x                    ; 2× buffs end at level boundary
+    sta score_2x
     lda #$FF
     sta spawn_last_quad
 
@@ -136,8 +138,19 @@ asp_done:
 .proc note_kill
     lda level_kills
     cmp #255
-    beq nk_hud
+    beq nk_extra
     inc level_kills
+nk_extra:
+    ; Every EXTRA_KILL_EVERY session kills → queue extra life parcel
+    inc kill_extra_cnt
+    lda kill_extra_cnt
+    cmp #EXTRA_KILL_EVERY
+    bcc nk_hud
+    lda #0
+    sta kill_extra_cnt
+    lda parcel_flags
+    ora #PARCEL_FLAG_EXTRA
+    sta parcel_flags
 nk_hud:
     lda #1
     sta hud_status_dirty
