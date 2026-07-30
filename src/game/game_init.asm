@@ -1,6 +1,7 @@
 ; Per-session reset (new game from title).
 
 .proc game_init_enter
+    jsr music::stop                 ; leave title attract loop
     lda #COL_CYAN
     sta VIC_BORDER
 

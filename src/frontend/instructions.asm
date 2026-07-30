@@ -1,6 +1,7 @@
 ; Instructions — typewriter reveal of instructions_text. FIRE skips / returns.
 
 .proc instructions_enter
+    jsr music::stop
     jsr vic_text_mode               ; blank + text mode + clear
 
     lda #<instructions_text

@@ -7,6 +7,11 @@ BLNSW           = $CC
     sei
     cld
 
+    ; CODE_HI extends past $A000 (music + hiscore). Bank BASIC out so that
+    ; window is RAM; keep KERNAL+I/O. title_park_hires may briefly use $35.
+    lda #MEM_BANK_GAME
+    sta $01
+
     ; Kill READY-prompt cursor (KERNAL IRQ still runs until we own it)
     lda #1
     sta BLNSW

@@ -58,6 +58,7 @@ attract_expired:
     jsr attract_reset_timer
     lda #MENU_FIRE_GUARD
     sta mode_timer                  ; ignore held fire from previous page
+    jsr music::start_title          ; 3-voice loop (no restart if already on)
     rts
 .endproc
 
@@ -125,7 +126,7 @@ col_tail:
     sei
     lda $01
     sta tmp0
-    lda #$35                        ; RAM $A000, I/O $D000, RAM $E000
+    lda #MEM_BANK_ALLRAM            ; RAM $A000+$E000, I/O (restore tmp0 after)
     sta $01
 
     lda #<title_bitmap
@@ -289,6 +290,7 @@ TT_COL_NAME     = 10                ; 19
     jsr attract_reset_timer
     lda #MENU_FIRE_GUARD
     sta mode_timer
+    jsr music::start_title          ; continue or start Valkyries loop
     jsr screen_unblank              ; reveal fully drawn menu
     rts
 .endproc

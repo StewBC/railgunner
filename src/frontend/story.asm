@@ -1,6 +1,7 @@
 ; Story screen — typewriter reveal of story_text. FIRE skips / returns to menu.
 
 .proc story_enter
+    jsr music::stop
     jsr vic_text_mode               ; blank + text mode + clear
 
     lda #<story_text

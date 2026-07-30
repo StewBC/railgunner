@@ -55,6 +55,7 @@ main_loop:
     sta objects::profile_marker
     jsr wait_frame
     jsr sfx::update                 ; SID one-shots — every physical frame
+    jsr music::update               ; title loop (skips voices held by SFX)
     lda #PROFILE_MAIN_DRAIN
     sta objects::profile_marker
     jsr objects::drain_irq_events
@@ -131,6 +132,7 @@ mux_build_failed:
 .include "game/life.asm"
 ; CODE_HI residents (each file sets .segment "CODE_HI")
 .include "sys/sound.asm"
+.include "sys/music.asm"
 .include "frontend/hiscore.asm"
 
 ; ---------------------------------------------------------------------------

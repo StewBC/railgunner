@@ -117,7 +117,8 @@ play_steal_next:
     jsr voice_cut                   ; X = voice to cut
 
 play_use:
-    ; X = voice index
+    ; X = voice index — claim from title music if needed
+    jsr music::mute_voice
     lda play_id
     sta v_id, x
     lda #0
@@ -349,6 +350,7 @@ slide_up:
 .endproc
 
 .proc voice_cut
+    ; Steal path: new SFX follows immediately — keep music muted on X.
     jsr voice_base_addr
     ldy #4
     lda #0
@@ -373,6 +375,7 @@ slide_up:
     sta v_state, x
     sta v_timer, x
     sta v_phase, x
+    jsr music::unmute_voice         ; title music may reclaim this voice
     rts
 .endproc
 

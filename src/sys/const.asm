@@ -37,6 +37,11 @@ IRQ_VECTOR_HI   = $0315
 KERNAL_IRQ_EXIT = $EA81
 SPRITE_PTR_BASE = SCREEN_RAM + $03F8
 
+; 6510 port $01 — memory map (bits 0–2). CODE_HI grows past $A000 (BASIC window).
+; Game runs with BASIC out so $A000–$BFFF is RAM. Title bitmap park uses $35 briefly.
+MEM_BANK_GAME   = $36               ; RAM $A000, I/O $D000, KERNAL $E000
+MEM_BANK_ALLRAM = $35               ; RAM $A000 + $E000, I/O (no KERNAL)
+
 ; SID (MOS 6581/8580) — voice stride 7; filter/volume at $D415–$D418
 SID_V1_FL       = $D400
 SID_V1_FH       = $D401
