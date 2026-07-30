@@ -389,7 +389,7 @@ det_fatal:
 
 ; X = stack index 0..3 (G,H,I,J), draw_i=col draw_j=row
 ; Per-tile: stack ≥ K → mine glyph as soon as cargo lands; else hub.
-; Colour always COL_RAIL (no orange tint). mine_armed is detonate-only.
+; Glyph only — rail colour is playfield dark gray / repair light gray only.
 .proc paint_one
     lda rail_data::ghij_stack, x
     cmp #MINE_STACK_K
@@ -403,11 +403,7 @@ po_put:
     ldx draw_i
     ldy draw_j
     lda tmp0
-    jsr screen_put_xy
-    ldx draw_i
-    ldy draw_j
-    lda #COL_RAIL
-    jmp screen_color_xy
+    jmp screen_put_xy
 .endproc
 
 ; G,H,I,J hub / mine glyphs (screen codes)

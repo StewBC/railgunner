@@ -189,8 +189,8 @@ mpt_done:
 .endproc
 
 ; Walk every marked tile back one damage step (0 stays 0); clear marks.
-; Always restore COL_RAIL colour — draw_* may skip GHIJ/junction geometry,
-; so colour must not stay stuck on COL_RAIL_HEAL_MARK.
+; Restore COL_RAIL (dark gray) on each marked cell — the only place that
+; undoes COL_RAIL_HEAL_MARK. draw_* is glyph-only and may skip junctions.
 .proc apply_heal_marks
     ldx #0
 ahm_h:
@@ -295,7 +295,7 @@ ahm_vn:
     inx
     cpx #SCREEN_H
     bne ahm_v
-    ; Hubs may have been mark-tinted; redraw GHIJ so mine/hub glyphs keep COL_RAIL
+    ; Refresh hub glyphs only (colour already restored above on marked cells)
     jsr cargo::paint_ghij
     rts
 .endproc
@@ -624,7 +624,7 @@ dbv_rts:
 ; Draw helpers — draw_i = col (H) or row (V)
 ; Never stamp over G/H/I/J (or H-band cells that are not V A/B/C).
 ; ---------------------------------------------------------------------------
-; Glyph by damage taken (mapped); colour always COL_RAIL.
+; Glyph by damage taken (mapped). No colour — playfield / repair own colour RAM.
 .proc draw_d
     jsr col_is_junction
     bcs dd_skip
@@ -635,11 +635,7 @@ dbv_rts:
     lda d_glyph, y
     ldy #RAIL_ROW_TOP
     ldx draw_i
-    jsr screen_put_xy
-    ldx draw_i
-    ldy #RAIL_ROW_TOP
-    lda #COL_RAIL
-    jmp screen_color_xy
+    jmp screen_put_xy
 dd_skip:
     rts
 .endproc
@@ -654,19 +650,11 @@ dd_skip:
     lda e_glyph, y
     ldy #RAIL_ROW_MID
     ldx draw_i
-    jsr screen_put_xy
-    ldx draw_i
-    ldy #RAIL_ROW_MID
-    lda #COL_RAIL
-    jmp screen_color_xy
+    jmp screen_put_xy
 de_cross:
     ldy #RAIL_ROW_MID
     lda #SC_RAIL_X
-    jsr screen_put_xy
-    ldx #RAIL_COL_MID
-    ldy #RAIL_ROW_MID
-    lda #COL_RAIL
-    jmp screen_color_xy
+    jmp screen_put_xy
 .endproc
 
 .proc draw_f
@@ -679,11 +667,7 @@ de_cross:
     lda f_glyph, y
     ldy #RAIL_ROW_BOT
     ldx draw_i
-    jsr screen_put_xy
-    ldx draw_i
-    ldy #RAIL_ROW_BOT
-    lda #COL_RAIL
-    jmp screen_color_xy
+    jmp screen_put_xy
 df_skip:
     rts
 .endproc
@@ -698,11 +682,7 @@ df_skip:
     lda a_glyph, y
     ldy draw_i
     ldx #RAIL_COL_LEFT
-    jsr screen_put_xy
-    ldx #RAIL_COL_LEFT
-    ldy draw_i
-    lda #COL_RAIL
-    jmp screen_color_xy
+    jmp screen_put_xy
 dva_skip:
     rts
 .endproc
@@ -717,11 +697,7 @@ dva_skip:
     lda b_glyph, y
     ldy draw_i
     ldx #RAIL_COL_MID
-    jsr screen_put_xy
-    ldx #RAIL_COL_MID
-    ldy draw_i
-    lda #COL_RAIL
-    jmp screen_color_xy
+    jmp screen_put_xy
 dvb_skip:
     rts
 .endproc
@@ -736,11 +712,7 @@ dvb_skip:
     lda c_glyph, y
     ldy draw_i
     ldx #RAIL_COL_RIGHT
-    jsr screen_put_xy
-    ldx #RAIL_COL_RIGHT
-    ldy draw_i
-    lda #COL_RAIL
-    jmp screen_color_xy
+    jmp screen_put_xy
 dvc_skip:
     rts
 .endproc
