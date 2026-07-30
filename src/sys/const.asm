@@ -412,9 +412,8 @@ DEATH_EXPLODE_HOLD    = 8           ; frames per step (~0.16s)
 DEATH_HOLD_PHASE      = 7           ; death_phase value during post-explode hold
 DEATH_HOLD_FRAMES     = 100         ; ~2s after explode sequence (player only)
 DEATH_GO_FLASH_FRAMES = 12          ; ~0.25s @ 50Hz; light/dark ×2 over hold
-DEATH_BANNER_COL      = 11          ; both banners start here
-DEATH_GO_BANNER_LEN   = 17          ; "    GAME OVER    "
-DEATH_RIP_BANNER_LEN  = 18          ; "    RIP  PILOT    "
+DEATH_GO_BANNER_LEN   = 9           ; "GAME OVER"
+DEATH_RIP_BANNER_LEN  = 10          ; "RIP  PILOT"
 SPR_COLOR_EXPLODE     = COL_RED
 ; obj_anim_state bit7 set while drone plays explode; low 2 bits = phase 0..2
 DRONE_DYING_BIT       = $80
@@ -614,19 +613,24 @@ SC_UDG_LIFE     = $6F
 SC_LETTER_A     = SC_UDG_LIFE
 SC_MINE         = SC_RAIL_G_MINE
 
-; HUD: 000000 - WAVE 01 - ######## -PILOTS:AAAA  (40 columns)
-; WAVE is +1 vs LVL → no space after the dash before PILOTS.
+; HUD: 000000   WAVE 01 ########    pilots AAAA  (40 columns)
+; No dashes/colons. Progress bar immediately after wave digits.
+; Banners (rank / death) clear only HUD_BANNER_COL .. HUD_BANNER_END-1 so
+; score (0–5) and reserve pilot icons (36–39) stay visible.
 HUD_ROW                 = 0
 HUD_SCORE_COL           = 0
 HUD_SCORE_LEN           = 6
 HUD_WAVE_LABEL_COL      = 9         ; "WAVE"
 HUD_LEVEL_COL           = 14        ; 2 digits (wave number)
 HUD_LEVEL_LEN           = 2
-HUD_PROGRESS_COL        = 19        ; 8 bar cells full→empty
+HUD_PROGRESS_COL        = 17        ; 8 bar cells full→empty (after "01 ")
 HUD_PROGRESS_LEN        = 8
-HUD_PILOTS_LABEL_COL    = 29        ; "PILOTS:" (tight: " -PILOTS:")
+HUD_PILOTS_LABEL_COL    = 29        ; "PILOTS"
 HUD_LIVES_COL           = 36
 HUD_LIVES_MAX_SHOW      = 4
+HUD_BANNER_COL          = 7         ; first col wiped for any top-line banner
+HUD_BANNER_END          = 36        ; exclusive end (lives icons start here)
+HUD_BANNER_ZONE_LEN     = HUD_BANNER_END - HUD_BANNER_COL   ; 29
 
 ; ---------------------------------------------------------------------------
 ; Bullets (character stream; V and H axes, 4px half-lanes)

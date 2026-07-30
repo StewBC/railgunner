@@ -1,4 +1,5 @@
-; Rank banner on HUD row (wave complete). Centred overlay; rest of top line stays.
+; Rank banner on HUD row (wave complete).
+; Clears only cols HUD_BANNER_COL .. HUD_BANNER_END-1 (score + pilots stay).
 ; Colour-cycles once through the high-score palette over LEVEL_BANNER_FRAMES.
 ; Banner text = nicety + ", " + rank title (tables split for future mix-match).
 
@@ -6,6 +7,8 @@
 
 ; Show rank line for current wave (about to advance). Overlay only — no full clear.
 .proc show_rank_banner
+    jsr clear_banner_zone
+
     jsr wave_idx                    ; X = 0..14
     stx score_work1                 ; save index
 
@@ -30,14 +33,14 @@
     adc #2                          ; comma + space
     sta score_work0                 ; total text length
     bcs srb_max
-    cmp #SCREEN_W + 1
+    cmp #HUD_BANNER_ZONE_LEN + 1
     bcc srb_len_ok
 srb_max:
-    lda #SCREEN_W
+    lda #HUD_BANNER_ZONE_LEN
     sta score_work0
 srb_len_ok:
 
-    ; Pad with BANNER_PAD_SPACES each side if room
+    ; Pad with BANNER_PAD_SPACES each side if room inside zone
     lda #BANNER_PAD_SPACES
     sta mux_i                       ; pad count
 srb_pad_try:
@@ -50,7 +53,7 @@ srb_pad_sum:
     clc
     adc mux_i
     bcs srb_pad_shrink
-    cmp #SCREEN_W + 1
+    cmp #HUD_BANNER_ZONE_LEN + 1
     bcc srb_pad_ok
 srb_pad_shrink:
     dec mux_i
@@ -67,11 +70,13 @@ srb_pad_ok:
     adc mux_i
     sta banner_len
 
-    ; start col = (40 - total) / 2
-    lda #SCREEN_W
+    ; start col = HUD_BANNER_COL + (zone_len - total) / 2
+    lda #HUD_BANNER_ZONE_LEN
     sec
     sbc banner_len
     lsr a
+    clc
+    adc #HUD_BANNER_COL
     sta banner_col
 
     ; Leading pad spaces
@@ -139,7 +144,7 @@ srb_text:
     ldy #HUD_ROW
     jsr screen_print
 
-    ; Trailing pad: banner_col + banner_len - pad .. 
+    ; Trailing pad
     lda mux_i
     beq srb_color
     lda banner_col
@@ -163,6 +168,26 @@ srb_trail:
 
 srb_color:
     jsr paint_banner_color
+    rts
+.endproc
+
+; Blank HUD cols HUD_BANNER_COL .. HUD_BANNER_END-1 (glyphs + white colour).
+; Clobbers A,X,Y,score_work0.
+.proc clear_banner_zone
+    ldx #HUD_BANNER_COL
+cbz_loop:
+    stx score_work0
+    ldy #HUD_ROW
+    lda #SC_SPACE
+    jsr screen_put_xy
+    ldx score_work0
+    ldy #HUD_ROW
+    lda #COL_WHITE
+    jsr screen_color_xy
+    ldx score_work0
+    inx
+    cpx #HUD_BANNER_END
+    bcc cbz_loop
     rts
 .endproc
 

@@ -99,11 +99,11 @@ str_game_over:
     .byte "GAME OVER", 0
 str_victory:
     .byte "VICTORY!", 0
-; Death-hold HUD banners — 4 spaces each side, centred (col 11)
+; Death-hold HUD banners — plain text; player.asm centres in banner zone (cols 7–35)
 str_game_over_banner:
-    .byte "    GAME OVER    ", 0          ; 17 chars
+    .byte "GAME OVER", 0
 str_rip_pilot_banner:
-    .byte "    RIP  PILOT    ", 0         ; 18 chars (extra space for balance)
+    .byte "RIP  PILOT", 0
 
 ; High-score entry chrome (mutable name at HS_PROMPT_NAME_OFF on str_hs_prompt).
 str_hs_congrats:
@@ -138,10 +138,11 @@ str_go_heavy:
 str_hiscore:
     .byte "HIGH SCORES", 0
 
-; Top HUD (exactly 40 cols). WAVE +1 vs LVL → no space after dash before PILOTS.
-; PILOTS = reserve only. Max 4. Start: 3 peel → 2.
+; Top HUD (exactly 40 cols). No dashes/colons. Bar immediately after wave number.
+; Reserve pilots at 36–39. Banners clear cols 7–35 only (score + pilots stay).
+; Labels must be UPPERCASE — ascii_to_screen only maps A–Z (charset is UC).
 str_hud:
-    .byte "000000 - WAVE 01 - ######## -PILOTS:AAAA", 0
+    .byte "000000   WAVE 01 ########    PILOTS AAAA", 0
 str_hud_placeholder = str_hud
 
 ; ---------------------------------------------------------------------------
@@ -206,17 +207,18 @@ level_kill_quota_tbl:
     .byte 16, 16, 20, 20, 24, 24, 24, 28, 28, 28, 32, 32, 32, 32, 32
 
 ; ---------------------------------------------------------------------------
-; Past Heroes table — 29 chars + NUL each (centred at col 5 on 40-col screen).
+; Past Heroes table — 37 chars + NUL each (centred at col 1 on 40-col screen).
 ;
 ; Header / row:
-;   " #  NAME  WAVE  SHOTS   SCORE"
-;   " 1  ---    00   00000  000000"
-;   "10  ---    15   12345  999999"
+;   " #  NAME  WAVE RANK     SHOTS  SCORE"
+;   " 1  ---    00           00000  000000"
+;   "10  ABC    15  GENERAL  12345  999999"
 ;
-; Columns (≥2 spaces between header titles; SCORE centred over 6 digits):
-;   #     rank 2 right-aligned (1..10)
+; Columns:
+;   #     table rank 2 right-aligned (1..10)
 ;   NAME  3 initials
-;   WAVE  2 digits zero-padded, centred under "WAVE" (waves / level — TBD)
+;   WAVE  2 digits zero-padded, centred under "WAVE"
+;   RANK  7 chars left-justified military title (from waves survived; blank if 0)
 ;   SHOTS 5 digits zero-padded (session shots; tally is u16 → max 65535)
 ;   SCORE 6 digits zero-padded (cap 999999)
 ;
@@ -224,9 +226,11 @@ level_kill_quota_tbl:
 ; ---------------------------------------------------------------------------
 HS_INITIALS_OFF = 4
 HS_WAVE_OFF     = 11                ; centred in WAVE field (cols 10..13)
-HS_SHOTS_OFF    = 16
-HS_SCORE_OFF    = 23
-HS_LINE_LEN     = 29
+HS_RANK_OFF     = 15                ; 7-char military rank title
+HS_RANK_LEN     = 7
+HS_SHOTS_OFF    = 24
+HS_SCORE_OFF    = 31
+HS_LINE_LEN     = 37
 
 ; Shared table layout (title + hiscore entry)
 HS_ROW_HEROES   = 2
@@ -238,7 +242,7 @@ HS_ROW_NEW      = 17                ; YOU HAVE A NEW HIGH SCORE
 HS_ROW_PROMPT   = 19                ; ENTER YOUR NAME PILOT: xxx
 HS_ROW_HELP     = 24                ; UP/DOWN… (bottom line)
 HS_ROW_CONGRATS = 0                 ; same row as title "RAIL GUNNER"
-HS_COL_TABLE    = 5                 ; 29-char lines centred
+HS_COL_TABLE    = 1                 ; 37-char lines centred ((40-37)/2 → 1)
 HS_COL_HEROES   = 14
 HS_COL_CONGRATS = 9                 ; 22 chars
 HS_COL_NEW      = 8                 ; 24 chars
@@ -246,28 +250,29 @@ HS_COL_PROMPT   = 7                 ; 26 chars
 HS_COL_HELP     = 3                 ; 34 chars
 
 str_hs_header:
-    .byte " #  NAME  WAVE  SHOTS   SCORE", 0
+    .byte " #  NAME  WAVE RANK     SHOTS  SCORE ", 0
 
+; Empty rank field = 7 spaces (no waves cleared yet / default rows)
 hs_line_1:
-    .byte " 1  ---    00   00000  000000", 0
+    .byte " 1  ---    00           00000  000000", 0
 hs_line_2:
-    .byte " 2  ---    00   00000  000000", 0
+    .byte " 2  ---    00           00000  000000", 0
 hs_line_3:
-    .byte " 3  ---    00   00000  000000", 0
+    .byte " 3  ---    00           00000  000000", 0
 hs_line_4:
-    .byte " 4  ---    00   00000  000000", 0
+    .byte " 4  ---    00           00000  000000", 0
 hs_line_5:
-    .byte " 5  ---    00   00000  000000", 0
+    .byte " 5  ---    00           00000  000000", 0
 hs_line_6:
-    .byte " 6  ---    00   00000  000000", 0
+    .byte " 6  ---    00           00000  000000", 0
 hs_line_7:
-    .byte " 7  ---    00   00000  000000", 0
+    .byte " 7  ---    00           00000  000000", 0
 hs_line_8:
-    .byte " 8  ---    00   00000  000000", 0
+    .byte " 8  ---    00           00000  000000", 0
 hs_line_9:
-    .byte " 9  ---    00   00000  000000", 0
+    .byte " 9  ---    00           00000  000000", 0
 hs_line_10:
-    .byte "10  ---    00   00000  000000", 0
+    .byte "10  ---    00           00000  000000", 0
 
 ; Pointer table for printing / recolour (lo, hi pairs)
 hs_line_ptrs:

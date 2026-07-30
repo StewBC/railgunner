@@ -181,7 +181,7 @@ hcs_lt:
 
 ; ---------------------------------------------------------------------------
 ; Insert session into table by score (descending). Sets hs_rank.
-; Name A--; wave/shots/score from session. Clobbers heavily.
+; Name A--; wave/rank/shots/score from session. Clobbers heavily.
 ; ---------------------------------------------------------------------------
 .proc hiscore_insert
     ; Find first rank where session > entry score
@@ -260,8 +260,12 @@ hi_fill:
     sta (ptr_lo), y
     ; Wave (2 digits, centred under WAVE @ off 11)
     jsr hs_session_waves            ; A = 0..15
+    sta score_work2                 ; keep for rank title
     ldx #HS_WAVE_OFF
     jsr hs_write_u8_2
+    ; Military rank title (7 chars) from waves survived
+    lda score_work2
+    jsr hs_write_rank
     ; Shots (5 digits)
     lda tally_shots0
     sta score_work0
@@ -289,6 +293,67 @@ hsw_normal:
     rts
 hsw_0:
     lda #0
+    rts
+.endproc
+
+; Write 7-char rank title at (ptr)+HS_RANK_OFF from waves survived in A (0..15).
+; 0 → blank; 1..15 → str_rank_title_01..15 left-justified, space-padded.
+; Clobbers A,X,Y,tmp0,tmp1,print_ptr_*.
+.proc hs_write_rank
+    cmp #0
+    beq hwr_blank
+    cmp #MAX_LEVEL + 1
+    bcc hwr_ok
+    lda #MAX_LEVEL
+hwr_ok:
+    sec
+    sbc #1                          ; 0..14 index
+    tax
+    lda rank_title_lo, x
+    sta print_ptr_lo
+    lda rank_title_hi, x
+    sta print_ptr_hi
+    lda #0
+    sta tmp1                        ; source index
+hwr_copy:
+    ldy tmp1
+    lda (print_ptr_lo), y
+    beq hwr_pad                     ; hit NUL → pad rest
+    sta tmp0
+    lda tmp1
+    clc
+    adc #HS_RANK_OFF
+    tay                             ; dest offset in line (Y for (zp),Y)
+    lda tmp0
+    sta (ptr_lo), y
+    inc tmp1
+    lda tmp1
+    cmp #HS_RANK_LEN
+    bcc hwr_copy
+    rts
+hwr_pad:
+    lda tmp1
+    clc
+    adc #HS_RANK_OFF
+    tay
+hwr_pad_loop:
+    lda #' '
+    sta (ptr_lo), y
+    iny
+    inc tmp1
+    lda tmp1
+    cmp #HS_RANK_LEN
+    bcc hwr_pad_loop
+    rts
+hwr_blank:
+    ldy #HS_RANK_OFF
+    ldx #HS_RANK_LEN
+hwr_bl_loop:
+    lda #' '
+    sta (ptr_lo), y
+    iny
+    dex
+    bne hwr_bl_loop
     rts
 .endproc
 

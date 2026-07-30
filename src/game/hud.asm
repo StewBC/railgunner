@@ -1,5 +1,5 @@
 ; Play HUD — score (score.asm), wave, progress bar, pilots (RESERVE lives).
-; Layout: 000000 - WAVE 01 - ######## -PILOTS:AAAA
+; Layout: 000000   WAVE 01 ########    PILOTS AAAA
 ; lives ZP = ships in reserve (max 4). Active ship is not drawn as a pilot.
 
 .scope hud

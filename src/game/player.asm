@@ -240,22 +240,34 @@ dgf_done:
     rts
 .endproc
 
-; Print hold banner on HUD row, then colour it (fatal vs life-loss).
+; Print hold banner in HUD banner zone (cols 7–35); score + pilots stay.
 .proc paint_death_banner
+    jsr message::clear_banner_zone
     lda death_fatal
     beq pdb_rip
     lda #<str_game_over_banner
     sta ptr_lo
     lda #>str_game_over_banner
     sta ptr_hi
-    jmp pdb_print
+    lda #DEATH_GO_BANNER_LEN
+    jmp pdb_place
 pdb_rip:
     lda #<str_rip_pilot_banner
     sta ptr_lo
     lda #>str_rip_pilot_banner
     sta ptr_hi
-pdb_print:
-    ldx #DEATH_BANNER_COL
+    lda #DEATH_RIP_BANNER_LEN
+pdb_place:
+    sta banner_len                  ; reuse for colour span
+    ; col = HUD_BANNER_COL + (zone_len - text_len) / 2
+    lda #HUD_BANNER_ZONE_LEN
+    sec
+    sbc banner_len
+    lsr a
+    clc
+    adc #HUD_BANNER_COL
+    sta banner_col
+    tax
     ldy #HUD_ROW
     jsr screen_print
     jmp paint_death_banner_color
@@ -282,14 +294,9 @@ pdc_rip_dark:
     lda #COL_DK_GRAY
 pdc_paint:
     sta score_work2
-    lda death_fatal
-    beq pdc_len_rip
-    ldy #DEATH_GO_BANNER_LEN
-    jmp pdc_len_ok
-pdc_len_rip:
-    ldy #DEATH_RIP_BANNER_LEN
-pdc_len_ok:
-    ldx #DEATH_BANNER_COL
+    ldx banner_col
+    ldy banner_len
+    beq pdc_done
 pdc_loop:
     sty score_work1
     stx score_work0
@@ -301,6 +308,7 @@ pdc_loop:
     ldy score_work1
     dey
     bne pdc_loop
+pdc_done:
     rts
 .endproc
 
