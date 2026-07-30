@@ -71,27 +71,34 @@ nk_done:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; Game-over layout (row, approx centred labels)
-;   4  GAME OVER
-;   7  TALLIES:
-;   9  YOU SURVIVED n ATTACK WAVES
-;  11  YOU FIRED: n BULLETS
-;  13  DESTROYED:
-;  14  CLASS A n
-;  15  CLASS B n
-;  16  CLASS C n
-;  20  PRESS FIRE
+; Game-over layout (rows 0..24, 40 cols)
+;
+;   1   GAME OVER              (red, centred)
+;   3   YOUR RESULTS           (yellow, centred)
+;   6   SCORE     000000       labels end col 15, values @ 21
+;   7   RANK      title
+;   8   WAVES SURVIVED  n
+;   9   SHOTS FIRED     n
+;  11   DESTRUCTION            (section, orange)
+;  12   MINE LAYERS     n      (C)
+;  13   MEDIUM BOMBERS  n      (B)
+;  14   HEAVY BOMBERS   n      (A)
+;  22   PRESS FIRE             (yellow, centred)
 ; ---------------------------------------------------------------------------
-GO_ROW_TITLE    = 4
-GO_ROW_TALLIES  = 7
-GO_ROW_SURVIVED = 9
-GO_ROW_FIRED    = 11
-GO_ROW_DEST     = 13
+GO_ROW_GAMEOVER = 1
+GO_ROW_RESULTS  = 3
+GO_ROW_SCORE    = 6
+GO_ROW_RANK     = 7
+GO_ROW_WAVES    = 8
+GO_ROW_SHOTS    = 9
+GO_ROW_DEST     = 11
+GO_ROW_C        = 12
+GO_ROW_B        = 13
 GO_ROW_A        = 14
-GO_ROW_B        = 15
-GO_ROW_C        = 16
-GO_ROW_FIRE     = 20
-GO_COL_LEFT     = 8                 ; common left margin for body lines
+GO_ROW_FIRE     = 22
+
+GO_LABEL_END    = 15                ; last column of right-aligned labels
+GO_VALUE_COL    = 21                ; first column of values
 
 .proc paint_gameover
     ; --- GAME OVER ---
@@ -99,149 +106,161 @@ GO_COL_LEFT     = 8                 ; common left margin for body lines
     sta ptr_lo
     lda #>str_game_over
     sta ptr_hi
-    ldx #15
-    ldy #GO_ROW_TITLE
+    ldx #15                         ; "GAME OVER" = 9 → centre ~15
+    ldy #GO_ROW_GAMEOVER
     jsr screen_print
     lda #COL_RED
-    ldy #GO_ROW_TITLE
+    ldy #GO_ROW_GAMEOVER
     jsr screen_color_row
 
-    ; --- TALLIES: ---
-    lda #<str_tallies
+    ; --- YOUR RESULTS ---
+    lda #<str_go_results
     sta ptr_lo
-    lda #>str_tallies
+    lda #>str_go_results
     sta ptr_hi
-    ldx #GO_COL_LEFT
-    ldy #GO_ROW_TALLIES
+    ldx #13                         ; 13 chars → centre col 13
+    ldy #GO_ROW_RESULTS
     jsr screen_print
     lda #COL_YELLOW
-    ldy #GO_ROW_TALLIES
+    ldy #GO_ROW_RESULTS
     jsr screen_color_row
 
-    ; --- YOU SURVIVED n ATTACK WAVES ---
-    lda #<str_survived_pre
+    ; --- SCORE ---
+    lda #<str_go_score
     sta ptr_lo
-    lda #>str_survived_pre
+    lda #>str_go_score
     sta ptr_hi
-    ldx #GO_COL_LEFT
-    ldy #GO_ROW_SURVIVED
-    jsr screen_print
-    ; col after "YOU SURVIVED " (13 chars) = GO_COL_LEFT+13
-    lda level
-    beq surv_zero
-    sec
-    sbc #1                          ; completed levels = level - 1
-    jmp surv_put
-surv_zero:
-    lda #0
-surv_put:
-    ldx #GO_COL_LEFT + 13
-    ldy #GO_ROW_SURVIVED
-    jsr print_u8
-    stx score_work0                 ; next col
-    lda #<str_survived_post
+    ldy #GO_ROW_SCORE
+    jsr print_label_ra
+    ldy #GO_ROW_SCORE
+    jsr print_score6
+    lda #COL_WHITE
+    ldy #GO_ROW_SCORE
+    jsr screen_color_row
+
+    ; --- RANK (title only) ---
+    lda #<str_go_rank
     sta ptr_lo
-    lda #>str_survived_post
+    lda #>str_go_rank
     sta ptr_hi
-    ldx score_work0
-    ldy #GO_ROW_SURVIVED
+    ldy #GO_ROW_RANK
+    jsr print_label_ra
+    jsr wave_index_to_x             ; X = 0..14
+    lda rank_title_lo, x
+    sta ptr_lo
+    lda rank_title_hi, x
+    sta ptr_hi
+    ldx #GO_VALUE_COL
+    ldy #GO_ROW_RANK
     jsr screen_print
     lda #COL_WHITE
-    ldy #GO_ROW_SURVIVED
+    ldy #GO_ROW_RANK
     jsr screen_color_row
 
-    ; --- YOU FIRED: n BULLETS ---
-    lda #<str_fired_pre
+    ; --- WAVES SURVIVED (completed waves = level-1) ---
+    lda #<str_go_waves
     sta ptr_lo
-    lda #>str_fired_pre
+    lda #>str_go_waves
     sta ptr_hi
-    ldx #GO_COL_LEFT
-    ldy #GO_ROW_FIRED
-    jsr screen_print
+    ldy #GO_ROW_WAVES
+    jsr print_label_ra
+    lda level
+    beq go_w0
+    sec
+    sbc #1
+    jmp go_wput
+go_w0:
+    lda #0
+go_wput:
+    ldx #GO_VALUE_COL
+    ldy #GO_ROW_WAVES
+    jsr print_u8
+    lda #COL_WHITE
+    ldy #GO_ROW_WAVES
+    jsr screen_color_row
+
+    ; --- SHOTS FIRED ---
+    lda #<str_go_shots
+    sta ptr_lo
+    lda #>str_go_shots
+    sta ptr_hi
+    ldy #GO_ROW_SHOTS
+    jsr print_label_ra
     lda tally_shots0
     sta score_work0
     lda tally_shots1
     sta score_work1
-    ldx #GO_COL_LEFT + 11           ; after "YOU FIRED: "
-    ldy #GO_ROW_FIRED
+    ldx #GO_VALUE_COL
+    ldy #GO_ROW_SHOTS
     jsr print_u16
-    stx score_work2
-    lda #<str_fired_post
-    sta ptr_lo
-    lda #>str_fired_post
-    sta ptr_hi
-    ldx score_work2
-    ldy #GO_ROW_FIRED
-    jsr screen_print
     lda #COL_WHITE
-    ldy #GO_ROW_FIRED
+    ldy #GO_ROW_SHOTS
     jsr screen_color_row
 
-    ; --- DESTROYED: ---
-    lda #<str_destroyed
+    ; --- DESTRUCTION ---
+    lda #<str_go_destruction
     sta ptr_lo
-    lda #>str_destroyed
+    lda #>str_go_destruction
     sta ptr_hi
-    ldx #GO_COL_LEFT
+    ldx #14                         ; 11 chars, slight centre bias
     ldy #GO_ROW_DEST
     jsr screen_print
-    lda #COL_CYAN
+    lda #COL_ORANGE
     ldy #GO_ROW_DEST
     jsr screen_color_row
 
-    ; CLASS A / B / C
-    lda #<str_class_a
+    ; C mine layers
+    lda #<str_go_mine
     sta ptr_lo
-    lda #>str_class_a
+    lda #>str_go_mine
     sta ptr_hi
-    ldx #GO_COL_LEFT + 2
-    ldy #GO_ROW_A
-    jsr screen_print
-    lda tally_kill_a0
-    sta score_work0
-    lda tally_kill_a1
-    sta score_work1
-    ldx #GO_COL_LEFT + 2 + 8        ; after "CLASS A "
-    ldy #GO_ROW_A
-    jsr print_u16
-    lda #COL_WHITE
-    ldy #GO_ROW_A
-    jsr screen_color_row
-
-    lda #<str_class_b
-    sta ptr_lo
-    lda #>str_class_b
-    sta ptr_hi
-    ldx #GO_COL_LEFT + 2
-    ldy #GO_ROW_B
-    jsr screen_print
-    lda tally_kill_b0
-    sta score_work0
-    lda tally_kill_b1
-    sta score_work1
-    ldx #GO_COL_LEFT + 2 + 8
-    ldy #GO_ROW_B
-    jsr print_u16
-    lda #COL_WHITE
-    ldy #GO_ROW_B
-    jsr screen_color_row
-
-    lda #<str_class_c
-    sta ptr_lo
-    lda #>str_class_c
-    sta ptr_hi
-    ldx #GO_COL_LEFT + 2
     ldy #GO_ROW_C
-    jsr screen_print
+    jsr print_label_ra
     lda tally_kill_c0
     sta score_work0
     lda tally_kill_c1
     sta score_work1
-    ldx #GO_COL_LEFT + 2 + 8
+    ldx #GO_VALUE_COL
     ldy #GO_ROW_C
     jsr print_u16
     lda #COL_WHITE
     ldy #GO_ROW_C
+    jsr screen_color_row
+
+    ; B medium bombers
+    lda #<str_go_medium
+    sta ptr_lo
+    lda #>str_go_medium
+    sta ptr_hi
+    ldy #GO_ROW_B
+    jsr print_label_ra
+    lda tally_kill_b0
+    sta score_work0
+    lda tally_kill_b1
+    sta score_work1
+    ldx #GO_VALUE_COL
+    ldy #GO_ROW_B
+    jsr print_u16
+    lda #COL_WHITE
+    ldy #GO_ROW_B
+    jsr screen_color_row
+
+    ; A heavy bombers
+    lda #<str_go_heavy
+    sta ptr_lo
+    lda #>str_go_heavy
+    sta ptr_hi
+    ldy #GO_ROW_A
+    jsr print_label_ra
+    lda tally_kill_a0
+    sta score_work0
+    lda tally_kill_a1
+    sta score_work1
+    ldx #GO_VALUE_COL
+    ldy #GO_ROW_A
+    jsr print_u16
+    lda #COL_WHITE
+    ldy #GO_ROW_A
     jsr screen_color_row
 
     ; PRESS FIRE
@@ -258,8 +277,128 @@ surv_put:
     rts
 .endproc
 
+; ptr_* = NUL-string; Y = row. Right-align so last char is at GO_LABEL_END.
+; Clobbers A,X,Y,tmp*,ptr may be restored from measure.
+.proc print_label_ra
+    sty score_work2                 ; row
+    ; strlen → score_work0
+    ldy #0
+pl_len:
+    lda (ptr_lo), y
+    beq pl_len_done
+    iny
+    bne pl_len
+pl_len_done:
+    sty score_work0
+    ; start col = GO_LABEL_END + 1 - len
+    lda #GO_LABEL_END + 1
+    sec
+    sbc score_work0
+    tax
+    ldy score_work2
+    jsr screen_print
+    rts
+.endproc
+
+; Wave index 0..14 from level (for rank title). Clobbers A; result in X.
+.proc wave_index_to_x
+    lda level
+    bne wix_nz
+    lda #1
+wix_nz:
+    cmp #MAX_LEVEL + 1
+    bcc wix_cap
+    lda #MAX_LEVEL
+wix_cap:
+    tax
+    dex
+    rts
+.endproc
+
+; 6-digit score with leading zeros at GO_VALUE_COL, row Y.
+; Uses score0..2 (24-bit). Clobbers A,X,Y,score_work*,mux_i/j/k,tmp*.
+.proc print_score6
+    sty score_work2                 ; row
+    lda score0
+    sta score_work0
+    lda score1
+    sta score_work1
+    lda score2
+    sta mux_k                       ; hi byte of working value
+    lda #GO_VALUE_COL
+    sta mux_j                       ; col
+    ldx #0                          ; place 0..5
+ps6_place:
+    stx mux_ref0                    ; save place index
+    lda #0
+    sta mux_i                       ; digit
+ps6_sub:
+    jsr cmp_s24
+    bcc ps6_emit
+    jsr sub_s24
+    inc mux_i
+    lda mux_i
+    cmp #10
+    bcc ps6_sub
+ps6_emit:
+    lda mux_i
+    clc
+    adc #SC_ZERO
+    ldx mux_j
+    ldy score_work2
+    jsr screen_put_xy
+    inc mux_j
+    ldx mux_ref0
+    inx
+    cpx #6
+    bcc ps6_place
+    rts
+.endproc
+
+; C set if score_work0/1 + mux_k >= go_score_place[X]
+.proc cmp_s24
+    lda mux_k
+    cmp go_score_hi, x
+    bcc cs_lt
+    bne cs_ge
+    lda score_work1
+    cmp go_score_mid, x
+    bcc cs_lt
+    bne cs_ge
+    lda score_work0
+    cmp go_score_lo, x
+    bcc cs_lt
+cs_ge:
+    sec
+    rts
+cs_lt:
+    clc
+    rts
+.endproc
+
+.proc sub_s24
+    lda score_work0
+    sec
+    sbc go_score_lo, x
+    sta score_work0
+    lda score_work1
+    sbc go_score_mid, x
+    sta score_work1
+    lda mux_k
+    sbc go_score_hi, x
+    sta mux_k
+    rts
+.endproc
+
+; 100000, 10000, 1000, 100, 10, 1 as 24-bit lo/mid/hi
+go_score_lo:
+    .byte $A0, $10, $E8, $64, $0A, $01
+go_score_mid:
+    .byte $86, $27, $03, $00, $00, $00
+go_score_hi:
+    .byte $01, $00, $00, $00, $00, $00
+
 ; Print A (0–255) decimal at col X, row Y. Returns next col in X.
-; Clobbers A,Y,tmp*,ptr*,score_work0/1/2,mux_i/j.
 .proc print_u8
     sta score_work0
     lda #0
@@ -275,19 +414,14 @@ surv_put:
     lda #0
     sta mux_k                       ; 0 = still leading zeros
 
-    ; 10000s
     ldx #0
     jsr div_place
-    ; 1000s
     ldx #1
     jsr div_place
-    ; 100s
     ldx #2
     jsr div_place
-    ; 10s
     ldx #3
     jsr div_place
-    ; 1s always
     lda #1
     sta mux_k
     ldx #4
@@ -296,11 +430,9 @@ surv_put:
     rts
 .endproc
 
-; Place index X: subtract tally_place from score_work while >=; emit digit if
-; non-leading or last place. mux_j = col, score_work2 = row, mux_k = seen digit.
 .proc div_place
     lda #0
-    sta mux_i                       ; digit
+    sta mux_i
 dp_sub:
     jsr cmp_place
     bcc dp_emit
@@ -313,7 +445,7 @@ dp_emit:
     lda mux_k
     bne dp_put
     lda mux_i
-    beq dp_skip                     ; leading zero
+    beq dp_skip
     lda #1
     sta mux_k
 dp_put:
@@ -355,7 +487,6 @@ cmp_lt:
     rts
 .endproc
 
-; 10000, 1000, 100, 10, 1
 tally_place_lo:
     .byte <10000, <1000, <100, <10, <1
 tally_place_hi:

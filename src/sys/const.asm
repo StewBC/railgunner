@@ -187,7 +187,7 @@ WAVE_CD_SPAN_MIN  = 10
 WAVE_MAX_ACTIVE_CAP = 10
 
 ; C cargo (orange parcel sprite) → GHIJ hub stacks. K per tile to arm;
-; default K=1 → 4 landings arm mines and detonate (player loses a life).
+; default K=1 → 4 landings arm mines; centre pass while armed → death.
 CARGO_SPEED       = 2               ; px/frame toward assigned G/H/I/J
 MINE_STACK_K      = 1
 SC_MINE           = $2A
@@ -514,16 +514,17 @@ SC_RAIL_J       = $0A
 SC_RAIL_FIRST   = SC_RAIL_A
 SC_RAIL_LAST    = SC_RAIL_J
 
-; HUD: 000000 - LVL 01 - ######## - PILOTS:AAAA  (40 columns)
+; HUD: 000000 - WAVE 01 - ######## -PILOTS:AAAA  (40 columns)
+; WAVE is +1 vs LVL → no space after the dash before PILOTS.
 HUD_ROW                 = 0
 HUD_SCORE_COL           = 0
 HUD_SCORE_LEN           = 6
-HUD_LVL_LABEL_COL       = 9         ; "LVL"
-HUD_LEVEL_COL           = 13        ; 2 digits
+HUD_WAVE_LABEL_COL      = 9         ; "WAVE"
+HUD_LEVEL_COL           = 14        ; 2 digits (wave number)
 HUD_LEVEL_LEN           = 2
-HUD_PROGRESS_COL        = 18        ; 8 bar cells full→empty
+HUD_PROGRESS_COL        = 19        ; 8 bar cells full→empty
 HUD_PROGRESS_LEN        = 8
-HUD_PILOTS_LABEL_COL    = 29        ; "PILOTS:"
+HUD_PILOTS_LABEL_COL    = 29        ; "PILOTS:" (tight: " -PILOTS:")
 HUD_LIVES_COL           = 36
 HUD_LIVES_MAX_SHOW      = 4
 

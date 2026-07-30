@@ -91,7 +91,7 @@ cargo_slot:        .res 1           ; object index, or $FF = none
 cargo_target:      .res 1           ; 0..3 = G,H,I,J destination this trip
 ghij_rr:           .res 1           ; 0..3 next stack tile to assign
 ghij_last:         .res 1           ; 0..3 last tile that received a stack ($FF = none)
-mine_armed:        .res 1           ; 1 = GHIJ full → detonate this frame
+mine_armed:        .res 1           ; 1 = all GHIJ ≥ K; detonate on centre enter
 
 ; Rank banner paint region (centred overlay; rest of HUD stays)
 banner_col:        .res 1           ; first column of banner (incl. pad spaces)

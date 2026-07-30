@@ -101,63 +101,93 @@ str_game_over_banner:
 str_rip_pilot_banner:
     .byte "    RIP  PILOT    ", 0         ; 18 chars (extra space for balance)
 
-; Game-over tallies (numbers filled in by tallies::paint_gameover)
-str_tallies:
-    .byte "TALLIES:", 0
-str_survived_pre:
-    .byte "YOU SURVIVED ", 0
-str_survived_post:
-    .byte " ATTACK WAVES", 0
-str_fired_pre:
-    .byte "YOU FIRED: ", 0
-str_fired_post:
-    .byte " BULLETS", 0
-str_destroyed:
-    .byte "DESTROYED:", 0
-str_class_a:
-    .byte "CLASS A ", 0
-str_class_b:
-    .byte "CLASS B ", 0
-str_class_c:
-    .byte "CLASS C ", 0
+; Game-over results (tallies::paint_gameover). Labels right-align to col 15.
+str_go_results:
+    .byte "YOUR RESULTS", 0
+str_go_score:
+    .byte "SCORE", 0
+str_go_rank:
+    .byte "RANK", 0
+str_go_waves:
+    .byte "WAVES SURVIVED", 0
+str_go_shots:
+    .byte "SHOTS FIRED", 0
+str_go_destruction:
+    .byte "DESTRUCTION", 0
+str_go_mine:
+    .byte "MINE LAYERS", 0
+str_go_medium:
+    .byte "MEDIUM BOMBERS", 0
+str_go_heavy:
+    .byte "HEAVY BOMBERS", 0
 
 str_hiscore:
     .byte "HIGH SCORES", 0
 
-; Top HUD (exactly 40 cols) — live fields later overwrite in place:
-;   000000 - LVL 01 - ######## - PILOTS:AAAA
-; PILOTS = reserve only (active ship not counted). Max 4. Start: 3 peel → 2.
+; Top HUD (exactly 40 cols). WAVE +1 vs LVL → no space after dash before PILOTS.
+; PILOTS = reserve only. Max 4. Start: 3 peel → 2.
 str_hud:
-    .byte "000000 - LVL 01 - ######## - PILOTS:AAAA", 0
+    .byte "000000 - WAVE 01 - ######## -PILOTS:AAAA", 0
 str_hud_placeholder = str_hud
 
-; Rank banners (cleared level 1..15 → index 0..14). Short for top line.
-str_rank_01: .byte "NICE WORK, PRIVATE", 0
-str_rank_02: .byte "GOOD WORK, L-CPL", 0
-str_rank_03: .byte "GREAT WORK, CPL", 0
-str_rank_04: .byte "WELL DONE, SGT", 0
-str_rank_05: .byte "NICE WORK, S-SGT", 0
-str_rank_06: .byte "SOLID WORK, WO2", 0
-str_rank_07: .byte "EXCELLENT, WO1", 0
-str_rank_08: .byte "OUTSTANDING, LT", 0
-str_rank_09: .byte "FINE WORK, CAPT", 0
-str_rank_10: .byte "SUPERB, MAJOR", 0
-str_rank_11: .byte "REMARKABLE, LT COL", 0
-str_rank_12: .byte "EXCEPTIONAL, COL", 0
-str_rank_13: .byte "BRILLIANT, BRIG", 0
-str_rank_14: .byte "OUTSTANDING, MAJ GEN", 0
-str_rank_15: .byte "LEGENDARY, GENERAL", 0
+; ---------------------------------------------------------------------------
+; Rank system: nicety + rank title are separate (future: random mix-match).
+; Banner = nicety + ", " + title. Game over RANK line = title only.
+; Wave complete 1..15 → index 0..14.
+; ---------------------------------------------------------------------------
+str_nicety_01: .byte "NICE WORK", 0
+str_nicety_02: .byte "GOOD WORK", 0
+str_nicety_03: .byte "GREAT WORK", 0
+str_nicety_04: .byte "WELL DONE", 0
+str_nicety_05: .byte "NICE WORK", 0
+str_nicety_06: .byte "SOLID WORK", 0
+str_nicety_07: .byte "EXCELLENT", 0
+str_nicety_08: .byte "OUTSTANDING", 0
+str_nicety_09: .byte "FINE WORK", 0
+str_nicety_10: .byte "SUPERB", 0
+str_nicety_11: .byte "REMARKABLE", 0
+str_nicety_12: .byte "EXCEPTIONAL", 0
+str_nicety_13: .byte "BRILLIANT", 0
+str_nicety_14: .byte "OUTSTANDING", 0
+str_nicety_15: .byte "LEGENDARY", 0
 
-rank_msg_lo:
-    .byte <str_rank_01, <str_rank_02, <str_rank_03, <str_rank_04, <str_rank_05
-    .byte <str_rank_06, <str_rank_07, <str_rank_08, <str_rank_09, <str_rank_10
-    .byte <str_rank_11, <str_rank_12, <str_rank_13, <str_rank_14, <str_rank_15
-rank_msg_hi:
-    .byte >str_rank_01, >str_rank_02, >str_rank_03, >str_rank_04, >str_rank_05
-    .byte >str_rank_06, >str_rank_07, >str_rank_08, >str_rank_09, >str_rank_10
-    .byte >str_rank_11, >str_rank_12, >str_rank_13, >str_rank_14, >str_rank_15
+str_rank_title_01: .byte "PRIVATE", 0
+str_rank_title_02: .byte "L-CPL", 0
+str_rank_title_03: .byte "CPL", 0
+str_rank_title_04: .byte "SGT", 0
+str_rank_title_05: .byte "S-SGT", 0
+str_rank_title_06: .byte "WO2", 0
+str_rank_title_07: .byte "WO1", 0
+str_rank_title_08: .byte "LT", 0
+str_rank_title_09: .byte "CAPT", 0
+str_rank_title_10: .byte "MAJOR", 0
+str_rank_title_11: .byte "LT COL", 0
+str_rank_title_12: .byte "COL", 0
+str_rank_title_13: .byte "BRIG", 0
+str_rank_title_14: .byte "MAJ GEN", 0
+str_rank_title_15: .byte "GENERAL", 0
 
-; Level kill quotas L1..L15
+nicety_lo:
+    .byte <str_nicety_01, <str_nicety_02, <str_nicety_03, <str_nicety_04, <str_nicety_05
+    .byte <str_nicety_06, <str_nicety_07, <str_nicety_08, <str_nicety_09, <str_nicety_10
+    .byte <str_nicety_11, <str_nicety_12, <str_nicety_13, <str_nicety_14, <str_nicety_15
+nicety_hi:
+    .byte >str_nicety_01, >str_nicety_02, >str_nicety_03, >str_nicety_04, >str_nicety_05
+    .byte >str_nicety_06, >str_nicety_07, >str_nicety_08, >str_nicety_09, >str_nicety_10
+    .byte >str_nicety_11, >str_nicety_12, >str_nicety_13, >str_nicety_14, >str_nicety_15
+
+rank_title_lo:
+    .byte <str_rank_title_01, <str_rank_title_02, <str_rank_title_03, <str_rank_title_04
+    .byte <str_rank_title_05, <str_rank_title_06, <str_rank_title_07, <str_rank_title_08
+    .byte <str_rank_title_09, <str_rank_title_10, <str_rank_title_11, <str_rank_title_12
+    .byte <str_rank_title_13, <str_rank_title_14, <str_rank_title_15
+rank_title_hi:
+    .byte >str_rank_title_01, >str_rank_title_02, >str_rank_title_03, >str_rank_title_04
+    .byte >str_rank_title_05, >str_rank_title_06, >str_rank_title_07, >str_rank_title_08
+    .byte >str_rank_title_09, >str_rank_title_10, >str_rank_title_11, >str_rank_title_12
+    .byte >str_rank_title_13, >str_rank_title_14, >str_rank_title_15
+
+; Wave kill quotas W1..W15 (code still uses level_* symbols)
 level_kill_quota_tbl:
     .byte 16, 16, 20, 20, 24, 24, 24, 28, 28, 28, 32, 32, 32, 32, 32
 

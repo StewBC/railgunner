@@ -124,17 +124,25 @@ upd_live:
     rts
 .endproc
 
-; Rising edge of centre intersection while clear_armed → wipe cargo hubs.
+; Rising edge of centre intersection:
+;   clear_armed → wipe GHIJ (also disarms mines)
+;   else mine_armed → detonate (death on *pass through*, not when armed)
 .proc check_clear_centre
     jsr at_intersection
     bcc ccc_out
     lda player_was_centre
     bne ccc_done                    ; still in centre
+    ; entered centre this frame
     lda clear_armed
-    beq ccc_mark
+    beq ccc_mine
     lda #0
     sta clear_armed
     jsr cargo::clear_stacks
+    jmp ccc_mark
+ccc_mine:
+    lda mine_armed
+    beq ccc_mark
+    jsr cargo::detonate
 ccc_mark:
     lda #1
     sta player_was_centre

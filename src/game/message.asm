@@ -1,77 +1,82 @@
-; Rank banner on HUD row (level complete). Centred overlay; rest of top line stays.
+; Rank banner on HUD row (wave complete). Centred overlay; rest of top line stays.
 ; Colour-cycles once through the high-score palette over LEVEL_BANNER_FRAMES.
+; Banner text = nicety + ", " + rank title (tables split for future mix-match).
 
 .scope message
 
-; Show rank line for current level (about to advance). Overlay only — no full clear.
+; Show rank line for current wave (about to advance). Overlay only — no full clear.
 .proc show_rank_banner
-    ; Index = level - 1 (completed this level)
-    lda level
-    bne srb_nz
-    lda #1
-srb_nz:
-    cmp #MAX_LEVEL + 1
-    bcc srb_cap
-    lda #MAX_LEVEL
-srb_cap:
-    tax
-    dex
-    lda rank_msg_lo, x
-    sta ptr_lo
-    lda rank_msg_hi, x
-    sta ptr_hi
+    jsr wave_idx                    ; X = 0..14
+    stx score_work1                 ; save index
 
-    ; Measure string length → score_work0
-    ldy #0
-srb_len:
-    lda (ptr_lo), y
-    beq srb_len_done
-    iny
-    bne srb_len
-srb_len_done:
-    sty score_work0                 ; text length
+    ; Measure nicety length → score_work0
+    lda nicety_lo, x
+    sta ptr_lo
+    lda nicety_hi, x
+    sta ptr_hi
+    jsr strlen
+    sta score_work0
+
+    ; + ", " (2) + rank title length
+    ldx score_work1
+    lda rank_title_lo, x
+    sta ptr_lo
+    lda rank_title_hi, x
+    sta ptr_hi
+    jsr strlen
+    clc
+    adc score_work0
+    clc
+    adc #2                          ; comma + space
+    sta score_work0                 ; total text length
+    bcs srb_max
+    cmp #SCREEN_W + 1
+    bcc srb_len_ok
+srb_max:
+    lda #SCREEN_W
+    sta score_work0
+srb_len_ok:
 
     ; Pad with BANNER_PAD_SPACES each side if room
     lda #BANNER_PAD_SPACES
-    sta score_work1
+    sta mux_i                       ; pad count
 srb_pad_try:
     lda score_work0
     clc
-    adc score_work1
+    adc mux_i
     bcc srb_pad_sum
     jmp srb_pad_zero
 srb_pad_sum:
     clc
-    adc score_work1                 ; + pad both sides
+    adc mux_i
     bcs srb_pad_shrink
     cmp #SCREEN_W + 1
     bcc srb_pad_ok
 srb_pad_shrink:
-    dec score_work1
+    dec mux_i
     bpl srb_pad_try
 srb_pad_zero:
     lda #0
-    sta score_work1
+    sta mux_i
 srb_pad_ok:
-    ; total = len + 2*pad → score_work2
+    ; total = text + 2*pad → banner_len
     lda score_work0
     clc
-    adc score_work1
+    adc mux_i
     clc
-    adc score_work1
-    sta score_work2
+    adc mux_i
     sta banner_len
 
     ; start col = (40 - total) / 2
     lda #SCREEN_W
     sec
-    sbc score_work2
+    sbc banner_len
     lsr a
     sta banner_col
 
-    ; Paint leading pad spaces
+    ; Leading pad spaces
     ldx banner_col
-    ldy score_work1
+    ldy mux_i
     beq srb_text
 srb_lead:
     sty score_work2
@@ -86,47 +91,64 @@ srb_lead:
     bne srb_lead
 
 srb_text:
-    ; Print rank string at banner_col + pad
+    ; Print nicety at banner_col + pad
     lda banner_col
     clc
-    adc score_work1
+    adc mux_i
     tax
-    ; restore string ptr (screen_put_xy clobbers ptr_*)
-    lda level
-    bne srb2_nz
-    lda #1
-srb2_nz:
-    cmp #MAX_LEVEL + 1
-    bcc srb2_cap
-    lda #MAX_LEVEL
-srb2_cap:
-    tay
-    dey
-    lda rank_msg_lo, y
+    stx mux_j                       ; running print col
+    ldx score_work1
+    lda nicety_lo, x
     sta ptr_lo
-    lda rank_msg_hi, y
+    lda nicety_hi, x
     sta ptr_hi
+    ldx mux_j
     ldy #HUD_ROW
     jsr screen_print
 
-    ; Trailing pad spaces after text
-    lda score_work1
+    ; Advance col by nicety length
+    ldx score_work1
+    lda nicety_lo, x
+    sta ptr_lo
+    lda nicety_hi, x
+    sta ptr_hi
+    jsr strlen
+    clc
+    adc mux_j
+    tax
+    stx mux_j
+
+    ; ", "
+    ldy #HUD_ROW
+    lda #','
+    jsr screen_put_xy
+    inc mux_j
+    ldx mux_j
+    ldy #HUD_ROW
+    lda #SC_SPACE
+    jsr screen_put_xy
+    inc mux_j
+
+    ; Rank title
+    ldx score_work1
+    lda rank_title_lo, x
+    sta ptr_lo
+    lda rank_title_hi, x
+    sta ptr_hi
+    ldx mux_j
+    ldy #HUD_ROW
+    jsr screen_print
+
+    ; Trailing pad: banner_col + banner_len - pad .. 
+    lda mux_i
     beq srb_color
     lda banner_col
     clc
-    adc score_work1                 ; past lead pad
-    clc
-    ; + text length: remeasure quickly from print — use banner_len - 2*pad
-    sta score_work0
-    lda banner_len
+    adc banner_len
     sec
-    sbc score_work1
-    sec
-    sbc score_work1                 ; text len
-    clc
-    adc score_work0                 ; col of first trail space
+    sbc mux_i                       ; first trail col
     tax
-    ldy score_work1
+    ldy mux_i
 srb_trail:
     sty score_work2
     stx score_work0
@@ -140,8 +162,35 @@ srb_trail:
     bne srb_trail
 
 srb_color:
-    ; First colour of the wheel
     jsr paint_banner_color
+    rts
+.endproc
+
+; X = wave index 0..14 from level. Clobbers A.
+.proc wave_idx
+    lda level
+    bne wi_nz
+    lda #1
+wi_nz:
+    cmp #MAX_LEVEL + 1
+    bcc wi_cap
+    lda #MAX_LEVEL
+wi_cap:
+    tax
+    dex
+    rts
+.endproc
+
+; A = strlen(ptr_*). Clobbers Y.
+.proc strlen
+    ldy #0
+sl_loop:
+    lda (ptr_lo), y
+    beq sl_done
+    iny
+    bne sl_loop
+sl_done:
+    tya
     rts
 .endproc
 
@@ -158,12 +207,9 @@ tbc_done:
 .proc paint_banner_color
     lda banner_len
     beq pbc_done
-    ; elapsed = LEVEL_BANNER_FRAMES - level_banner_t
-    ; (at first paint, level_banner_t is already set by caller)
     lda #LEVEL_BANNER_FRAMES
     sec
     sbc level_banner_t
-    ; idx = min(BANNER_NUM_COLORS-1, elapsed / BANNER_COLOR_HOLD)
     ldx #0
 pbc_div:
     cmp #BANNER_COLOR_HOLD
@@ -175,7 +221,7 @@ pbc_div:
     bcc pbc_div
 pbc_idx:
     lda score_color_table, x
-    sta score_work2                 ; colour
+    sta score_work2
     ldx banner_col
     ldy banner_len
 pbc_loop:

@@ -1,6 +1,6 @@
-; C cargo → orange parcel sprite → one of GHIJ (round-robin) → arm → detonate.
+; C cargo → orange parcel sprite → one of GHIJ (round-robin) → arm mines.
 ; Stacks live in rail_data::ghij_stack[4] (rail.asm OBJECTS segment).
-; Four landings (K=1 on each of G,H,I,J) blow the player (lose a life).
+; Four hubs at ≥ K arm mines; detonate when player enters centre while armed.
 
 .segment "CODE_HI"
 .scope cargo
@@ -308,7 +308,8 @@ rlc_paint:
     jmp check_arm                   ; may disarm mines if we broke a full set
 .endproc
 
-; All four hub tiles at ≥ K → mines + immediate detonation (player loses a life).
+; All four hub tiles at ≥ K → arm mines (glyphs). Detonate only when the
+; player next *enters* the centre (see player::check_clear_centre).
 .proc check_arm
     ldx #0
 ca_loop:
@@ -320,8 +321,7 @@ ca_loop:
     bcc ca_loop
     lda #1
     sta mine_armed
-    jsr paint_ghij
-    jmp detonate
+    jmp paint_ghij
 ca_no:
     lda #0
     sta mine_armed
@@ -330,9 +330,12 @@ ca_no:
 
 ; Blow the player: clear hub, start death sequence (respawn or game over).
 ; lives = reserve only. Die with 0 reserve → game over; else respawn peels one.
+; Called on centre-pass while mine_armed (not when the fourth stack lands).
 .proc detonate
     lda player_dead
     bne det_done                    ; already dying
+    lda mine_armed
+    beq det_done                    ; not armed (e.g. clear wiped hubs first)
     jsr clear_stacks
     lda lives
     beq det_fatal                   ; no reserve → last ship just died

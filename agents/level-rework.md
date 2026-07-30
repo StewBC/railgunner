@@ -52,7 +52,8 @@ play (move + fire always, except game over)
   pad spaces when room. Duration `LEVEL_BANNER_FRAMES` (75 ≈ 1.5s, 50% longer
   than the original 50). Colour-cycles **once** through the high-score palette
   (`score_color_table`, 10 colours × `BANNER_COLOR_HOLD` frames each).
-- Copy: praise + shortened rank (`str_rank_01`…`15`). Ladder: Private → … →
+- Copy: **nicety** + **rank title** (`str_nicety_*` / `str_rank_title_*`,
+  composed for the banner; game over uses title only). Ladder: Private → … →
   Lt Col → Colonel → Brigadier → Maj Gen → General.
 - **LVL digit advances after banner**, not at start.
 - No FIRE skip.
@@ -85,14 +86,14 @@ play (move + fire always, except game over)
 ## 3. HUD layout (40 columns)
 
 ```
-000000 - LVL 01 - ######## - PILOTS:AAAA
+000000 - WAVE 01 - ######## -PILOTS:AAAA
 ```
 
 | Field | Role |
 |-------|------|
 | `000000` | Score |
-| `LVL nn` | Level (post-banner) |
-| `########` | Level progress (full → empty) |
+| `WAVE nn` | Attack wave (player-facing; code may still say `level`) |
+| `########` | Wave progress (full → empty) |
 | `PILOTS:AAAA` | **Reserve** lives (up to 4 `A` icons) |
 
 **Removed:** health bar, ammo bar, health/ammo mechanics.
@@ -107,7 +108,7 @@ play (move + fire always, except game over)
 | **C** | No player HP. On rail arrival → **cargo** toward hub. |
 | **Cargo** | Orange parcel **sprite** flies to the next **G→H→I→J** hub tile; on arrival sprite vanishes and that tile stacks. |
 | **Level-clear cargo peel** | On level clear (rank banner start): remove **one** stack from the **most recently** deposited GHIJ tile (survive bonus). |
-| **Mines / detonate** | When each of G,H,I,J has stacks ≥ **K** (`MINE_STACK_K`, default **1** → **4 landings**), tiles show mine glyphs and the player dies (stacks clear). Reserve left → respawn peel; else game over. |
+| **Mines / detonate** | When each of G,H,I,J has stacks ≥ **K** (`MINE_STACK_K`, default **1** → **4 landings**), tiles show mine glyphs (**armed**). Player dies only on the next **centre enter** while armed (stacks clear). Clear parcel on that pass disarms first. Reserve left → respawn peel; else game over. |
 | **Death sequence** | Ignore input; explode then hold. Then: reserve left → restart **current level** spawn + deploy peel; no reserve or rail collapse → game over. |
 | **Reserve 0 + death** | Game over (after death sequence). |
 | **Health / ammo** | **Gone** (not deferred UI — removed from session model). |
@@ -131,8 +132,8 @@ play (move + fire always, except game over)
 | Rank banner | `src/game/message.asm` |
 | C cargo + mines | `src/game/cargo.asm`; stacks in `rail_data::ghij_stack` |
 | Parcels | `src/game/parcels.asm` |
-| Quota + rank tables | `src/data/strings.asm` (`level_kill_quota_tbl`, `str_rank_*`) |
-| HUD template | `str_hud` |
+| Quota + rank tables | `src/data/strings.asm` (`level_kill_quota_tbl`, nicety + rank title) |
+| HUD template | `str_hud` (`WAVE`) |
 | Constants | `src/sys/const.asm` (`LEVEL_*`, `MINE_STACK_K`, …) |
 | ZP | `level_kills`, `level_quota`, `level_banner_t`, cargo/mine fields |
 
