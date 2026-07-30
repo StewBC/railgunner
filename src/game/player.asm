@@ -166,8 +166,10 @@ ccc_out:
     sta player_dead
     lda #0
     sta death_phase
+    sta repair_timer                ; abandon open repair (no heal)
     lda #DEATH_EXPLODE_HOLD
     sta death_timer
+    jsr rail::clear_heal_marks      ; erase lt-gray paint immediately
     jsr show_explode_frame
     lda #SFX_PLAYER_DIE
     jsr sfx::play

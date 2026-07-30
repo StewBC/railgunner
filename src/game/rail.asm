@@ -65,23 +65,77 @@ clr_v:
     rts
 .endproc
 
-; Zero heal marks only (no damage change). Used on death / new game.
+; Cancel open repair marks without healing: restore COL_RAIL on each marked
+; cell, then zero flags. Used on death (and begin_repair restart). Without the
+; colour restore, light-gray paint stuck forever when the timer was abandoned.
 .proc clear_heal_marks
     ldx #0
-    txa
 chm_h:
+    stx draw_i
+    lda rail_data::heal_mark_d, x
+    beq chm_he
+    ldy #RAIL_ROW_TOP
+    lda #COL_RAIL
+    jsr screen_color_xy
+    ldx draw_i
+    lda #0
     sta rail_data::heal_mark_d, x
+chm_he:
+    lda rail_data::heal_mark_e, x
+    beq chm_hf
+    ldy #RAIL_ROW_MID
+    lda #COL_RAIL
+    jsr screen_color_xy
+    ldx draw_i
+    lda #0
     sta rail_data::heal_mark_e, x
+chm_hf:
+    lda rail_data::heal_mark_f, x
+    beq chm_hn
+    ldy #RAIL_ROW_BOT
+    lda #COL_RAIL
+    jsr screen_color_xy
+    ldx draw_i
+    lda #0
     sta rail_data::heal_mark_f, x
+chm_hn:
     inx
     cpx #SCREEN_W
     bne chm_h
+
     ldx #0
-    txa
 chm_v:
+    stx draw_i
+    lda rail_data::heal_mark_va, x
+    beq chm_vb
+    ldx #RAIL_COL_LEFT
+    ldy draw_i
+    lda #COL_RAIL
+    jsr screen_color_xy
+    ldx draw_i
+    lda #0
     sta rail_data::heal_mark_va, x
+chm_vb:
+    lda rail_data::heal_mark_vb, x
+    beq chm_vc
+    ldx #RAIL_COL_MID
+    ldy draw_i
+    lda #COL_RAIL
+    jsr screen_color_xy
+    ldx draw_i
+    lda #0
     sta rail_data::heal_mark_vb, x
+chm_vc:
+    lda rail_data::heal_mark_vc, x
+    beq chm_vn
+    ldx #RAIL_COL_RIGHT
+    ldy draw_i
+    lda #COL_RAIL
+    jsr screen_color_xy
+    ldx draw_i
+    lda #0
     sta rail_data::heal_mark_vc, x
+chm_vn:
     inx
     cpx #SCREEN_H
     bne chm_v
