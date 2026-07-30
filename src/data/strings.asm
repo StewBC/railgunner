@@ -1,8 +1,8 @@
 ; PETSCII/ASCII uppercase strings for screen_print (0-terminated).
 ; Must live in DATA (or CODE); included under .segment "DATA".
 ;
-; High-score lines are mutable in place (initials + score digits) for a future
-; load/save path. Rank prefixes are fixed text.
+; High-score lines are mutable in place (initials, wave, shots, score) for a
+; future load/save path. Rank prefixes are fixed text.
 
 ; ---------------------------------------------------------------------------
 ; Title / menu
@@ -194,34 +194,51 @@ level_kill_quota_tbl:
     .byte 16, 16, 20, 20, 24, 24, 24, 28, 28, 28, 32, 32, 32, 32, 32
 
 ; ---------------------------------------------------------------------------
-; Past Heroes table — 18 chars + NUL each.
-; Format: "NN.   III   SSSSSS"  (3 spaces between columns; NN right-aligned)
-; Initials at offset 6 (3 chars), score at offset 12 (6 digits).
+; Past Heroes table — 29 chars + NUL each (centred at col 5 on 40-col screen).
+;
+; Header / row:
+;   " #  NAME  WAVE  SHOTS   SCORE"
+;   " 1  ---    00   00000  000000"
+;   "10  ---    15   12345  999999"
+;
+; Columns (≥2 spaces between header titles; SCORE centred over 6 digits):
+;   #     rank 2 right-aligned (1..10)
+;   NAME  3 initials
+;   WAVE  2 digits zero-padded, centred under "WAVE" (waves / level — TBD)
+;   SHOTS 5 digits zero-padded (session shots; tally is u16 → max 65535)
+;   SCORE 6 digits zero-padded (cap 999999)
+;
+; Mutable fields (future entry / load-save write in place):
 ; ---------------------------------------------------------------------------
-HS_INITIALS_OFF = 6
-HS_SCORE_OFF    = 12
-HS_LINE_LEN     = 18
+HS_INITIALS_OFF = 4
+HS_WAVE_OFF     = 11                ; centred in WAVE field (cols 10..13)
+HS_SHOTS_OFF    = 16
+HS_SCORE_OFF    = 23
+HS_LINE_LEN     = 29
+
+str_hs_header:
+    .byte " #  NAME  WAVE  SHOTS   SCORE", 0
 
 hs_line_1:
-    .byte " 1.   ---   000000", 0
+    .byte " 1  ---    00   00000  000000", 0
 hs_line_2:
-    .byte " 2.   ---   000000", 0
+    .byte " 2  ---    00   00000  000000", 0
 hs_line_3:
-    .byte " 3.   ---   000000", 0
+    .byte " 3  ---    00   00000  000000", 0
 hs_line_4:
-    .byte " 4.   ---   000000", 0
+    .byte " 4  ---    00   00000  000000", 0
 hs_line_5:
-    .byte " 5.   ---   000000", 0
+    .byte " 5  ---    00   00000  000000", 0
 hs_line_6:
-    .byte " 6.   ---   000000", 0
+    .byte " 6  ---    00   00000  000000", 0
 hs_line_7:
-    .byte " 7.   ---   000000", 0
+    .byte " 7  ---    00   00000  000000", 0
 hs_line_8:
-    .byte " 8.   ---   000000", 0
+    .byte " 8  ---    00   00000  000000", 0
 hs_line_9:
-    .byte " 9.   ---   000000", 0
+    .byte " 9  ---    00   00000  000000", 0
 hs_line_10:
-    .byte "10.   ---   000000", 0
+    .byte "10  ---    00   00000  000000", 0
 
 ; Pointer table for printing / recolour (lo, hi pairs)
 hs_line_ptrs:

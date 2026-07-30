@@ -165,22 +165,25 @@ bmp_tail:
 ; Text title (menu + past heroes)
 ; ===========================================================================
 
-; Layout rows (0-based)
+; Layout rows (0-based). Blank under PAST HEROES + column header; table +2
+; vs old. Rows 0..24 used (name on last visible line).
 TT_ROW_TITLE    = 0
 TT_ROW_HEROES   = 2
-TT_ROW_SCORE0   = 3                 ; scores occupy rows 3..12
-TT_ROW_FIRE     = 14
-TT_ROW_STORY    = 15
-TT_ROW_INSTR    = 16
-TT_ROW_CODE     = 18
-TT_ROW_AI       = 19
-TT_ROW_PROD     = 21
-TT_ROW_NAME     = 22
+TT_ROW_HS_HEAD  = 4                 ; blank row 3 under heroes
+TT_ROW_SCORE0   = 5                 ; scores occupy rows 5..14
+TT_ROW_FIRE     = 16
+TT_ROW_STORY    = 17
+TT_ROW_INSTR    = 18
+TT_ROW_CODE     = 20
+TT_ROW_AI       = 21
+TT_ROW_PROD     = 23
+TT_ROW_NAME     = 24
 
 ; Centred columns for each string ( (40 - len) / 2 )
 TT_COL_TITLE    = 14                ; "RAIL GUNNER" = 11
 TT_COL_HEROES   = 14                ; "PAST HEROES" = 11
-TT_COL_SCORE    = 11                ; " 1.   ---   000000" = 18
+TT_COL_HS_HEAD  = 5                 ; header / score lines = 29
+TT_COL_SCORE    = 5
 TT_COL_FIRE     = 14                ; 12
 TT_COL_STORY    = 14                ; 11
 TT_COL_INSTR    = 11                ; 18
@@ -213,6 +216,18 @@ TT_COL_NAME     = 10                ; 19
     jsr screen_print
     lda #COL_CYAN
     ldy #TT_ROW_HEROES
+    jsr screen_color_row
+
+    ; Column headings (row under blank after PAST HEROES)
+    lda #<str_hs_header
+    sta ptr_lo
+    lda #>str_hs_header
+    sta ptr_hi
+    ldx #TT_COL_HS_HEAD
+    ldy #TT_ROW_HS_HEAD
+    jsr screen_print
+    lda #COL_WHITE
+    ldy #TT_ROW_HS_HEAD
     jsr screen_color_row
 
     ; Ten score lines
