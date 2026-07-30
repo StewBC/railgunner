@@ -662,7 +662,10 @@ dd_skip:
 .endproc
 
 .proc draw_e
+    ; Centre cell is B∩E cross — never damaged, always SC_RAIL_X
     ldx draw_i
+    cpx #RAIL_COL_MID
+    beq de_cross
     lda rail_data::dmg_e, x
     tay
     lda e_glyph, y
@@ -677,6 +680,14 @@ dd_skip:
     lda dmg_color, y
     ldx draw_i
     ldy #RAIL_ROW_MID
+    jmp screen_color_xy
+de_cross:
+    ldy #RAIL_ROW_MID
+    lda #SC_RAIL_X
+    jsr screen_put_xy
+    ldx #RAIL_COL_MID
+    ldy #RAIL_ROW_MID
+    lda #COL_RAIL
     jmp screen_color_xy
 .endproc
 
@@ -772,18 +783,19 @@ dvc_skip:
     rts
 .endproc
 
+; dmg level 0..3 → full / dmg / crit / destroyed (space)
 d_glyph:
-    .byte SC_RAIL_D, SC_ZERO+1, SC_ZERO+2, SC_SPACE
+    .byte SC_RAIL_D, SC_RAIL_D_DMG, SC_RAIL_D_CRIT, SC_SPACE
 e_glyph:
-    .byte SC_RAIL_E, SC_ZERO+1, SC_ZERO+2, SC_SPACE
+    .byte SC_RAIL_E, SC_RAIL_E_DMG, SC_RAIL_E_CRIT, SC_SPACE
 f_glyph:
-    .byte SC_RAIL_F, SC_ZERO+1, SC_ZERO+2, SC_SPACE
+    .byte SC_RAIL_F, SC_RAIL_F_DMG, SC_RAIL_F_CRIT, SC_SPACE
 a_glyph:
-    .byte SC_RAIL_A, SC_ZERO+1, SC_ZERO+2, SC_SPACE
+    .byte SC_RAIL_A, SC_RAIL_A_DMG, SC_RAIL_A_CRIT, SC_SPACE
 b_glyph:
-    .byte SC_RAIL_B, SC_ZERO+1, SC_ZERO+2, SC_SPACE
+    .byte SC_RAIL_B, SC_RAIL_B_DMG, SC_RAIL_B_CRIT, SC_SPACE
 c_glyph:
-    .byte SC_RAIL_C, SC_ZERO+1, SC_ZERO+2, SC_SPACE
+    .byte SC_RAIL_C, SC_RAIL_C_DMG, SC_RAIL_C_CRIT, SC_SPACE
 dmg_color:
     .byte COL_RAIL, COL_ORANGE, COL_BROWN, COL_DK_GRAY
 

@@ -378,39 +378,23 @@ det_fatal:
     jmp paint_one
 .endproc
 
-; X = stack index, draw_i=col draw_j=row
+; X = stack index 0..3 (G,H,I,J), draw_i=col draw_j=row
 .proc paint_one
     lda mine_armed
     bne po_mine
     lda rail_data::ghij_stack, x
     beq po_base
-    ; stacked but not armed — show star light
-    lda #SC_STAR
+    ; stacked but not armed — hub glyph, cargo orange
+    lda hub_glyph, x
     jmp po_put_orange
 po_mine:
-    lda #SC_MINE
+    lda hub_mine_glyph, x
     jmp po_put_orange
 po_base:
-    ; restore elbow letter
-    cpx #0
-    beq po_g
-    cpx #1
-    beq po_h
-    cpx #2
-    beq po_i
-    lda #SC_RAIL_J
-    jmp po_put
-po_g:
-    lda #SC_RAIL_G
-    jmp po_put
-po_h:
-    lda #SC_RAIL_H
-    jmp po_put
-po_i:
-    lda #SC_RAIL_I
+    lda hub_glyph, x
 po_put:
     sta tmp0
-    lda #COL_GRAY
+    lda #COL_RAIL
     jmp po_put_color
 po_put_orange:
     sta tmp0
@@ -426,6 +410,12 @@ po_put_color:
     ldy draw_j
     jmp screen_color_xy
 .endproc
+
+; G,H,I,J hub / mine glyphs (screen codes)
+hub_glyph:
+    .byte SC_RAIL_G, SC_RAIL_H, SC_RAIL_I, SC_RAIL_J
+hub_mine_glyph:
+    .byte SC_RAIL_G_MINE, SC_RAIL_H_MINE, SC_RAIL_I_MINE, SC_RAIL_J_MINE
 
 .proc clear_stacks
     lda #0

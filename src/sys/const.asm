@@ -188,7 +188,6 @@ WAVE_MAX_ACTIVE_CAP = 10
 ; default K=1 → 4 landings arm mines; centre pass while armed → death.
 CARGO_SPEED       = 2               ; px/frame toward assigned G/H/I/J
 MINE_STACK_K      = 1
-SC_MINE           = $2A
 ; Sprite top-left so parcel disc centres on GHIJ char cells (see cargo.asm)
 CARGO_TGT_X0      = 160             ; G col18
 CARGO_TGT_X1      = 176             ; H col20
@@ -484,33 +483,71 @@ STORY_TYPE_DELAY = 1                ; frames between glyphs (~50% faster than 2)
 STORY_STATE_TYPING = 0
 STORY_STATE_DONE   = 1
 
-; Screen codes for placeholder art
+; Screen codes — text glyphs 0..63; UDG pack $40..$6F (see map below)
 SC_SPACE        = $20
-SC_STAR         = $2A
+SC_STAR         = $2A               ; legacy; cargo stack no longer uses this
 SC_PLUS         = $2B
-SC_DASH         = $2D               ; legacy; playfield uses SC_RAIL_*
+SC_DASH         = $2D
 SC_ZERO         = $30
-SC_VBAR         = $5D               ; legacy; playfield uses SC_RAIL_*
-SC_HASH         = $23               ; HUD bar stand-in until UDGs
-SC_LETTER_A     = $01               ; life icon stand-in / rail tile A placeholder
+SC_VBAR         = $5D
+SC_HASH         = $23
 
-; Playfield rail placeholders (font A–J until UDGs installed). Key:
-;   A left V-edge  B solid mid  C right V-edge
-;   D top H-edge   E mid H      F bottom H-edge
-;   G elbow L→up   H elbow top→R
-;   I elbow L→down J elbow R→down
-SC_RAIL_A       = $01
-SC_RAIL_B       = $02
-SC_RAIL_C       = $03
-SC_RAIL_D       = $04
-SC_RAIL_E       = $05
-SC_RAIL_F       = $06
-SC_RAIL_G       = $07
-SC_RAIL_H       = $08
-SC_RAIL_I       = $09
-SC_RAIL_J       = $0A
+; ---------------------------------------------------------------------------
+; UDG pack @ $40 (48 slots, full — life is last)
+;   AAABBBCCCDDDEEEFFF GGHHIIJJ X PPPP 1111222233334444 life
+;   A–F ×3 | G–J ×2 | B∩E cross | bars 2/4/6/8 | VL VR HT HB ×4 | life
+;   Junction tile never damaged (no alts).
+; ---------------------------------------------------------------------------
+; A–F: full (healthy), dmg, critical
+SC_RAIL_A       = $40
+SC_RAIL_A_DMG   = $41
+SC_RAIL_A_CRIT  = $42
+SC_RAIL_B       = $43
+SC_RAIL_B_DMG   = $44
+SC_RAIL_B_CRIT  = $45
+SC_RAIL_C       = $46
+SC_RAIL_C_DMG   = $47
+SC_RAIL_C_CRIT  = $48
+SC_RAIL_D       = $49
+SC_RAIL_D_DMG   = $4A
+SC_RAIL_D_CRIT  = $4B
+SC_RAIL_E       = $4C
+SC_RAIL_E_DMG   = $4D
+SC_RAIL_E_CRIT  = $4E
+SC_RAIL_F       = $4F
+SC_RAIL_F_DMG   = $50
+SC_RAIL_F_CRIT  = $51
+; G–J hubs: normal, mine
+SC_RAIL_G       = $52
+SC_RAIL_G_MINE  = $53
+SC_RAIL_H       = $54
+SC_RAIL_H_MINE  = $55
+SC_RAIL_I       = $56
+SC_RAIL_I_MINE  = $57
+SC_RAIL_J       = $58
+SC_RAIL_J_MINE  = $59
+; B∩E centre cross (after second J, before bars)
+SC_RAIL_X       = $5A
 SC_RAIL_FIRST   = SC_RAIL_A
-SC_RAIL_LAST    = SC_RAIL_J
+SC_RAIL_LAST    = SC_RAIL_J         ; letter elbows; X is separate
+; Progress bar fill (order in atlas: 2, 4, 6, 8 px)
+SC_UDG_BAR2     = $5B
+SC_UDG_BAR4     = $5C
+SC_UDG_BAR6     = $5D
+SC_UDG_BAR8     = $5E
+SC_UDG_BAR_FIRST = SC_UDG_BAR2
+SC_UDG_BAR_COUNT = 4
+; Bullets: left-vert, right-vert, top-horz, bot-horz
+SC_BULLET_VL0   = $5F
+SC_BULLET_VR0   = $63
+SC_BULLET_HT0   = $67
+SC_BULLET_HB0   = $6B
+SC_BULLET_FIRST = SC_BULLET_VL0
+SC_BULLET_COUNT = 16
+; Reserve life icon (HUD PILOTS) — last UDG
+SC_UDG_LIFE     = $6F
+SC_LETTER_A     = SC_UDG_LIFE
+SC_MINE         = SC_RAIL_G_MINE
 
 ; HUD: 000000 - WAVE 01 - ######## -PILOTS:AAAA  (40 columns)
 ; WAVE is +1 vs LVL → no space after the dash before PILOTS.
@@ -525,39 +562,6 @@ HUD_PROGRESS_LEN        = 8
 HUD_PILOTS_LABEL_COL    = 29        ; "PILOTS:" (tight: " -PILOTS:")
 HUD_LIVES_COL           = 36
 HUD_LIVES_MAX_SHOW      = 4
-
-; ---------------------------------------------------------------------------
-; UDG reservation map (overlay onto CHARSET segment at install)
-; Bullets already use half-cell lanes (4 phases × 2 halves = 8 per axis):
-;   $F0–$F7  vertical  (VL0–3, VR0–3)
-;   $F8–$FF  horizontal (HT0–3, HB0–3)  — reserved & defined
-; Planned / reserved block (placeholders until art installs):
-;   $C0      life icon (HUD)
-;   $C1–$CA  rail normal a–j (10)
-;   $CB–$D0  rail damage set 1 (a–f only, 6)
-;   $D1–$D6  rail damage set 2 (a–f only, 6)
-;   $D7–$DA  HUD bar fill (shared health + ammo): 8, 6, 4, 2 px tall
-;            Empty cell = SC_SPACE (no blank UDG)
-; Count: 1 life + 10 rail + 6 + 6 + 4 bar + 8v + 8h = 43
-; ---------------------------------------------------------------------------
-SC_BULLET_VL0   = $F0
-SC_BULLET_VR0   = $F4
-SC_BULLET_HT0   = $F8
-SC_BULLET_HB0   = $FC
-SC_BULLET_FIRST = SC_BULLET_VL0
-SC_BULLET_COUNT = 16                ; 8 vert + 8 horiz (4px half-lanes)
-SC_UDG_LIFE     = $C0
-SC_UDG_RAIL0    = $C1               ; a–j normal → $C1..$CA
-SC_UDG_DMG1     = $CB               ; a–f damage 1
-SC_UDG_DMG2     = $D1               ; a–f damage 2
-; Bar cells: one set for H and A (colour RAM distinguishes). Index by fill step.
-SC_UDG_BAR8     = $D7               ; full 8 px
-SC_UDG_BAR6     = $D8
-SC_UDG_BAR4     = $D9
-SC_UDG_BAR2     = $DA
-SC_UDG_BAR_FIRST = SC_UDG_BAR8
-SC_UDG_BAR_COUNT = 4
-SC_UDG_COUNT    = 43                ; life+rails+dmg+bars+bullets
 
 ; ---------------------------------------------------------------------------
 ; Bullets (character stream; V and H axes, 4px half-lanes)

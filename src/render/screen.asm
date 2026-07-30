@@ -352,13 +352,19 @@ h12_put:
     cmp #40
     bcc h12
 
-    ; --- Row 13: solid mid E full width ---
+    ; --- Row 13: solid mid E; centre cell is B∩E cross (SC_RAIL_X) ---
     lda #0
 h13:
     sta draw_j
     ldx draw_j
     ldy #RAIL_ROW_MID
+    cpx #RAIL_COL_MID
+    bne h13_e
+    lda #SC_RAIL_X
+    jmp h13_put
+h13_e:
     lda #SC_RAIL_E
+h13_put:
     jsr screen_put_xy
     inc draw_j
     lda draw_j

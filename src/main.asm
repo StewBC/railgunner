@@ -148,6 +148,5 @@ mux_build_failed:
 .segment "DATA"
 .include "data/strings.asm"
 .include "data/sprites.asm"
-.include "data/charset_bullets.asm"
-.include "data/charset_bars.asm"
+; charset_bullets / charset_bars retired — baked into CHARSET atlas
 .include "data/waves.asm"

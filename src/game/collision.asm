@@ -525,22 +525,11 @@ cr_no:
 .endproc
 
 ; A = screen code. C clear = this is a rail *tile* (any appearance).
-; Valid set:
-;   interim stand-ins  SC_RAIL_A..J     ($01..$0A) — look like A–J, are tiles
-;   production normal  SC_UDG_RAIL0..   ($C1..$CA) — a–j UDGs (reserved)
-;   production damage  SC_UDG_DMG1/2    ($CB..$D6) — a–f scar alts (reserved)
-; Geometry already forbids HUD; this set is what counts once draw flips to UDGs.
+; UDG pack: $40..$5A = A–F (3) + G–J hub/mine + B∩E cross. Not bars/bullets/life.
 .proc is_rail_tile
-    ; Interim placeholders (today's playfield draw)
-    cmp #SC_RAIL_FIRST
-    bcc irt_udg
-    cmp #SC_RAIL_LAST + 1
-    bcc irt_yes
-irt_udg:
-    ; Continuous reserved block $C1..$D6 (10 normal + 6 dmg1 + 6 dmg2)
-    cmp #SC_UDG_RAIL0
+    cmp #SC_RAIL_A                  ; $40
     bcc irt_no
-    cmp #SC_UDG_DMG2 + 6            ; first code after dmg2 = $D7 (bar)
+    cmp #SC_RAIL_X + 1              ; $5B = first bar
     bcs irt_no
 irt_yes:
     clc

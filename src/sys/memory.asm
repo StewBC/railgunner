@@ -5,7 +5,7 @@
 ;   ZEROPAGE  $02     noemit variable map
 ;   BASIC     $0801   SYS stub (10 SYS 2061)
 ;   CODE      $080d   low executable (must end before CHARSET $2800)
-;   CHARSET   $2800   2K VIC text font (futura 0..63; bars/bullets overlaid at init)
+;   CHARSET   $2800   2K VIC text font (0..63 text + $40..$6E UDG pack, baked)
 ;   TITLE     $4000   title hires source (bitmap + colour matrix)
 ;   DATA      $6328   strings / tables / sprite frame source
 ;   CODE_HI   $7400   overflow game logic (rail damage, cargo; after DATA)
@@ -41,7 +41,7 @@
 ; tst/ demos place their own frames in a SPRITES segment at $3000 instead.
 ;
 ; After cold init + stage sprite install:
-;   $2800–$2FFF  character set (0..63 futura; $D7 bars; $F0–$FF bullets)
+;   $2800–$2FFF  character set (assets/charset/railgunner_charset.bin)
 ;   $3000–$30FF  drone C   ptr $C0–$C3
 ;   $3100–$31FF  drone B   ptr $C4–$C7
 ;   $3200–$32FF  drone A   ptr $C8–$CB

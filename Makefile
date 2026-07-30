@@ -5,7 +5,7 @@
 #   make coop       build, windowed emu + control port, coop_debug watcher
 #   make assets     regenerate converted art when sources change
 #   make screens    title (and future) screen bins only
-#   make charset    charset bins (placeholder until converters exist)
+#   make charset    atlas PNG → railgunner_charset.bin
 #   make sprites    sprite bins (placeholder until converters exist)
 #   make clean      remove build/ outputs (not assets/ PNGs or generated bins)
 #
@@ -30,10 +30,15 @@ TITLE_BINS := $(TITLE_HIRES_BIN) $(TITLE_HIRES_COL)
 TITLE_OUT_PREFIX := $(ROOT)/assets/screens/title
 PNG_TO_HIRES := $(TOOLS)/png_to_c64_hires.py
 PNG_TO_SPRITE := $(TOOLS)/png_to_c64_sprite.py
+PNG_TO_CHARSET := $(TOOLS)/png_to_c64_charset.py
 
-# Future: list more screen / charset products here.
+# Future: list more screen products here.
 SCREEN_BINS := $(TITLE_BINS)
-CHARSET_BINS :=
+
+# VIC text font atlas (16×7 cells = 112 glyphs → 2K bin)
+CHARSET_PNG := $(ROOT)/assets/charset/railgunner_charset.png
+CHARSET_BIN := $(ROOT)/assets/charset/railgunner_charset.bin
+CHARSET_BINS := $(CHARSET_BIN)
 
 # Multicolour sprite frames: each assets/sprites/*.png → same-stem .bin (64 bytes).
 # --fit: medium/large source art currently exceeds 12×21; scale until remastered.
@@ -64,7 +69,7 @@ help:
 	@echo "  make coop         build, emu+control-port, coop live-debug watcher"
 	@echo "  make assets       screens + charset + sprites converters"
 	@echo "  make screens      railgunner.png → title_hires*.bin"
-	@echo "  make charset      (no converters yet)"
+	@echo "  make charset      railgunner_charset.png → .bin (2K font)"
 	@echo "  make sprites      assets/sprites/*.png → *.bin (64-byte MC)"
 	@echo "  make clean        wipe build/ (keeps assets/ PNGs; bins via make assets)"
 
@@ -91,9 +96,10 @@ assets: screens charset sprites
 
 screens: $(SCREEN_BINS)
 
-charset:
-	@# No charset converters yet — directory reserved under assets/charset/
-	@true
+charset: $(CHARSET_BINS)
+
+$(CHARSET_BIN): $(CHARSET_PNG) $(PNG_TO_CHARSET)
+	$(PYTHON) $(PNG_TO_CHARSET) $(CHARSET_PNG) -o $(CHARSET_BIN)
 
 sprites: $(SPRITE_BINS)
 

@@ -192,7 +192,7 @@ lives_n:
 lives_draw:
     ldx score_work1
     ldy #HUD_ROW
-    lda #SC_LETTER_A
+    lda #SC_UDG_LIFE
     jsr screen_put_xy
     dec score_work1
     dec score_work0
