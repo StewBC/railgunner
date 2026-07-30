@@ -46,9 +46,8 @@ VIC_CTRL1_BITMAP = $3b              ; bitmap (BMM), DEN, 25 rows, yscroll 3
 VIC_CTRL1_TEXT_BLANK   = VIC_CTRL1_TEXT & VIC_DEN_MASK
 VIC_CTRL1_BITMAP_BLANK = VIC_CTRL1_BITMAP & VIC_DEN_MASK
 VIC_CTRL2_HIRES = $08               ; 40 cols, multicolour off
-VIC_MEM_TEXT    = $14               ; screen $0400, charset ROM $1000 (boot only)
-; Text + RAM charset @ $2800 (bank 0). CODE currently extends past $2000 into
-; the old charset slot — do not put font at $2000 or install will trash IRQ code.
+VIC_MEM_TEXT    = $14               ; screen $0400, charset ROM $1000 (unused after boot)
+; Text + RAM charset @ $2800 (bank 0, segment CHARSET). CODE must end before $2800.
 ; $D018: screen $0400 (bits7-4=1), charset $2800 (bits3-1=5) → $1A
 VIC_MEM_TEXT_RAM = $1A
 BITMAP_SIZE     = 8000              ; 320×200 / 8
@@ -69,9 +68,8 @@ VIC_MEM_TITLE   = $38
 ; Character set (VIC bank 0) — install once at cold init; all text uses this.
 ; $2800–$2FFF: after CODE (~$20E8), before SPRITE_BLOCK $3000.
 ; ---------------------------------------------------------------------------
-CHARSET_RAM     = $2800
+CHARSET_RAM     = $2800             ; segment CHARSET — PRG-resident font
 CHARSET_SIZE    = 2048              ; 256 glyphs × 8 bytes
-CHAR_ROM        = $D000             ; uppercase/graphics set (I/O bank out)
 SPRITE_H_PX             = 21        ; VIC sprite height (lines)
 
 ; Joystick port 2 bits (active low on PRA)
@@ -529,7 +527,7 @@ HUD_LIVES_COL           = 36
 HUD_LIVES_MAX_SHOW      = 4
 
 ; ---------------------------------------------------------------------------
-; UDG reservation map (install over ROM copy at CHARSET_RAM)
+; UDG reservation map (overlay onto CHARSET segment at install)
 ; Bullets already use half-cell lanes (4 phases × 2 halves = 8 per axis):
 ;   $F0–$F7  vertical  (VL0–3, VR0–3)
 ;   $F8–$FF  horizontal (HT0–3, HB0–3)  — reserved & defined

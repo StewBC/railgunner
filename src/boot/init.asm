@@ -11,13 +11,13 @@ BLNSW           = $CC
     lda #1
     sta BLNSW
 
-    ; Safe text defaults (ROM font) until charset_install
+    ; Point VIC at RAM font early (CHARSET segment already at $2800 from load)
     lda #VIC_CTRL1_TEXT
     sta VIC_CTRL1
     lda #VIC_CTRL2_HIRES
     sta VIC_CTRL2
     jsr vic_select_bank0
-    lda #VIC_MEM_TEXT
+    lda #VIC_MEM_TEXT_RAM
     sta VIC_MEM
 
     lda #COL_BLUE
@@ -27,7 +27,7 @@ BLNSW           = $CC
 
     jsr screen_clear
 
-    ; Fire-and-forget: title hires under KERNAL; RAM font for every text screen
+    ; Title hires under KERNAL; overlay bullet/bar UDGs onto CHARSET
     jsr title_park_hires
     jsr charset_install
     jsr vic_select_bank0

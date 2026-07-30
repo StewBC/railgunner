@@ -1,43 +1,12 @@
-; Character set: copy C64 char ROM → RAM once, install bullet + bar UDGs.
-; All text modes use this font (VIC bank 0, CHARSET_RAM @ $2800).
+; Character set @ CHARSET_RAM ($2800) — PRG-resident futuristic font (seg CHARSET).
+; Cold init only overlays bullet + bar UDGs (glyphs 0..63 already loaded).
 
 ; ---------------------------------------------------------------------------
 ; charset_install — cold init (once). Clobbers A,X,Y,ptr_*,print_ptr_*,tmp0
 ; ---------------------------------------------------------------------------
 .proc charset_install
-    sei
-
-    lda $01
-    sta tmp0
-    lda #$33                        ; CHAR ROM at $D000
-    sta $01
-
-    lda #<CHAR_ROM
-    sta ptr_lo
-    lda #>CHAR_ROM
-    sta ptr_hi
-    lda #<CHARSET_RAM
-    sta print_ptr_lo
-    lda #>CHARSET_RAM
-    sta print_ptr_hi
-
-    ldx #>CHARSET_SIZE              ; 8 pages
-    ldy #0
-copy_pages:
-    lda (ptr_lo), y
-    sta (print_ptr_lo), y
-    iny
-    bne copy_pages
-    inc ptr_hi
-    inc print_ptr_hi
-    dex
-    bne copy_pages
-
-    lda tmp0
-    sta $01
-    cli
-
-    ; Overlay bullet UDGs at SC_BULLET_FIRST
+    ; Base font is already at $2800 via segment CHARSET (no ROM copy).
+    ; Overlay bullet UDGs at SC_BULLET_FIRST ($F0)
     lda #<chr_bullet_udg
     sta ptr_lo
     lda #>chr_bullet_udg
@@ -55,7 +24,7 @@ overlay_bul:
     cpy #CHR_BULLET_UDG_BYTES
     bne overlay_bul
 
-    ; Overlay HUD bar UDGs at SC_UDG_BAR_FIRST (8/6/4/2 px left-fill)
+    ; Overlay HUD bar UDGs at SC_UDG_BAR_FIRST ($D7)
     lda #<chr_bar_udg
     sta ptr_lo
     lda #>chr_bar_udg

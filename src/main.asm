@@ -10,6 +10,7 @@
 .segdef "ZEROPAGE", $02, noemit
 .segdef "BASIC", $0801
 .segdef "CODE", $080d               ; low code — keep below CHARSET $2800
+.segdef "CHARSET", $2800            ; 2K RAM font (futura 0..63 + UDG overlays at install)
 .segdef "TITLE", $4000              ; hires source (bitmap + colours)
 .segdef "DATA", $6328               ; strings/tables + sprite frame source
 .segdef "CODE_HI", $7400            ; overflow game logic (after DATA + sprite frames)
@@ -128,6 +129,12 @@ mux_build_failed:
 .include "game/message.asm"
 .include "game/play.asm"
 .include "game/life.asm"
+
+; ---------------------------------------------------------------------------
+; Character set (VIC text font @ $2800 — load in place, no ROM copy)
+; ---------------------------------------------------------------------------
+.segment "CHARSET"
+.include "data/charset_font.asm"
 
 ; ---------------------------------------------------------------------------
 ; Title graphics (source arrays; copied to $2000 / $0400 at runtime)

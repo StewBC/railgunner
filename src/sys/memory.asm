@@ -5,14 +5,15 @@
 ;   ZEROPAGE  $02     noemit variable map
 ;   BASIC     $0801   SYS stub (10 SYS 2061)
 ;   CODE      $080d   low executable (must end before CHARSET $2800)
+;   CHARSET   $2800   2K VIC text font (futura 0..63; bars/bullets overlaid at init)
 ;   TITLE     $4000   title hires source (bitmap + colour matrix)
 ;   DATA      $6328   strings / tables / sprite frame source
 ;   CODE_HI   $7400   overflow game logic (rail damage, cargo; after DATA)
 ;   OBJECTS   $C000   noemit graphical-object/mux runtime state
 ;
-; VIC bank 0 runtime (not PRG-resident source):
+; VIC bank 0:
 ;   SCREEN_RAM    $0400   text screen
-;   CHARSET_RAM   $2800   2K RAM font (after cold init; not $2000 — CODE lives there)
+;   CHARSET_RAM   $2800   = segment CHARSET (PRG-resident; not $2000)
 ;   COLOR_RAM     $D800
 ;
 ; Launch: tools/agent_session.py assembles, fixes BASIC pointers, pastes RUN
@@ -25,8 +26,8 @@
 ;   Sprite ptrs   $07F8–$07FF (when sprites used)
 
 ; VIC bank 0 ($0000–$3FFF) — play + all text UI:
-;   CODE          ~$080D–$20E8+  (must NOT be overwritten by charset install)
-;   CHARSET_RAM   = $2800   ; 2K font (ROM copy + UDGs); cold init once
+;   CODE          ~$080D–$24xx   (must end before CHARSET $2800)
+;   CHARSET_RAM   = $2800   ; 2K font segment (no C64 ROM copy)
 ;   SPRITE_BLOCK  = $3000   ; drone frames (reinstall each stage enter)
 ;   PLAYER_BUF_0  = $3E00   ; sprite pointer $F8
 ;   PLAYER_BUF_1  = $3E40   ; sprite pointer $F9
@@ -40,7 +41,7 @@
 ; tst/ demos place their own frames in a SPRITES segment at $3000 instead.
 ;
 ; After cold init + stage sprite install:
-;   $2800–$2FFF  character set ($F0–$FF = 16 bullet UDGs)
+;   $2800–$2FFF  character set (0..63 futura; $D7 bars; $F0–$FF bullets)
 ;   $3000–$30FF  drone C   ptr $C0–$C3
 ;   $3100–$31FF  drone B   ptr $C4–$C7
 ;   $3200–$32FF  drone A   ptr $C8–$CB
