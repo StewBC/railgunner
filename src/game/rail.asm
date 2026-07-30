@@ -191,6 +191,8 @@ mpt_done:
 .endproc
 
 ; Walk every marked tile back one damage step (0 stays 0); clear marks.
+; Always restore COL_RAIL colour — draw_* may skip GHIJ/junction geometry,
+; so colour must not stay stuck on COL_RAIL_HEAL_MARK.
 .proc apply_heal_marks
     ldx #0
 ahm_h:
@@ -203,6 +205,10 @@ ahm_h:
 ahm_hd0:
     jsr draw_d
     ldx draw_i
+    ldy #RAIL_ROW_TOP
+    lda #COL_RAIL
+    jsr screen_color_xy
+    ldx draw_i
     lda #0
     sta rail_data::heal_mark_d, x
 ahm_he:
@@ -214,6 +220,10 @@ ahm_he:
 ahm_he0:
     jsr draw_e
     ldx draw_i
+    ldy #RAIL_ROW_MID
+    lda #COL_RAIL
+    jsr screen_color_xy
+    ldx draw_i
     lda #0
     sta rail_data::heal_mark_e, x
 ahm_hf:
@@ -224,6 +234,10 @@ ahm_hf:
     dec rail_data::dmg_f, x
 ahm_hf0:
     jsr draw_f
+    ldx draw_i
+    ldy #RAIL_ROW_BOT
+    lda #COL_RAIL
+    jsr screen_color_xy
     ldx draw_i
     lda #0
     sta rail_data::heal_mark_f, x
@@ -242,6 +256,10 @@ ahm_v:
     dec rail_data::dmg_va, x
 ahm_va0:
     jsr draw_va
+    ldx #RAIL_COL_LEFT
+    ldy draw_i
+    lda #COL_RAIL
+    jsr screen_color_xy
     ldx draw_i
     lda #0
     sta rail_data::heal_mark_va, x
@@ -253,6 +271,10 @@ ahm_vb:
     dec rail_data::dmg_vb, x
 ahm_vb0:
     jsr draw_vb
+    ldx #RAIL_COL_MID
+    ldy draw_i
+    lda #COL_RAIL
+    jsr screen_color_xy
     ldx draw_i
     lda #0
     sta rail_data::heal_mark_vb, x
@@ -264,6 +286,10 @@ ahm_vc:
     dec rail_data::dmg_vc, x
 ahm_vc0:
     jsr draw_vc
+    ldx #RAIL_COL_RIGHT
+    ldy draw_i
+    lda #COL_RAIL
+    jsr screen_color_xy
     ldx draw_i
     lda #0
     sta rail_data::heal_mark_vc, x
@@ -271,6 +297,8 @@ ahm_vn:
     inx
     cpx #SCREEN_H
     bne ahm_v
+    ; Hubs may have been mark-tinted; redraw GHIJ so mine/hub glyphs keep COL_RAIL
+    jsr cargo::paint_ghij
     rts
 .endproc
 
@@ -638,6 +666,7 @@ dbv_rts:
 ; Draw helpers — draw_i = col (H) or row (V)
 ; Never stamp over G/H/I/J (or H-band cells that are not V A/B/C).
 ; ---------------------------------------------------------------------------
+; Glyph by damage only; colour always COL_RAIL (cracked art carries the look).
 .proc draw_d
     jsr col_is_junction
     bcs dd_skip
@@ -645,17 +674,12 @@ dbv_rts:
     lda rail_data::dmg_d, x
     tay
     lda d_glyph, y
-    sta tmp0
     ldy #RAIL_ROW_TOP
     ldx draw_i
-    lda tmp0
     jsr screen_put_xy
     ldx draw_i
-    lda rail_data::dmg_d, x
-    tay
-    lda dmg_color, y
-    ldx draw_i
     ldy #RAIL_ROW_TOP
+    lda #COL_RAIL
     jmp screen_color_xy
 dd_skip:
     rts
@@ -669,17 +693,12 @@ dd_skip:
     lda rail_data::dmg_e, x
     tay
     lda e_glyph, y
-    sta tmp0
     ldy #RAIL_ROW_MID
     ldx draw_i
-    lda tmp0
     jsr screen_put_xy
     ldx draw_i
-    lda rail_data::dmg_e, x
-    tay
-    lda dmg_color, y
-    ldx draw_i
     ldy #RAIL_ROW_MID
+    lda #COL_RAIL
     jmp screen_color_xy
 de_cross:
     ldy #RAIL_ROW_MID
@@ -698,17 +717,12 @@ de_cross:
     lda rail_data::dmg_f, x
     tay
     lda f_glyph, y
-    sta tmp0
     ldy #RAIL_ROW_BOT
     ldx draw_i
-    lda tmp0
     jsr screen_put_xy
     ldx draw_i
-    lda rail_data::dmg_f, x
-    tay
-    lda dmg_color, y
-    ldx draw_i
     ldy #RAIL_ROW_BOT
+    lda #COL_RAIL
     jmp screen_color_xy
 df_skip:
     rts
@@ -721,17 +735,12 @@ df_skip:
     lda rail_data::dmg_va, x
     tay
     lda a_glyph, y
-    sta tmp0
-    ldy draw_i                      ; row
+    ldy draw_i
     ldx #RAIL_COL_LEFT
-    lda tmp0
     jsr screen_put_xy
-    ldx draw_i
-    lda rail_data::dmg_va, x
-    tay
-    lda dmg_color, y
     ldx #RAIL_COL_LEFT
     ldy draw_i
+    lda #COL_RAIL
     jmp screen_color_xy
 dva_skip:
     rts
@@ -744,17 +753,12 @@ dva_skip:
     lda rail_data::dmg_vb, x
     tay
     lda b_glyph, y
-    sta tmp0
     ldy draw_i
     ldx #RAIL_COL_MID
-    lda tmp0
     jsr screen_put_xy
-    ldx draw_i
-    lda rail_data::dmg_vb, x
-    tay
-    lda dmg_color, y
     ldx #RAIL_COL_MID
     ldy draw_i
+    lda #COL_RAIL
     jmp screen_color_xy
 dvb_skip:
     rts
@@ -767,17 +771,12 @@ dvb_skip:
     lda rail_data::dmg_vc, x
     tay
     lda c_glyph, y
-    sta tmp0
     ldy draw_i
     ldx #RAIL_COL_RIGHT
-    lda tmp0
     jsr screen_put_xy
-    ldx draw_i
-    lda rail_data::dmg_vc, x
-    tay
-    lda dmg_color, y
     ldx #RAIL_COL_RIGHT
     ldy draw_i
+    lda #COL_RAIL
     jmp screen_color_xy
 dvc_skip:
     rts
@@ -796,7 +795,5 @@ b_glyph:
     .byte SC_RAIL_B, SC_RAIL_B_DMG, SC_RAIL_B_CRIT, SC_SPACE
 c_glyph:
     .byte SC_RAIL_C, SC_RAIL_C_DMG, SC_RAIL_C_CRIT, SC_SPACE
-dmg_color:
-    .byte COL_RAIL, COL_ORANGE, COL_BROWN, COL_DK_GRAY
 
 .endscope
