@@ -308,8 +308,8 @@ rlc_paint:
     jmp check_arm                   ; may disarm mines if we broke a full set
 .endproc
 
-; All four hub tiles at ≥ K → arm mines (glyphs). Detonate only when the
-; player next *enters* the centre (see player::check_clear_centre).
+; All four hub tiles at ≥ K → arm for centre-pass detonate.
+; Glyphs are per-tile in paint_ghij (not gated on mine_armed).
 .proc check_arm
     ldx #0
 ca_loop:
@@ -321,7 +321,7 @@ ca_loop:
     bcc ca_loop
     lda #1
     sta mine_armed
-    jmp paint_ghij
+    rts
 ca_no:
     lda #0
     sta mine_armed
@@ -379,35 +379,25 @@ det_fatal:
 .endproc
 
 ; X = stack index 0..3 (G,H,I,J), draw_i=col draw_j=row
+; Per-tile: stack ≥ K → mine glyph as soon as cargo lands; else hub.
+; Colour always COL_RAIL (no orange tint). mine_armed is detonate-only.
 .proc paint_one
-    lda mine_armed
-    bne po_mine
     lda rail_data::ghij_stack, x
-    beq po_base
-    ; stacked but not armed — hub glyph, cargo orange
-    lda hub_glyph, x
-    jmp po_put_orange
-po_mine:
+    cmp #MINE_STACK_K
+    bcc po_base
     lda hub_mine_glyph, x
-    jmp po_put_orange
+    jmp po_put
 po_base:
     lda hub_glyph, x
 po_put:
     sta tmp0
-    lda #COL_RAIL
-    jmp po_put_color
-po_put_orange:
-    sta tmp0
-    lda #COL_ORANGE
-po_put_color:
-    pha
     ldx draw_i
     ldy draw_j
     lda tmp0
     jsr screen_put_xy
-    pla
     ldx draw_i
     ldy draw_j
+    lda #COL_RAIL
     jmp screen_color_xy
 .endproc
 
