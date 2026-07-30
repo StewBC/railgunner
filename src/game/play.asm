@@ -20,6 +20,7 @@
 play_logic:
     lda #0
     sta pending_mode
+    jsr rail::strike_frame_reset    ; one rail apply per drone per tick max
     lda #PROFILE_PLAY_PLAYER
     sta objects::profile_marker
     jsr player::update

@@ -106,11 +106,8 @@ ra_c:
 ra_ab:
     lda player_dead
     bne ra_free                     ; dying: no rail damage
-    txa
-    pha
-    jsr rail::apply_ab_hit
-    pla
-    tax
+    ; Rail damage = remaining HP (blue=3, green=2, cyan=1).
+    jsr drones::apply_rail_strikes
 ra_free:
     jsr objects::retire_and_try_free
     rts

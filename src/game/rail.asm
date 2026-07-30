@@ -1,41 +1,37 @@
-; Rail damage (A/B). Approach-aware:
+; Rail damage (heavy/medium/light = 3/2/1 strike points from remaining HP).
 ;
-;   H-rail (DOWN/UP):
-;     From top:    D (outer) → E (core)   per column
-;     From bottom: F (outer) → E (core)   per column
-;   V-rail (RIGHT/LEFT — drone flies sideways into the shaft):
-;     From left:   A (outer) → B (core)   per row
-;     From right:  C (outer) → B (core)   per row
+;   H-rail (DOWN/UP):  D/F outer → E core per column
+;   V-rail (LEFT/RIGHT): A/C outer → B core per row
 ;
-; Core destroyed (E column or B row) → game over.
-; Strike footprint: 2 columns (H) or 2 rows (V) under the drone body.
-;
-; Junction: G/H/I/J (and elbow B on the H edges) have no damage glyphs
-; (UDGs are a–f only). H-outer D/F never stamps cols 18–20; V damage never
-; stamps rows 12–14 (those cells are the H-rail). E core still takes damage
-; through the centre.
+; Per-cell values are damage *taken* (0 = healthy). Outer dies at RAIL_OUTER_HP,
+; core at RAIL_CORE_HP (game over). Points spill outer → core in one apply.
+; Glyphs mapped from damage (not 1:1 with points). Footprint: 2 cols/rows.
 ;
 ; screen_put_xy clobbers tmp0–tmp2 — keep approach in draw_j for the strike.
 
 .segment "OBJECTS"
 .scope rail_data
-; H-rail: index = column 0..39
-dmg_d:  .res SCREEN_W              ; top edge D
+; H-rail: index = column 0..39 — damage taken 0..RAIL_*_HP
+dmg_d:  .res SCREEN_W              ; top edge D (outer)
 dmg_e:  .res SCREEN_W              ; mid solid E (core)
-dmg_f:  .res SCREEN_W              ; bottom edge F
+dmg_f:  .res SCREEN_W              ; bottom edge F (outer)
 ; V-rail: index = row 0..24
-dmg_va: .res SCREEN_H              ; left outer A  (col RAIL_COL_LEFT)
-dmg_vb: .res SCREEN_H              ; mid core B   (col RAIL_COL_MID)
-dmg_vc: .res SCREEN_H              ; right outer C (col RAIL_COL_RIGHT)
+dmg_va: .res SCREEN_H              ; left outer A
+dmg_vb: .res SCREEN_H              ; mid core B
+dmg_vc: .res SCREEN_H              ; right outer C
 ; G/H/I/J cargo stacks (0=G,1=H,2=I,3=J)
 ghij_stack: .res 4
-; Repair (7b): tiles marked during repair_timer; heal 1 step when timer ends
+; Repair (7b): tiles marked during repair_timer; heal 1 point when timer ends
 heal_mark_d:  .res SCREEN_W
 heal_mark_e:  .res SCREEN_W
 heal_mark_f:  .res SCREEN_W
 heal_mark_va: .res SCREEN_H
 heal_mark_vb: .res SCREEN_H
 heal_mark_vc: .res SCREEN_H
+; Current impact
+dmg_amt:  .res 1                   ; points for this strike (1..3)
+hit_left: .res 1                   ; points left while applying one cell
+hit_slot: .res 1                   ; slot that already applied rail dmg this tick ($FF=none)
 .endscope
 
 .segment "CODE_HI"
@@ -350,8 +346,22 @@ rfs_vn:
     rts
 .endproc
 
-; X = drone slot
+; Clear per-tick rail-hit dedupe (call once at start of play tick).
+.proc strike_frame_reset
+    lda #$FF
+    sta rail_data::hit_slot
+    rts
+.endproc
+
+; X = drone slot. rail_data::dmg_amt = strike points (1..3) set by caller.
+; Applies points to ONE primary cell only (not ×2 footprint). Idempotent per
+; slot per tick so geometry + collision cannot double-apply.
 .proc apply_ab_hit
+    cpx rail_data::hit_slot
+    bne aah_go
+    rts                             ; already struck this slot this tick
+aah_go:
+    stx rail_data::hit_slot
     lda objects::obj_user, x
     sta draw_j                      ; approach
     cmp #DRONE_APPROACH_RIGHT
@@ -360,7 +370,7 @@ rfs_vn:
     beq apply_v
     jmp apply_h
 
-; ----- V-rail: 2 rows under body, outer col then core B -----
+; ----- V-rail: primary row under body only -----
 apply_v:
     lda objects::obj_y_int, x
     clc
@@ -379,19 +389,12 @@ av_row:
     bcc av_ok
     lda #SCREEN_H - 1
 av_ok:
-    sta draw_i                      ; row0
-    jsr damage_row
-    lda draw_i
-    clc
-    adc #1
-    cmp #SCREEN_H
-    bcs av_done
     sta draw_i
-    jsr damage_row
-av_done:
-    rts
+    lda rail_data::dmg_amt
+    sta rail_data::hit_left
+    jmp damage_row
 
-; ----- H-rail: 2 cols under body, outer row then core E -----
+; ----- H-rail: primary column under body only -----
 apply_h:
     lda objects::obj_x_lo, x
     clc
@@ -419,22 +422,14 @@ apply_h:
     lda #39
 ah_ok:
     sta draw_i
-    jsr damage_col
-    lda draw_i
-    clc
-    adc #1
-    cmp #40
-    bcs ah_done
-    sta draw_i
-    jsr damage_col
-ah_done:
-    rts
+    lda rail_data::dmg_amt
+    sta rail_data::hit_left
+    jmp damage_col
 ah0:
     lda #0
     sta draw_i
-    jsr damage_col
-    lda #1
-    sta draw_i
+    lda rail_data::dmg_amt
+    sta rail_data::hit_left
     jmp damage_col
 .endproc
 
@@ -469,7 +464,7 @@ rih_no:
 .endproc
 
 ; ---------------------------------------------------------------------------
-; H-rail column damage (draw_i = col, draw_j = approach UP/DOWN)
+; Spend hit_left points on one column/row: outer first, spill to core.
 ; ---------------------------------------------------------------------------
 .proc damage_col
     lda draw_j
@@ -479,85 +474,66 @@ rih_no:
 .endproc
 
 .proc dmg_from_top
-    ; Junction top edge is G/B/H — no D decay; pass strike into E core
+dft_loop:
+    lda rail_data::hit_left
+    beq dft_done
+    dec rail_data::hit_left
     jsr col_is_junction
-    bcs dft_e_only
+    bcs dft_core                    ; no D at G/B/H — all points to E
     ldx draw_i
     lda rail_data::dmg_d, x
-    cmp #3
-    bcs dft_e_only
-    cmp #2
-    beq dft_d_finish
+    cmp #RAIL_OUTER_HP
+    bcs dft_core                    ; outer already gone
     clc
     adc #1
     sta rail_data::dmg_d, x
     jsr draw_d
-    rts
-dft_d_finish:
-    lda #3
-    sta rail_data::dmg_d, x
-    jsr draw_d
+    jmp dft_loop
+dft_core:
     ldx draw_i
-    lda rail_data::dmg_e, x
-    bne dft_e_step
-    lda #1
-    sta rail_data::dmg_e, x
-    jsr draw_e
+    jsr damage_e_h_one
+    jmp dft_loop
+dft_done:
     rts
-dft_e_only:
-    ldx draw_i
-dft_e_step:
-    jmp damage_e_h
 .endproc
 
 .proc dmg_from_bot
-    ; Junction bottom edge is I/B/J — no F decay; pass strike into E core
+dfb_loop:
+    lda rail_data::hit_left
+    beq dfb_done
+    dec rail_data::hit_left
     jsr col_is_junction
-    bcs dfb_e_only
+    bcs dfb_core
     ldx draw_i
     lda rail_data::dmg_f, x
-    cmp #3
-    bcs dfb_e_only
-    cmp #2
-    beq dfb_f_finish
+    cmp #RAIL_OUTER_HP
+    bcs dfb_core
     clc
     adc #1
     sta rail_data::dmg_f, x
     jsr draw_f
-    rts
-dfb_f_finish:
-    lda #3
-    sta rail_data::dmg_f, x
-    jsr draw_f
+    jmp dfb_loop
+dfb_core:
     ldx draw_i
-    lda rail_data::dmg_e, x
-    bne dfb_e_step
-    lda #1
-    sta rail_data::dmg_e, x
-    jsr draw_e
+    jsr damage_e_h_one
+    jmp dfb_loop
+dfb_done:
     rts
-dfb_e_only:
-    ldx draw_i
-dfb_e_step:
-    jmp damage_e_h
 .endproc
 
-.proc damage_e_h
+; +1 to E core at X; fatal if reaches RAIL_CORE_HP. Clobbers A.
+.proc damage_e_h_one
     lda rail_data::dmg_e, x
-    cmp #3
+    cmp #RAIL_CORE_HP
     bcs deh_rts
-    cmp #2
-    beq deh_destroy
     clc
     adc #1
     sta rail_data::dmg_e, x
     jsr draw_e
-    rts
-deh_destroy:
-    lda #3
-    sta rail_data::dmg_e, x
-    jsr draw_e
-    ; Full core collapse → death sequence then game over (not instant mode_set)
+    ldx draw_i
+    lda rail_data::dmg_e, x
+    cmp #RAIL_CORE_HP
+    bcc deh_rts
     lda player_dead
     bne deh_rts
     jsr player::begin_death_fatal
@@ -569,7 +545,6 @@ deh_rts:
 ; V-rail row damage (draw_i = row, draw_j = approach LEFT/RIGHT)
 ; ---------------------------------------------------------------------------
 .proc damage_row
-    ; H-rail band is D/E/F + G/H/I/J elbows — not V A/B/C cells
     jsr row_is_hrail
     bcs dr_skip
     lda draw_j
@@ -580,81 +555,62 @@ dr_skip:
     rts
 .endproc
 
-; From left (approach RIGHT): A outer → B core
 .proc dmg_from_left
+dfl_loop:
+    lda rail_data::hit_left
+    beq dfl_done
+    dec rail_data::hit_left
     ldx draw_i
     lda rail_data::dmg_va, x
-    cmp #3
-    bcs dfl_b_only
-    cmp #2
-    beq dfl_a_finish
+    cmp #RAIL_OUTER_HP
+    bcs dfl_core
     clc
     adc #1
     sta rail_data::dmg_va, x
     jsr draw_va
-    rts
-dfl_a_finish:
-    lda #3
-    sta rail_data::dmg_va, x
-    jsr draw_va
+    jmp dfl_loop
+dfl_core:
     ldx draw_i
-    lda rail_data::dmg_vb, x
-    bne dfl_b_step
-    lda #1
-    sta rail_data::dmg_vb, x
-    jsr draw_vb
+    jsr damage_b_v_one
+    jmp dfl_loop
+dfl_done:
     rts
-dfl_b_only:
-    ldx draw_i
-dfl_b_step:
-    jmp damage_b_v
 .endproc
 
-; From right (approach LEFT): C outer → B core
 .proc dmg_from_right
+dfr_loop:
+    lda rail_data::hit_left
+    beq dfr_done
+    dec rail_data::hit_left
     ldx draw_i
     lda rail_data::dmg_vc, x
-    cmp #3
-    bcs dfr_b_only
-    cmp #2
-    beq dfr_c_finish
+    cmp #RAIL_OUTER_HP
+    bcs dfr_core
     clc
     adc #1
     sta rail_data::dmg_vc, x
     jsr draw_vc
-    rts
-dfr_c_finish:
-    lda #3
-    sta rail_data::dmg_vc, x
-    jsr draw_vc
+    jmp dfr_loop
+dfr_core:
     ldx draw_i
-    lda rail_data::dmg_vb, x
-    bne dfr_b_step
-    lda #1
-    sta rail_data::dmg_vb, x
-    jsr draw_vb
+    jsr damage_b_v_one
+    jmp dfr_loop
+dfr_done:
     rts
-dfr_b_only:
-    ldx draw_i
-dfr_b_step:
-    jmp damage_b_v
 .endproc
 
-.proc damage_b_v
+.proc damage_b_v_one
     lda rail_data::dmg_vb, x
-    cmp #3
+    cmp #RAIL_CORE_HP
     bcs dbv_rts
-    cmp #2
-    beq dbv_destroy
     clc
     adc #1
     sta rail_data::dmg_vb, x
     jsr draw_vb
-    rts
-dbv_destroy:
-    lda #3
-    sta rail_data::dmg_vb, x
-    jsr draw_vb
+    ldx draw_i
+    lda rail_data::dmg_vb, x
+    cmp #RAIL_CORE_HP
+    bcc dbv_rts
     lda player_dead
     bne dbv_rts
     jsr player::begin_death_fatal
@@ -666,12 +622,13 @@ dbv_rts:
 ; Draw helpers — draw_i = col (H) or row (V)
 ; Never stamp over G/H/I/J (or H-band cells that are not V A/B/C).
 ; ---------------------------------------------------------------------------
-; Glyph by damage only; colour always COL_RAIL (cracked art carries the look).
+; Glyph by damage taken (mapped); colour always COL_RAIL.
 .proc draw_d
     jsr col_is_junction
     bcs dd_skip
     ldx draw_i
     lda rail_data::dmg_d, x
+    jsr outer_glyph_idx
     tay
     lda d_glyph, y
     ldy #RAIL_ROW_TOP
@@ -686,11 +643,11 @@ dd_skip:
 .endproc
 
 .proc draw_e
-    ; Centre cell is B∩E cross — never damaged, always SC_RAIL_X
     ldx draw_i
     cpx #RAIL_COL_MID
     beq de_cross
     lda rail_data::dmg_e, x
+    jsr core_glyph_idx
     tay
     lda e_glyph, y
     ldy #RAIL_ROW_MID
@@ -715,6 +672,7 @@ de_cross:
     bcs df_skip
     ldx draw_i
     lda rail_data::dmg_f, x
+    jsr outer_glyph_idx
     tay
     lda f_glyph, y
     ldy #RAIL_ROW_BOT
@@ -733,6 +691,7 @@ df_skip:
     bcs dva_skip
     ldx draw_i
     lda rail_data::dmg_va, x
+    jsr outer_glyph_idx
     tay
     lda a_glyph, y
     ldy draw_i
@@ -751,6 +710,7 @@ dva_skip:
     bcs dvb_skip
     ldx draw_i
     lda rail_data::dmg_vb, x
+    jsr core_glyph_idx
     tay
     lda b_glyph, y
     ldy draw_i
@@ -769,6 +729,7 @@ dvb_skip:
     bcs dvc_skip
     ldx draw_i
     lda rail_data::dmg_vc, x
+    jsr outer_glyph_idx
     tay
     lda c_glyph, y
     ldy draw_i
@@ -782,7 +743,50 @@ dvc_skip:
     rts
 .endproc
 
-; dmg level 0..3 → full / dmg / crit / destroyed (space)
+; A = outer damage taken (0..6+) → glyph index 0 full, 1 crack, 2 crit, 3 gone
+; Thresholds for RAIL_OUTER_HP=6: 0 | 1–2 | 3–4 | 5+
+.proc outer_glyph_idx
+    cmp #0
+    beq ogi0
+    cmp #3
+    bcc ogi1
+    cmp #5
+    bcc ogi2
+    lda #3
+    rts
+ogi0:
+    lda #0
+    rts
+ogi1:
+    lda #1
+    rts
+ogi2:
+    lda #2
+    rts
+.endproc
+
+; A = core damage taken (0..5+) → 0 full, 1 crack, 2 crit, 3 gone
+; Thresholds for RAIL_CORE_HP=5: 0 | 1–2 | 3–4 | 5+
+.proc core_glyph_idx
+    cmp #0
+    beq cgi0
+    cmp #3
+    bcc cgi1
+    cmp #5
+    bcc cgi2
+    lda #3
+    rts
+cgi0:
+    lda #0
+    rts
+cgi1:
+    lda #1
+    rts
+cgi2:
+    lda #2
+    rts
+.endproc
+
 d_glyph:
     .byte SC_RAIL_D, SC_RAIL_D_DMG, SC_RAIL_D_CRIT, SC_SPACE
 e_glyph:

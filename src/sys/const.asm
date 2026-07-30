@@ -197,6 +197,11 @@ CARGO_TGT_Y1      = 156             ; rows 14 (I/J)
 ; Pixel inset for drone→col (matches rail::apply_ab_hit body align)
 DRONE_IMPACT_X_OFF = 4
 
+; Rail toughness (damage *taken* 0..HP; glyph mapped separately).
+; Light/medium/heavy strikes = 1/2/3 (remaining drone HP). Tune here for fun.
+RAIL_OUTER_HP     = 6               ; D/F/A/C full → destroyed
+RAIL_CORE_HP      = 5               ; E/B full → game over at this damage
+
 ; Score: 1 registered hit = 1 point (not 1 bullet). Cap for 6-digit HUD.
 ; A/B/C kill totals = hit points (3/2/1) once multi-HP is live.
 SCORE_HIT_POINTS = 1

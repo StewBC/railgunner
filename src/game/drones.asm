@@ -992,14 +992,31 @@ arr_c:
     tax
     jmp arr_retire
 arr_ab:
-    txa
-    pha
-    jsr rail::apply_ab_hit
-    pla
-    tax
+    ; Rail damage = remaining HP (blue=3, green=2, cyan=1).
+    jsr apply_rail_strikes
 arr_retire:
     jsr objects::retire_and_try_free
 arr_done:
+    rts
+.endproc
+
+; X = A/B drone slot on entry *and* exit (must preserve X for retire!).
+; ONE apply with points = remaining HP (3/2/1).
+.proc apply_rail_strikes
+    lda objects::obj_reserved, x    ; HP left (= strike points)
+    bne ars_have
+    lda #1
+ars_have:
+    cmp #4
+    bcc ars_cap
+    lda #3
+ars_cap:
+    sta rail_data::dmg_amt          ; 1..3 only
+    txa
+    pha                             ; rail::apply_ab_hit clobbers X → column
+    jsr rail::apply_ab_hit
+    pla
+    tax                             ; restore drone slot for caller retire
     rts
 .endproc
 
