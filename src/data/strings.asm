@@ -65,6 +65,7 @@ story_text:
     .byte "YOU ARE A RAIL GUNNER.", 0
 
 ; Instructions body for typewriter (left-justified). $0A = newline, $00 = end.
+; Keep lines ≤39 chars (STORY_MARGIN_X=1). Row 24 = FIRE TO CONTINUE.
 instructions_text:
     .byte "YOU RIDE THE CROSS RAILS.", $0A
     .byte $0A
@@ -72,23 +73,23 @@ instructions_text:
     .byte "FIRE OR SPACE TO SHOOT.", $0A
     .byte $0A
     .byte "DRONES STRIKE FROM THE EDGES:", $0A
+    .byte "BLUE   3 SHOTS. 2 DAMAGE TO RAILS.", $0A
+    .byte "GREEN  2 SHOTS. 1 DAMAGE TO RAILS.", $0A
+    .byte "RED    1 SHOT.  DROPS CARGO.", $0A
     .byte $0A
-    .byte "A  LARGE. 3 HITS. ATTACKS RAIL.", $0A
-    .byte "B  MEDIUM. 2 HITS. ATTACKS RAIL.", $0A
-    .byte "C  SMALL. 1 HIT. DROPS CARGO.", $0A
-    .byte "   CARGO ARMS MINES AT THE HUB.", $0A
+    .byte "STOP DRONES BEFORE THEY REACH THE", $0A
+    .byte "RAILS. CARGO ARMS MINES AT THE HUB.", $0A
+    .byte "4 MINES MEAN DEATH WHEN THE GUNNER", $0A
+    .byte "PASSES THROUGH. 1 MINE DISARMED WHEN", $0A
+    .byte "A WAVE IS SURVIVED.", $0A
     .byte $0A
-    .byte "STOP A AND B BEFORE THEY HIT", $0A
-    .byte "THE RAIL. STOP C BEFORE CARGO", $0A
-    .byte "ARMS THE CENTRE MINES.", $0A
+    .byte "POWERUP PARCELS HELP THE GUNNER.", $0A
+    .byte "POINTS, 2X SCORE, 2X DAMAGE, CLEAR", $0A
+    .byte "MINES, REPAIR THE RAIL OR EXTRA LIVES.", $0A
     .byte $0A
-    .byte "WATCH FOR POWERUP PARCELS.", $0A
-    .byte "THEY RIDE THE OPPOSITE ARM.", $0A
-    .byte "SHIELD, DAMAGE, REPAIR, AMMO", $0A
-    .byte "AND MORE - INTERCEPT THEM.", $0A
-    .byte $0A
-    .byte "GAME OVER WHEN ALL LIVES ARE", $0A
-    .byte "LOST, OR YOUR RAIL IS DESTROYED.", 0
+    .byte "GAME OVER WHEN ALL LIVES ARE LOST", $0A
+    .byte "OR WHEN THE RAIL SUFFERS CRITICAL", $0A
+    .byte "FAILURE.", 0
 
 str_press_fire:
     .byte "PRESS FIRE", 0
