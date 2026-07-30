@@ -29,6 +29,9 @@
     jsr hud_color_static
     jsr screen_unblank
 
+    lda #SFX_WAVE
+    jsr sfx::play                   ; wave 1 start whoop
+
     lda #MODE_PLAY
     jsr mode_set
     rts

@@ -169,6 +169,8 @@ ccc_out:
     lda #DEATH_EXPLODE_HOLD
     sta death_timer
     jsr show_explode_frame
+    lda #SFX_PLAYER_DIE
+    jsr sfx::play
 bd_done:
     rts
 .endproc

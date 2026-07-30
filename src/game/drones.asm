@@ -850,6 +850,8 @@ cfh_done:
     sta objects::obj_sprite_attr, x
     jsr show_explode_frame
     jsr objects::mark_dirty
+    lda #SFX_DRONE_DIE
+    jsr sfx::play                   ; preserves X (drone slot)
     rts
 .endproc
 

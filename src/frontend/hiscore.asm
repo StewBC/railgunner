@@ -652,6 +652,8 @@ hsd_done:
     lda #0
     sta hs_char_idx
 hsu_apply:
+    lda #SFX_HS_TICK
+    jsr sfx::play
     jsr hs_apply_char
     jmp hs_refresh_name
 .endproc
@@ -664,6 +666,8 @@ hsdn_dec:
     sec
     sbc #1
     sta hs_char_idx
+    lda #SFX_HS_TICK
+    jsr sfx::play
     jsr hs_apply_char
     jmp hs_refresh_name
 .endproc
@@ -674,6 +678,8 @@ hsdn_dec:
     bne hsf_go
     rts
 hsf_go:
+    lda #SFX_UI_FIRE
+    jsr sfx::play
     lda hs_char_idx
     cmp #HS_CHAR_BACK
     beq hsf_back

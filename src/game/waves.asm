@@ -203,6 +203,8 @@ ub_done:
     sta level_banner_t
     jsr load                        ; new quota + parcels reset + spawn params
     jsr message::restore_hud_line
+    lda #SFX_WAVE
+    jsr sfx::play                   ; next wave start whoop
     rts
 adv_victory:
     lda #1

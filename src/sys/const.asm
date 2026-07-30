@@ -37,6 +37,55 @@ IRQ_VECTOR_HI   = $0315
 KERNAL_IRQ_EXIT = $EA81
 SPRITE_PTR_BASE = SCREEN_RAM + $03F8
 
+; SID (MOS 6581/8580) — voice stride 7; filter/volume at $D415–$D418
+SID_V1_FL       = $D400
+SID_V1_FH       = $D401
+SID_V1_PWL      = $D402
+SID_V1_PWH      = $D403
+SID_V1_CTRL     = $D404
+SID_V1_AD       = $D405
+SID_V1_SR       = $D406
+SID_V2_FL       = $D407
+SID_V2_FH       = $D408
+SID_V2_PWL      = $D409
+SID_V2_PWH      = $D40A
+SID_V2_CTRL     = $D40B
+SID_V2_AD       = $D40C
+SID_V2_SR       = $D40D
+SID_V3_FL       = $D40E
+SID_V3_FH       = $D40F
+SID_V3_PWL      = $D410
+SID_V3_PWH      = $D411
+SID_V3_CTRL     = $D412
+SID_V3_AD       = $D413
+SID_V3_SR       = $D414
+SID_FC_LO       = $D415
+SID_FC_HI       = $D416
+SID_RES_FILT    = $D417
+SID_MODE_VOL    = $D418
+SID_VOICE_STRIDE = 7
+SID_WAVE_TRI    = $10
+SID_WAVE_SAW    = $20
+SID_WAVE_PULSE  = $40
+SID_WAVE_NOISE  = $80
+SID_GATE        = $01
+SID_VOL_MAX     = $0F               ; no filter mode bits
+
+; One-shot SFX ids — also priority (lower number = higher priority).
+; No continuous gun fire / spindown (by design).
+SFX_UI_FIRE     = 0                 ; menu FIRE acknowledge (soft thump)
+SFX_HS_TICK     = 1                 ; high-score initial scroll tick
+SFX_WAVE        = 2                 ; wave / level start whoop×3
+SFX_MINE        = 3                 ; cargo hubs arm → mine clink
+SFX_PARCEL      = 4                 ; bonus parcel launched swoosh
+SFX_PLAYER_DIE  = 5                 ; player explode rumble (noise)
+SFX_EXTRA       = 6                 ; extra life parcel collect cha-ching
+SFX_HEAL        = 7                 ; rail heal swish
+SFX_DRONE_DIE   = 8                 ; drone explode pop
+SFX_PING        = 9                 ; non-extra parcel collect (friendly ping)
+SFX_COUNT       = 10
+SFX_FREE        = $FF               ; voice idle marker
+
 ; VIC defaults / modes
 VIC_DEN         = %00010000         ; $D011 bit 4 — display enable
 VIC_DEN_MASK    = %11101111         ; AND mask to clear DEN (avoid unary ~ width)

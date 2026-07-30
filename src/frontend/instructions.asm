@@ -21,6 +21,8 @@
     bne instr_upd_exit
     lda input_fire_edge
     beq instr_upd_exit
+    lda #SFX_UI_FIRE
+    jsr sfx::play
     lda #MODE_TITLE_TEXT
     jsr mode_set
 instr_upd_exit:

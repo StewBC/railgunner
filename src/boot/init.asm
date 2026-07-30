@@ -39,6 +39,7 @@ BLNSW           = $CC
     jsr video::detect_standard
     jsr video::init_sprite_palette
     jsr sprite_mux_irq::init
+    jsr sfx::init
     jsr irq_install
 
     lda #0

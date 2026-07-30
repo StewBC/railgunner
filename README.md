@@ -133,6 +133,7 @@ is the load test for the tools the agents themselves depend on.
 
 Title screen, font and sprites by Grok.  Cleanup and tile graphics by Stefan.  
 Code by Grok & Codex.  Support from Claude.  
+Sound Effects by Grok.  
 No human read, changed or edited the code in the making of this game.  
 Game written over 5 days with 1st commit on 26 July 2026.  
 Produced by Stefan Wessels, 2026.

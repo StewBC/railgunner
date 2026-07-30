@@ -194,6 +194,8 @@ upd_done:
     lda #(OBJF_ALLOCATED | OBJF_RENDER)
     sta objects::obj_flags, x
     jsr objects::mark_dirty
+    lda #SFX_PARCEL
+    jsr sfx::play
     clc
     rts
 ts_fail:
@@ -628,6 +630,17 @@ aia_done:
 .endproc
 
 .proc award_payload
+    ; Collect SFX first: extra life → cha-ching; everything else → friendly ping
+    lda parcel_type
+    cmp #PARCEL_TYPE_EXTRA
+    beq ap_sfx_extra
+    lda #SFX_PING
+    jsr sfx::play
+    jmp ap_dispatch
+ap_sfx_extra:
+    lda #SFX_EXTRA
+    jsr sfx::play
+ap_dispatch:
     lda parcel_type
     cmp #PARCEL_TYPE_SCORE2X
     beq ap_score2x

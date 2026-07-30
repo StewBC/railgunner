@@ -103,6 +103,8 @@ chm_v:
     jsr mark_player_tiles
     dec repair_timer
     bne rt_done
+    lda #SFX_HEAL
+    jsr sfx::play
     jsr apply_heal_marks
 rt_done:
     rts

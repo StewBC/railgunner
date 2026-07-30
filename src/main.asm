@@ -54,6 +54,7 @@ main_loop:
     lda #PROFILE_MAIN_WAIT
     sta objects::profile_marker
     jsr wait_frame
+    jsr sfx::update                 ; SID one-shots — every physical frame
     lda #PROFILE_MAIN_DRAIN
     sta objects::profile_marker
     jsr objects::drain_irq_events
@@ -128,7 +129,8 @@ mux_build_failed:
 .include "game/message.asm"
 .include "game/play.asm"
 .include "game/life.asm"
-; Hiscore entry is large; lives in CODE_HI (file sets the segment).
+; CODE_HI residents (each file sets .segment "CODE_HI")
+.include "sys/sound.asm"
 .include "frontend/hiscore.asm"
 
 ; ---------------------------------------------------------------------------

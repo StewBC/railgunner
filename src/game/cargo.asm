@@ -310,7 +310,10 @@ rlc_paint:
 
 ; All four hub tiles at ≥ K → arm for centre-pass detonate.
 ; Glyphs are per-tile in paint_ghij (not gated on mine_armed).
+; Clink only on 0→1 arm edge (not every re-check while armed).
 .proc check_arm
+    lda mine_armed
+    pha                             ; prior arm state
     ldx #0
 ca_loop:
     lda rail_data::ghij_stack, x
@@ -321,10 +324,16 @@ ca_loop:
     bcc ca_loop
     lda #1
     sta mine_armed
+    pla
+    bne ca_done                     ; already armed
+    lda #SFX_MINE
+    jsr sfx::play
+ca_done:
     rts
 ca_no:
     lda #0
     sta mine_armed
+    pla                             ; discard prior
     rts
 .endproc
 

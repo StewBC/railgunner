@@ -21,6 +21,8 @@
     bne story_upd_exit              ; still in fire guard
     lda input_fire_edge
     beq story_upd_exit
+    lda #SFX_UI_FIRE
+    jsr sfx::play
     lda #MODE_TITLE_TEXT
     jsr mode_set
 story_upd_exit:

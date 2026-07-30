@@ -29,6 +29,8 @@ gameover_ready:
     lda input_fire_edge
     ora input_fire
     beq gameover_done
+    lda #SFX_UI_FIRE
+    jsr sfx::play
     jsr hiscore_qualifies           ; C set → top-10 by score
     bcc go_to_title
     lda #MODE_HISCORE

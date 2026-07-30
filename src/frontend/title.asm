@@ -70,6 +70,8 @@ attract_expired:
 gfx_fire_ok:
     lda input_fire_edge
     beq gfx_attract
+    lda #SFX_UI_FIRE
+    jsr sfx::play
     lda #MODE_TITLE_TEXT            ; enter blanks, draws, unblanks
     jsr mode_set
     rts
@@ -303,18 +305,24 @@ TT_COL_NAME     = 10                ; 19
 tt_input:
     lda input_fire_edge
     beq tt_try_s
+    lda #SFX_UI_FIRE
+    jsr sfx::play
     lda #MODE_GAME_INIT
     jsr mode_set
     rts
 tt_try_s:
     lda input_key_s_edge
     beq tt_try_i
+    lda #SFX_UI_FIRE
+    jsr sfx::play
     lda #MODE_STORY
     jsr mode_set
     rts
 tt_try_i:
     lda input_key_i_edge
     beq tt_attract
+    lda #SFX_UI_FIRE
+    jsr sfx::play
     lda #MODE_INSTRUCTIONS
     jsr mode_set
     rts
