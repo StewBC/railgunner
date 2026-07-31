@@ -4,6 +4,8 @@ A Commodore 64 rail shooter written in 6502 assembly, built against **c64m** —
 
 This project was made by AI. **Grok** wrote essentially all of the game code. The **sprite multiplexer** was written by **Codex**. **Claude** reviewed the work and made the improvements to **c64m** that came out of building and debugging this game.
 
+YouTube Video: https://github.com/StewBC/railgunner
+
 ---
 
 ## Why this exists
