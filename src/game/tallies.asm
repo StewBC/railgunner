@@ -153,14 +153,15 @@ pg_results:
     ldy #GO_ROW_SCORE
     jsr screen_color_row
 
-    ; --- RANK (title only) ---
+    ; --- RANK (title only; same mapping as high-score: waves survived) ---
     lda #<str_go_rank
     sta ptr_lo
     lda #>str_go_rank
     sta ptr_hi
     ldy #GO_ROW_RANK
     jsr print_label_ra
-    jsr wave_index_to_x             ; X = 0..14
+    jsr wave_index_to_x             ; C set + X = 0..14 if rank earned
+    bcc pg_rank_done                ; 0 waves → blank (match hiscore)
     lda rank_title_lo, x
     sta ptr_lo
     lda rank_title_hi, x
@@ -168,6 +169,7 @@ pg_results:
     ldx #GO_VALUE_COL
     ldy #GO_ROW_RANK
     jsr screen_print
+pg_rank_done:
     lda #COL_WHITE
     ldy #GO_ROW_RANK
     jsr screen_color_row
@@ -179,19 +181,7 @@ pg_results:
     sta ptr_hi
     ldy #GO_ROW_WAVES
     jsr print_label_ra
-    lda victory
-    beq go_w_normal
-    lda #MAX_LEVEL                  ; cleared L15
-    jmp go_wput
-go_w_normal:
-    lda level
-    beq go_w0
-    sec
-    sbc #1
-    jmp go_wput
-go_w0:
-    lda #0
-go_wput:
+    jsr session_waves               ; A = 0..15 (same as hiscore)
     ldx #GO_VALUE_COL
     ldy #GO_ROW_WAVES
     jsr print_u8
@@ -320,18 +310,40 @@ pl_len_done:
     rts
 .endproc
 
-; Wave index 0..14 from level (for rank title). Clobbers A; result in X.
-.proc wave_index_to_x
-    lda level
-    bne wix_nz
-    lda #1
-wix_nz:
-    cmp #MAX_LEVEL + 1
-    bcc wix_cap
+; A = waves survived this session (victory → 15, else level-1).
+; Matches hiscore::hs_session_waves. Clobbers A.
+.proc session_waves
+    lda victory
+    beq sw_normal
     lda #MAX_LEVEL
-wix_cap:
+    rts
+sw_normal:
+    lda level
+    beq sw_0
+    sec
+    sbc #1
+    rts
+sw_0:
+    lda #0
+    rts
+.endproc
+
+; Rank title index from waves survived (match hiscore::hs_write_rank).
+; C set + X = 0..14 if any waves cleared; C clear if 0 (no title yet).
+; Clobbers A,X.
+.proc wave_index_to_x
+    jsr session_waves               ; A = 0..15
+    beq wix_none
+    cmp #MAX_LEVEL + 1
+    bcc wix_ok
+    lda #MAX_LEVEL
+wix_ok:
     tax
-    dex
+    dex                             ; 1..15 → index 0..14
+    sec
+    rts
+wix_none:
+    clc
     rts
 .endproc
 
