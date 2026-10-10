@@ -1,7 +1,7 @@
 # Sprite mux code review
 
 **Date:** 2026-07-26  
-**Scope:** Production mux/pool (`src/sprite/mux_*.asm`, `src/game/objects.asm`, IRQ/main wiring), PLAY art harness, and `tst/` demos.  
+**Scope:** Production mux/pool (`src/c64/sprite/mux_*.asm`, `src/c64/game/objects.asm`, IRQ/main wiring), the play loop, and `tst/c64/` demos.  
 **Policy:** Review only — **no source changes**.  
 **Method:** Design handoffs (`objects-sprites.md`, `sprite-mux-status.md`), full read of builder/IRQ/pool, offline assemble, live c64m remote tests in PLAY mode (correct `set-memory` binary protocol).
 
@@ -71,7 +71,7 @@ Builder math matches `release = prev_bottom + 2`, `deadline = top - 9`.
 
 ### Assembler / layout
 
-- Production `src/main.asm` assembles: **CODE `[$080D–$1C69)`**, OBJECTS `[$C000–$C900)`.
+- Production `src/c64/main.asm` assembles: **CODE `[$080D–$1C69)`**, OBJECTS `[$C000–$C900)`.
 - Plan buffers sit at `$C300` / `$C500` as designed; IRQ page-delta patching (+2) is correct.
 - 24-byte SoA tables stay page-aligned.
 
@@ -101,16 +101,16 @@ Live example: moving LL C/B/A to the same Y while UL/UR/LR stayed active produce
 
 ---
 
-### P1 — `tst/` demos currently fail to assemble — **FIXED**
+### P1 — `tst/c64/` demos currently fail to assemble — **FIXED**
 
 ```text
-tst/build_sprite_mux_dance.sh  →  spr_frames_src not found (video.asm)
+tst/c64/build_sprite_mux_dance.sh  →  spr_frames_src not found (video.asm)
 ```
 
 **Cause:** `video::install_sprite_frames` referenced game-only `spr_frames_src`
 while demos included shared `video.asm`.
 
-**Fix:** moved install to `src/sys/sprite_install.asm` (included only from
+**Fix:** moved install to `src/c64/sys/sprite_install.asm` (included only from
 `main.asm`). Demos keep `video.asm` for detect/palette and their own
 `SPRITES`/`dance_sprite` at `$3000`.
 
@@ -372,7 +372,7 @@ These were scrutinized and look correct relative to the design:
 ## Recommended next work (priority order)
 
 1. **Collision handoff proof** — BG collision one line before every lane reuse; assert old logical owner once.
-2. ~~**Fix `tst/` assemble**~~ done — dance/circle rebuild via `tst/build_*.sh`.
+2. ~~**Fix `tst/c64/` assemble**~~ done — dance/circle rebuild via `tst/c64/build_*.sh`.
 3. **PLAY/debug surface for `mux_last_error`** when integrating waves.
 4. **Hardening `objects::init` / stage re-entry** under a live IRQ.
 5. Keep wave tables inside the measured Y/reuse/serialization envelope (document constants next to spawn code).

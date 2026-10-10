@@ -1,21 +1,21 @@
 # RailGunner — host build orchestration
 #
 #   make            assets (if needed) → build/railgunner.prg
-#   make play       full build, then windowed play (tools/play.sh)
+#   make play       full build, then windowed play (tools/c64/play.sh)
 #   make coop       build, windowed emu + control port, coop_debug watcher
 #   make assets     regenerate converted art when sources change
 #   make screens    title (and future) screen bins only
 #   make charset    atlas PNG → railgunner_charset.bin
 #   make sprites    sprite bins (placeholder until converters exist)
-#   make clean      remove build/ outputs (not assets/ PNGs or generated bins)
+#   make clean      remove build/ outputs (not assets/c64/ PNGs or generated bins)
 #
-# Generators live under tools/; this file only wires timestamps and targets.
-# Agent path stays tools/agent_session.py (live assemble; no Makefile required).
+# Generators live under tools/c64/; this file only wires timestamps and targets.
+# Agent path stays tools/c64/agent_session.py (live assemble; no Makefile required).
 
 .PHONY: all prg assets screens charset sprites play coop clean help ensure_prg_header
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-TOOLS := $(ROOT)/tools
+TOOLS := $(ROOT)/tools/c64
 PYTHON ?= python3
 
 # ---------------------------------------------------------------------------
@@ -23,11 +23,11 @@ PYTHON ?= python3
 # ---------------------------------------------------------------------------
 
 # Source art (hires products keep title_* names for .incbin stability)
-TITLE_PNG := $(ROOT)/assets/screens/railgunner.png
-TITLE_HIRES_BIN := $(ROOT)/assets/screens/title_hires.bin
-TITLE_HIRES_COL := $(ROOT)/assets/screens/title_hires_col.bin
+TITLE_PNG := $(ROOT)/assets/c64/screens/railgunner.png
+TITLE_HIRES_BIN := $(ROOT)/assets/c64/screens/title_hires.bin
+TITLE_HIRES_COL := $(ROOT)/assets/c64/screens/title_hires_col.bin
 TITLE_BINS := $(TITLE_HIRES_BIN) $(TITLE_HIRES_COL)
-TITLE_OUT_PREFIX := $(ROOT)/assets/screens/title
+TITLE_OUT_PREFIX := $(ROOT)/assets/c64/screens/title
 PNG_TO_HIRES := $(TOOLS)/png_to_c64_hires.py
 PNG_TO_SPRITE := $(TOOLS)/png_to_c64_sprite.py
 PNG_TO_CHARSET := $(TOOLS)/png_to_c64_charset.py
@@ -36,13 +36,13 @@ PNG_TO_CHARSET := $(TOOLS)/png_to_c64_charset.py
 SCREEN_BINS := $(TITLE_BINS)
 
 # VIC text font atlas (16×7 cells = 112 glyphs → 2K bin)
-CHARSET_PNG := $(ROOT)/assets/charset/railgunner_charset.png
-CHARSET_BIN := $(ROOT)/assets/charset/railgunner_charset.bin
+CHARSET_PNG := $(ROOT)/assets/c64/charset/railgunner_charset.png
+CHARSET_BIN := $(ROOT)/assets/c64/charset/railgunner_charset.bin
 CHARSET_BINS := $(CHARSET_BIN)
 
-# Multicolour sprite frames: each assets/sprites/*.png → same-stem .bin (64 bytes).
+# Multicolour sprite frames: each assets/c64/sprites/*.png → same-stem .bin (64 bytes).
 # --fit: medium/large source art currently exceeds 12×21; scale until remastered.
-SPRITE_PNGS := $(wildcard $(ROOT)/assets/sprites/*.png)
+SPRITE_PNGS := $(wildcard $(ROOT)/assets/c64/sprites/*.png)
 SPRITE_BINS := $(SPRITE_PNGS:.png=.bin)
 
 ASSET_BINS := $(SCREEN_BINS) $(CHARSET_BINS) $(SPRITE_BINS)
@@ -65,13 +65,13 @@ all: prg
 help:
 	@echo "RailGunner make targets:"
 	@echo "  make / make prg   regenerate assets if needed, assemble PRG"
-	@echo "  make play         build then tools/play.sh (windowed)"
+	@echo "  make play         build then tools/c64/play.sh (windowed)"
 	@echo "  make coop         build, emu+control-port, coop live-debug watcher"
 	@echo "  make assets       screens + charset + sprites converters"
 	@echo "  make screens      railgunner.png → title_hires*.bin"
 	@echo "  make charset      railgunner_charset.png → .bin (2K font)"
-	@echo "  make sprites      assets/sprites/*.png → *.bin (64-byte MC)"
-	@echo "  make clean        wipe build/ (keeps assets/ PNGs; bins via make assets)"
+	@echo "  make sprites      assets/c64/sprites/*.png → *.bin (64-byte MC)"
+	@echo "  make clean        wipe build/ (keeps assets/c64/ PNGs; bins via make assets)"
 
 # Drop a mis-tagged PRG (raw c64masm image written to .prg without $0801 load
 # header). Make would otherwise treat it as up-to-date and play/--autorun fails.
@@ -105,7 +105,7 @@ sprites: $(SPRITE_BINS)
 
 # Multicolour VIC sprite: 12×21 logical pixels → 64-byte block.
 # --fit until medium/large PNGs are remastered to native 12×21.
-$(ROOT)/assets/sprites/%.bin: $(ROOT)/assets/sprites/%.png $(PNG_TO_SPRITE)
+$(ROOT)/assets/c64/sprites/%.bin: $(ROOT)/assets/c64/sprites/%.png $(PNG_TO_SPRITE)
 	$(PYTHON) $(PNG_TO_SPRITE) $< --fit -o $@
 
 # One converter writes both hires products; col bin tracks the bitmap bin.

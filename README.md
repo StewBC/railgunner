@@ -41,7 +41,7 @@ In-game story and instructions screens have the full fiction and enemy table; yo
 | Tool | Role |
 |------|------|
 | **make** | Build orchestration (assets → PRG, play launch) |
-| **Python 3** | Asset converters (`tools/png_to_c64_*.py`) and helper scripts |
+| **Python 3** | Asset converters (`tools/c64/png_to_c64_*.py`) and helper scripts |
 | **c64masm** | Offline assembler (from c64m) |
 | **c64m** | Emulator window to run the PRG |
 
@@ -56,15 +56,15 @@ parent/
 Build c64m so these exist:
 
 - `../c64m/build/c64m`
-- `../c64m/build/c64masm`
+- `../c64m/build/am65` (offline assembler; the old `c64masm` name is gone)
 
-### Symlinks in `tools/`
+### Symlinks in `tools/c64/`
 
-`tools/c64m`, `tools/c64masm`, and a couple of shared Python helpers are **soft links** into that sibling tree:
+`tools/c64/c64m`, `tools/c64/c64masm`, and a couple of shared Python helpers are **soft links** into that sibling tree:
 
 ```text
-tools/c64m      → ../../c64m/build/c64m
-tools/c64masm   → ../../c64m/build/c64masm
+tools/c64/c64m      → ../../../c64m/build/c64m
+tools/c64/c64masm   → ../../../c64m/build/am65
 ```
 
 **Do they survive a round-trip through GitHub?** Yes on Unix and macOS. Git stores symlinks as mode `120000` with the *target path string* as content; clone restores real symlinks. They are not followed or inlined on push.
@@ -125,9 +125,10 @@ is the load test for the tools the agents themselves depend on.
 
 | Path | What |
 |------|------|
-| `src/` | 6502 sources (`main.asm` is the assemble root) |
-| `assets/` | Art and converted binary blobs |
-| `tools/` | Build/play scripts + symlinks into c64m |
+| `src/c64/` | Commodore 64 6502 sources (`main.asm` is the assemble root). Other platforms will be siblings under `src/` |
+| `assets/c64/` | Commodore 64 art and converted blobs. Other platforms will be siblings under `assets/` |
+| `tools/c64/` | C64 build/play scripts and c64m symlinks. Other platforms will be siblings under `tools/` |
+| `tst/c64/` | C64 standalone tests (sprite-mux demos). Other platforms will be siblings under `tst/` |
 | `build/` | Assembler outputs (generated) |
 | `agents/` | Agent handoffs — design, roadmap, assembler notes (for AI sessions, not required to play) |
 

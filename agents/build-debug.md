@@ -1,8 +1,8 @@
 # Build, run, and debug — agent handoff
 
 **Role:** How an agent **debugs** RailGunner over the remote control port after
-a user bug report. Humans **play** with `tools/play.sh` (no agent attached).
-Agents use `tools/agent_session.py` to assemble, instrument, observe, and fix.
+a user bug report. Humans **play** with `tools/c64/play.sh` (no agent attached).
+Agents use `tools/c64/agent_session.py` to assemble, instrument, observe, and fix.
 
 See [`README.md`](README.md) for the two-path model and project goal.
 
@@ -17,13 +17,17 @@ See [`README.md`](README.md) for the two-path model and project goal.
 If this handoff and c64m disagree, **trust c64m** (source/tests/manual) and update
 this file.
 
-**Protocol:** `C64M/6` (localhost TCP, one client at a time). Bumps that matter
-for this repo: **C64M/3** flight recorder (`history-*`), **C64M/4** guarded
-breakpoints (`when=`), **C64M/5** frame ring (`frame-ring-*`, `get-frame-at`),
-**C64M/6** VIC ring (`vic-ring-*` — per-line latched sprite X / derived state).
-`hello` / `version` advertise `protocol=C64M/6`; `capabilities` includes
-`history`, `frame-ring`, and `vic-ring`. Rebuild `../c64m/build/c64m` if
-`hello` still says C64M/5.
+**Protocol:** `C64M/8` (localhost TCP, one client at a time). Confirm with
+`hello`. There is no compatibility path for an older `protocol=` string.
+Bumps this repo uses:
+
+- **C64M/3** flight recorder (`history-*`)
+- **C64M/4** guarded breakpoints (`when=`)
+- **C64M/5** frame ring (`frame-ring-*`, `get-frame-at`)
+- **C64M/6** VIC ring (`vic-ring-*` — per-line latched sprite X / derived state)
+- **C64M/8** inspect honesty. `get-state` reports `mode=live` or `mode=inspector`. While `mode=inspector`, mutating commands fail with `error read-only-inspector`; `leave-inspector` returns to live. Unsolicited lines are `0 event ...` (including `state-changed`). `Ctl.cmd` skips id 0.
+
+Rebuild `../c64m/build/c64m` if `hello` is not `protocol=C64M/8`. Older friction-log entries say C64M/6 because that was the wire on that day.
 
 ---
 
@@ -33,13 +37,13 @@ Do **not** hard-code absolute build paths elsewhere. Use these:
 
 | Path | Points at | Use |
 |------|-----------|-----|
-| `tools/c64m` | `../../c64m/build/c64m` | Emulator + in-process assembler + debugger |
-| `tools/c64masm` | `../../c64m/build/c64masm` | Offline assemble |
-| `tools/c64_control_client.py` | `../../c64m/tools/c64_control_client.py` | Control-port helper (`Ctl`) |
-| `tools/play.sh` | user | Offline PRG + `--prg --autorun` (human play) |
-| `tools/build-prg.sh` | build | `src/main.asm` → `build/railgunner.prg` |
-| `tools/agent_session.py` | agent | Windowed + port 6510 + assemble + paste RUN |
-| `tools/run-emulator.sh` | alias | → `play.sh` |
+| `tools/c64/c64m` | `../../../c64m/build/c64m` | Emulator + in-process assembler + debugger |
+| `tools/c64/c64masm` | `../../../c64m/build/am65` | Offline assemble (c64m renamed the CLI to `am65`; this symlink keeps the old name) |
+| `tools/c64/c64_control_client.py` | `../../../c64m/tools/c64_control_client.py` | Control-port helper (`Ctl`) |
+| `tools/c64/play.sh` | user | Offline PRG + `--prg --autorun` (human play) |
+| `tools/c64/build-prg.sh` | build | `src/c64/main.asm` → `build/railgunner.prg` |
+| `tools/c64/agent_session.py` | agent | Windowed + port 6510 + assemble + paste RUN |
+| `tools/c64/run-emulator.sh` | alias | → `play.sh` |
 | `c64m.ini` | config | ROMs, Assembler tab; `auto_run=no` |
 
 Rebuild c64m **in its own repo** if the symlink target is missing (do not edit c64m
@@ -52,7 +56,7 @@ cmake --build ../c64m/build -j
 ### Agent boot sequence (`agent_session.py`)
 
 1. Start windowed c64m with `c64m.ini` + `--control-port 6510`
-2. `assemble basic-run=1 reset=1 <abs>/src/main.asm` — assembles, then fixes the
+2. `assemble basic-run=1 reset=1 <abs>/src/c64/main.asm` — assembles, then fixes the
    BASIC pointers (from the emitted origin+end) and pastes `RUN` so BASIC does
    `SYS 2061` → `start`. **One command**; no manual `set-memory`/paste ceremony.
    (**Keep `reset=1`** when re-assembling into a running emulator — c64m skips
@@ -63,10 +67,10 @@ Do **not** poke PC to `$080D` via assembler auto-run (use `basic-run` instead).
 Never `--headless`.
 
 ```bash
-tools/agent_session.py              # start + boot (assemble basic-run=1)
-tools/agent_session.py --attach     # already running; re-assemble + basic-run
-tools/agent_session.py --verify     # smoke title, exit
-tools/play.sh                       # human only — offline PRG, no control port
+tools/c64/agent_session.py              # start + boot (assemble basic-run=1)
+tools/c64/agent_session.py --attach     # already running; re-assemble + basic-run
+tools/c64/agent_session.py --verify     # smoke title, exit
+tools/c64/play.sh                       # human only — offline PRG, no control port
 ```
 
 ---
@@ -76,14 +80,14 @@ tools/play.sh                       # human only — offline PRG, no control por
 | Concern | Rule |
 |---------|------|
 | Emulator process cwd | `../c64m` (so ROMs resolve; scripts set this) |
-| Live assemble path | **Absolute** `src/main.asm` (emu cwd is c64m) |
-| Offline PRG | `tools/build-prg.sh` → `build/railgunner.prg` |
+| Live assemble path | **Absolute** `src/c64/main.asm` (emu cwd is c64m) |
+| Offline PRG | `tools/c64/build-prg.sh` → `build/railgunner.prg` |
 | Default control port | **6510** (agent sessions) |
 
 Resolve the game root once per session:
 
 ```bash
-RG="$(cd "$(dirname "$0")/.." && pwd)"   # if inside a script under tools/
+RG="$(cd "$(dirname "$0")/../.." && pwd)"   # if inside a script under tools/c64/
 # or:
 RG="/absolute/path/to/railgunner"
 ```
@@ -95,7 +99,7 @@ RG="/absolute/path/to/railgunner"
 ### A. Agent session (control port)
 
 ```sh
-tools/agent_session.py
+tools/c64/agent_session.py
 ```
 
 Windowed + port 6510. Kill the **emulator process** when the session ends —
@@ -104,13 +108,13 @@ Windowed + port 6510. Kill the **emulator process** when the session ends —
 ### B. Human play (no agent)
 
 ```sh
-tools/play.sh
+tools/c64/play.sh
 ```
 
 ### C. Attach
 
 ```sh
-tools/agent_session.py --attach
+tools/c64/agent_session.py --attach
 ```
 
 ### Turbo modes (agents)
@@ -137,7 +141,7 @@ N assemble [address=<hex>] [run-address=<hex>] [auto-run=0|1] [basic-run=0|1] [r
 
 | Option | Default | RailGunner guidance |
 |--------|---------|---------------------|
-| `address` | `$8000` | Host default only. Our `src/main.asm` sets segments (`BASIC` `$0801`, `CODE` `$080d`); source origin wins once it emits / sets `* =` / `.org`. Safe to pass `address=$0801` or omit and rely on source. The success line reports the **actual emitted origin** (`ok address=$0801`), not this default. |
+| `address` | `$8000` | Host default only. Our `src/c64/main.asm` sets segments (`BASIC` `$0801`, `CODE` `$080d`); source origin wins once it emits / sets `* =` / `.org`. Safe to pass `address=$0801` or omit and rely on source. The success line reports the **actual emitted origin** (`ok address=$0801`), not this default. |
 | `run-address` | same as `address` | Entry for auto-run — use code start (`$080d` / `start` once symbols work) when `auto-run=1` |
 | `auto-run` | `0` | Pokes PC into ML (skips BASIC). We **avoid** this — leaves KERNAL state wrong. Prefer `basic-run`. |
 | `basic-run` | `0` | **The boot button for this project.** `1` = fix BASIC pointers (from emitted origin+end) + paste `RUN`, i.e. assemble-as-LOAD for our `10 SYS 2061` stub. Mutually exclusive with `auto-run` (both `=1` → `bad-args`). Skips a redundant reset when already at a fresh READY. |
@@ -148,7 +152,7 @@ N assemble [address=<hex>] [run-address=<hex>] [auto-run=0|1] [basic-run=0|1] [r
 ### Success / failure
 
 ```text
-1 assemble reset=1 /abs/path/railgunner/src/main.asm
+1 assemble reset=1 /abs/path/railgunner/src/c64/main.asm
 1 ok address=$0801
 
 2 assemble reset=0 /abs/path/broken.asm
@@ -175,12 +179,12 @@ Useful for CI-ish “does it assemble?” without a live machine:
 
 ```sh
 # From RailGunner root — playable PRG for humans:
-make prg                    # or: tools/build-prg.sh
+make prg                    # or: tools/c64/build-prg.sh
 # → build/railgunner.raw  (c64masm memory image @ $0801)
 # → build/railgunner.prg  (2-byte load $0801 + raw)  ← only this is --prg safe
 
 # Assemble-only check (do NOT use this path as the play PRG):
-tools/c64masm -i src/main.asm -o build/railgunner.raw -s build/symbols.txt
+tools/c64/c64masm -i src/c64/main.asm -o build/railgunner.raw -s build/symbols.txt
 ```
 
 **Never** `c64masm -o build/railgunner.prg`. The CLI writes a raw image; a C64
@@ -189,7 +193,7 @@ keeps Make “up to date” while `make play` / `--autorun` loads garbage and RU
 does nothing — until `make clean && make`. `make prg` / `play.sh` now reject a
 missing `$01 $08` header and rebuild.
 
-`C64MASM` is predefined to `1` in this path (see assembler syntax).  
+`AM65` is predefined to `1` on this CLI path (`tools/c64/c64masm` → `am65`). In-emulator `assemble` sets `AM65=0` and `C64=1` (see assembler syntax).  
 **Primary game loop for agents remains live `assemble` into the emulator** so
 breakpoints, PC, and memory match what you run.
 
@@ -204,13 +208,13 @@ import sys
 from pathlib import Path
 
 RG = Path("/absolute/path/to/railgunner")  # set per machine
-sys.path.insert(0, str(RG / "tools"))
+sys.path.insert(0, str(RG / "tools" / "c64"))
 from c64_control_client import Ctl
 
-SRC = (RG / "src" / "main.asm").resolve()
+SRC = (RG / "src" / "c64" / "main.asm").resolve()
 
 c = Ctl(port=6510)          # default in upstream helper is 17652 — always pass 6510
-print(c.cmd("hello"))       # ('ok', 'name=c64m protocol=C64M/6')
+print(c.cmd("hello"))       # ('ok', 'name=c64m protocol=C64M/8')
 
 # Build into the machine (absolute path — emulator cwd is ../c64m)
 r = c.cmd(f"assemble reset=1 {SRC}")
@@ -245,7 +249,7 @@ Wire rules agents must not violate:
 ### 6.1 Assemble, run to label, inspect
 
 ```text
-1 assemble reset=1 /ABS/railgunner/src/main.asm
+1 assemble reset=1 /ABS/railgunner/src/c64/main.asm
 2 find-symbol start
 3 break-clear-all
 4 break-exec $080D
@@ -449,7 +453,7 @@ Coop inbox: `scrub [count]` dumps PNGs of the retained window;
 
 ### 6.7c VIC ring (why did that frame look wrong?)
 
-**C64M/6** — per-line end-of-line derived VIC state. The frame ring shows *that*
+Shipped in **C64M/6** (the wire is now **C64M/8**) — per-line end-of-line derived VIC state. The frame ring shows *that*
 a frame is wrong; this shows *why*: which sprites had fetched data, badline,
 and especially **sprite X including the `$D010` MSB actually latched for
 painting that line** (`spr_x=`). A one-frame left-edge flash is often latched
@@ -505,20 +509,20 @@ Restore later with `load-state` + `wait-event load-state-complete`.
 ## 7. Recommended agent workflow (game work)
 
 ```text
-1. Ensure tools/c64m exists (rebuild c64m in its own repo if needed).
-2. Start agent session: tools/agent_session.py  (or --attach if already up).
+1. Ensure tools/c64/c64m exists (rebuild c64m in its own repo if needed).
+2. Start agent session: tools/c64/agent_session.py  (or --attach if already up).
 3. Human reports bug (what they saw vs expected); do not require them to read asm.
-4. Edit src/** (syntax per assembler-syntax.md).
+4. Edit src/c64/** (syntax per assembler-syntax.md).
 5. Re-boot: assemble reset=1 + pointer fix + paste RUN (agent_session --attach).
 6. find-symbol / break-exec / joystick N mask / get-memory as needed.
 7. Observe: get-cpu, get-memory, get-vic, get-frame / get-frame-at,
    vic-ring-find, history-*, break-create … when=… for nuanced stops.
 8. One kill criterion; one change; re-assemble with reset; re-measure.
-9. Ask human to re-test with tools/play.sh.
+9. Ask human to re-test with tools/c64/play.sh.
 10. quit-client; kill emulator process when the session ends.
 ```
 
-**Human playtest:** `tools/play.sh` only. Do not claim “feels good” from memory
+**Human playtest:** `tools/c64/play.sh` only. Do not claim “feels good” from memory
 dumps alone — that feedback is the human’s job.
 
 **Vertical slice focus** (from design/layout): prove rail draw, one drone type,
@@ -530,10 +534,10 @@ bullet cells, `$D01F` disambiguation, then mux — instrument those labels first
 
 | Goal | Command shape |
 |------|----------------|
-| Rebuild + start like a human (BASIC-run) | `assemble basic-run=1 reset=1 /ABS/.../src/main.asm` (fixes pointers + pastes `RUN`) |
-| Assemble only, inspect before running | `assemble reset=1 /ABS/.../src/main.asm` then breakpoints / `run` |
+| Rebuild + start like a human (BASIC-run) | `assemble basic-run=1 reset=1 /ABS/.../src/c64/main.asm` (fixes pointers + pastes `RUN`) |
+| Assemble only, inspect before running | `assemble reset=1 /ABS/.../src/c64/main.asm` then breakpoints / `run` |
 | Hot-patch without reset | **Avoid** unless you know state; prefer `reset=1` when re-assembling |
-| Offline PRG for human play | `tools/build-prg.sh` / `tools/play.sh` |
+| Offline PRG for human play | `tools/c64/build-prg.sh` / `tools/c64/play.sh` |
 
 **Do not** use `auto-run=1 run-address=$080d` — that pokes PC into ML, skips BASIC
 `RUN`/`SYS`, and leaves KERNAL state wrong (e.g. cursor). Prefer `basic-run=1` or
@@ -545,8 +549,8 @@ offline `--prg --autorun`.
 
 | Pitfall | Correct behavior |
 |---------|------------------|
-| Launch c64m from RailGunner cwd without scripts | Use `tools/play.sh` or `tools/agent_session.py` (they set cwd / INI) |
-| Relative `assemble src/main.asm` (cwd=c64m) | Pass **absolute** path to RailGunner `src/main.asm` |
+| Launch c64m from RailGunner cwd without scripts | Use `tools/c64/play.sh` or `tools/c64/agent_session.py` (they set cwd / INI) |
+| Relative `assemble src/c64/main.asm` (cwd=c64m) | Pass **absolute** path to RailGunner `src/c64/main.asm` |
 | `quit-client` ends session forever | Only closes socket; **kill emulator process** to tear down |
 | `--headless` | **Forbidden** on RailGunner — always windowed |
 | Re-assemble without reset | Use **`reset=1`** when the emu is already running |
@@ -636,21 +640,21 @@ Do not commit coop tooling until a freeze→snap→resume path is proven live.
 
 ```bash
 # Human play
-tools/play.sh
+tools/c64/play.sh
 
 # Agent session
-tools/agent_session.py
+tools/c64/agent_session.py
 
 # Coop glitch hunt (see coop-debug.md)
 make coop
 
 # Offline PRG / symbols
-tools/build-prg.sh
+tools/c64/build-prg.sh
 ```
 
 ```text
 hello | ping | get-state | get-cpu | get-vic | get-cia 1
-assemble reset=1 /ABS/src/main.asm
+assemble reset=1 /ABS/src/c64/main.asm
 find-symbol <name>
 break-exec $addr | break-create ... | break-list | break-clear-all
 run | pause | step-instruction | step-over | step-out | step-frame
@@ -689,6 +693,15 @@ it was friction, and a concrete suggested improvement. Keep symptoms
 reproducible (exact command + response). Mark severity (papercut / slows-work /
 blocks-work). Cross off (`~~struck~~ fixed in c64m <ref>`) when resolved
 upstream — do not delete history.
+
+### 2026-10-10 — offline assembler binary is `am65`, not `c64masm`
+
+- **Severity:** blocks-work until the RailGunner symlink is retargeted.
+- **Did:** `make prg` after moving the C64 sources. Make needs `tools/c64/c64masm`.
+- **c64m did:** `../c64m/build/c64masm` is gone. The same CLI is `../c64m/build/am65` (`-i` / `-o` / `-s` unchanged). It predefines `AM65=1`, not `C64MASM`.
+- **Friction:** a checkout whose symlink still says `build/c64masm` cannot assemble offline. In-emulator `assemble` is unaffected.
+- **Workaround:** `tools/c64/c64masm` → `../../../c64m/build/am65`.
+- **Suggested improvement:** keep a `c64masm` name next to `am65`, or say the rename in the c64m tool doc agents read first.
 
 ### 2026-07-29 — Coop automatic range traces use an unsupported `history-find end=`
 
@@ -803,7 +816,7 @@ longer a prerequisite for using the service.
 ### 2026-07-26 — `agent_session.py` retains the control server's sole client
 
 - **Severity:** slows-work.
-- **Did:** launched `tools/agent_session.py` normally, then opened a second
+- **Did:** launched `tools/c64/agent_session.py` normally, then opened a second
   `Ctl(port=6510)` process to inspect mux counters while the visible session
   remained active.
 - **c64m did:** accepted only the helper's existing connection; the inspection
@@ -812,7 +825,7 @@ longer a prerequisite for using the service.
   inspection, but it keeps its connection without exposing an interactive
   command path. `--once` releases the client but this execution environment
   reaps the detached emulator, so the practical workaround was to launch
-  windowed `tools/c64m` directly and perform boot plus all inspection through
+  windowed `tools/c64/c64m` directly and perform boot plus all inspection through
   one client process.
 - **Suggested improvement:** give `agent_session.py` an interactive command
   loop, a command-script option, or explicitly release/reconnect its client
@@ -825,7 +838,7 @@ origin (lowest emitted byte), e.g. `ok address=$0801`, not the requested
 `address=` default the source overrides.
 
 - **Severity:** papercut (actively misleading during debugging).
-- **Did:** `assemble reset=1 auto-run=0 /ABS/src/main.asm` with **no** `address=`
+- **Did:** `assemble reset=1 auto-run=0 /ABS/src/c64/main.asm` with **no** `address=`
   (source sets segments: `BASIC $0801`, `CODE $080d`).
 - **c64m said:** `ok address=$8000`.
 - **Reality:** code assembled to `$080D` and ran from there —
@@ -907,7 +920,8 @@ over ad-hoc workarounds; keep friction entries only for *remaining* pain.
 | Flight recorder `history-*` | C64M/3 | Bus/write forensics after freeze; `hist` in coop |
 | Guarded BP `when=` | C64M/4 | IRQ-only / raster-band / value-bit stops; coop `arm … when=` |
 | Frame ring `get-frame-at` | C64M/5 | One-frame glitches after late pause; coop `scrub` / `frame` |
-| VIC ring `vic-ring-find` | C64M/6 | Latched per-line `spr_x` / enable; coop `vic <frame>` |
+| VIC ring `vic-ring-find` | C64M/6 (still on C64M/8) | Latched per-line `spr_x` / enable; coop `vic <frame>` |
+| Inspect mode | C64M/8 | `mode=inspector` is read-only; `leave-inspector` to mutate again |
 | `basic-run=1` assemble | earlier | `agent_session.py` boot — no pointer ceremony |
 | Assembler `locked` / `reclaim=` segments | earlier | Pin VIC regions; overlay title RAM intentionally |
 

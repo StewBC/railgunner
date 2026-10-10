@@ -11,9 +11,9 @@ watchpoints, and chat. No c64m source edits required.
 
 | Path | Role |
 |------|------|
-| `tools/coop_debug_rg.py` | **RailGunner entry** — coop_watch + symbols from `build/symbols.txt` |
-| `tools/coop_watch.py` | Symlink → `../c64m/tools/coop_watch.py` (generic daemon) |
-| `tools/c64_control_client.py` | Symlink → c64m `Ctl` client |
+| `tools/c64/coop_debug_rg.py` | **RailGunner entry** — coop_watch + symbols from `build/symbols.txt` |
+| `tools/c64/coop_watch.py` | Symlink → `../../../c64m/tools/coop_watch.py` (generic daemon) |
+| `tools/c64/c64_control_client.py` | Symlink → c64m `Ctl` client |
 | `build/debug/snap-NNN.txt` | Evidence pack written on every freeze |
 | `build/debug/coop_inbox` | Agent → daemon command channel (append lines) |
 
@@ -32,7 +32,7 @@ watchpoints, and chat. No c64m source edits required.
 ```
 
 - **One process holds the control socket** and runs the `wait-paused` loop:
-  `tools/coop_debug_rg.py`.
+  `tools/c64/coop_debug_rg.py`.
 - That process is **not** a subagent with a separate chat. The **coder agent**
   (main conversation with the human) steers it by **appending lines** to
   `build/debug/coop_inbox` and by **reading** `build/debug/snap-*.txt`.
@@ -48,8 +48,10 @@ frame ring still has the pixels (~16.5 s default), and the VIC ring still has
 per-line latched sprite X (~10 s default). Scrub before assuming the glitch
 is gone.
 
-Protocol stack (c64m): **C64M/6** — history (C64M/3) + guarded `when=` (C64M/4)
-+ frame ring (C64M/5) + VIC ring (C64M/6). Details:
+Protocol stack (c64m): **C64M/8**. This workflow uses history (C64M/3),
+guarded `when=` (C64M/4), the frame ring (C64M/5), and the VIC ring (C64M/6).
+`hello` must say `protocol=C64M/8`. If `get-state` reports `mode=inspector`,
+mutating commands fail until `leave-inspector`. Details:
 [`build-debug.md`](build-debug.md) §§6.5b–6.7c.
 
 ---
@@ -58,7 +60,7 @@ Protocol stack (c64m): **C64M/6** — history (C64M/3) + guarded `when=` (C64M/4
 
 ```bash
 # From RailGunner repo root
-tools/build-prg.sh                  # refresh build/symbols.txt for regions
+tools/c64/build-prg.sh                  # refresh build/symbols.txt for regions
 ```
 
 Symbols drive which ZP/pool addresses appear in every snap. Stale symbols →
@@ -75,7 +77,7 @@ confirm in c64m `agents/frontend-debugger.md` if unsure).
 
 ```bash
 make coop
-# same: tools/coop.sh
+# same: tools/c64/coop.sh
 ```
 
 This will:
@@ -83,7 +85,7 @@ This will:
 1. `make prg` (fresh PRG + `build/symbols.txt` for region dumps)
 2. If port **6510** is free: start windowed c64m with `--control-port`, `--prg`,
    `--autorun` (game boots; you play from title)
-3. Run `tools/coop_debug_rg.py` in the **foreground** (owns the control socket)
+3. Run `tools/c64/coop_debug_rg.py` in the **foreground** (owns the control socket)
 
 Env: `C64M_PORT` (default 6510). If the port is already open, only the watcher
 starts (attach mode).
@@ -93,15 +95,15 @@ starts (attach mode).
 **Terminal A — emulator (windowed, control port):**
 
 ```bash
-tools/c64m --control-port 6510
-# or: tools/agent_session.py
+tools/c64/c64m --control-port 6510
+# or: tools/c64/agent_session.py
 ```
 
 **Terminal B — watcher (from RailGunner root):**
 
 ```bash
-tools/build-prg.sh
-tools/coop_debug_rg.py
+tools/c64/build-prg.sh
+tools/c64/coop_debug_rg.py
 ```
 
 **Never** `--headless` for coop play. **Never** leave turbo at warp (3) for
@@ -261,11 +263,11 @@ rg 'objects::profile_marker' build/symbols.txt
 echo 'hist $C279 write 256' >> build/debug/coop_inbox
 
 # Analyze that evidence pack (latest snap by default, or pass one explicitly).
-tools/analyze_profile.py
-tools/analyze_profile.py build/debug/snap-021.txt
+tools/c64/analyze_profile.py
+tools/c64/analyze_profile.py build/debug/snap-021.txt
 ```
 
-The phase IDs and instrumentation sites are in `src/sys/const.asm`. A 256-write
+The phase IDs and instrumentation sites are in `src/c64/sys/const.asm`. A 256-write
 capture spans several busy frames; repeat after changing the workload when a
 phase is data-dependent. The measurements include the six-cycle `LDA #id` /
 `STA abs` marker cost at each boundary, so treat differences of only a few
@@ -320,7 +322,7 @@ without a visible glitch.
 
 ## 7. RailGunner regions (what gets dumped)
 
-`tools/coop_debug_rg.py` resolves names from `build/symbols.txt`:
+`tools/c64/coop_debug_rg.py` resolves names from `build/symbols.txt`:
 
 **Session / player / level (ZP):** `game_mode`, `input_dirs`, score, lives,
 `level`, `level_kills`, `level_quota`, `level_banner_t`, `pending_mode`, player
@@ -333,7 +335,7 @@ plan, command count, `mux_last_error`, dirty/miss/seq.
 
 **Write traces:** `$D000..$D02E` sprite regs + SoA ranges for flags/kind/y/ptr/hw_owner.
 
-After a big layout change: `tools/build-prg.sh` then restart the watcher so
+After a big layout change: `tools/c64/build-prg.sh` then restart the watcher so
 addresses refresh.
 
 ---
@@ -393,6 +395,6 @@ lower-left, **Q4** upper-left.
 | File | Owner |
 |------|--------|
 | `../c64m/tools/coop_watch.py` | c64m (upstream); RG may symlink only |
-| `tools/coop_debug_rg.py` | RailGunner — game CONFIG + symbol resolve |
+| `tools/c64/coop_debug_rg.py` | RailGunner — game CONFIG + symbol resolve |
 | `agents/coop-debug.md` | RailGunner — this protocol |
 | `build/debug/*` | Ephemeral session artifacts (do not require commit) |

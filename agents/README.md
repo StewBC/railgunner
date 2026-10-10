@@ -14,14 +14,14 @@ the tool (and fix the handoff).
 2. **`railgunner.md`** — original design brief (layout, long-horizon systems).
 3. **`roadmap.md`** — stages, **where we are**, ordered **Next steps** (default
    work order). Living guide; detail docs hang off it later.
-4. **`repo-layout.md`** — where source lives, what already exists, Stage 2 files
-   still to add, include rules. Create new files only under this plan.
+4. **`repo-layout.md`** — where source lives and the include rules. Create new
+   files only under this plan.
 5. **`assembler-syntax.md`** — **required before writing any `.asm`**. c64m
    assembler language only (not ACME / ca65 / KickAsm / 64tass unless listed
    there). Syntax, directives, macros, scopes, segments (including `locked` /
    `reclaim=`), pitfalls.
 6. **`build-debug.md`** — **required before driving the emulator**. Play vs
-   agent launch, remote API recipes (protocol **C64M/6**: history, guarded
+   agent launch, remote API recipes (protocol **C64M/8**: history, guarded
    `when=` breakpoints, **frame ring**, **VIC ring**), **pitfalls / hard-won
    lessons** (reset, BASIC pointers, ZP clobber, keyboard matrix). Read the
    pitfalls before debugging input or screen code.
@@ -31,7 +31,7 @@ the tool (and fix the handoff).
 8. Component handoffs relevant to the task. For graphical objects, hardware
    sprites, the mux, or collision attribution: **`objects-sprites.md`** (ABI)
    plus **`sprite-mux-status.md`** / **`sprite-mux-issues.md`** (live status).
-9. Source under `src/` (root unit: `src/main.asm`) and samples under
+9. Source under `src/c64/` (root unit: `src/c64/main.asm`) and samples under
    `../c64m/samples/` when learning idioms.
 
 Do not invent assembler syntax. If something is missing from
@@ -45,12 +45,12 @@ update the handoff so the next agent does not rediscover it.
 | [`level-rework.md`](level-rework.md) | **Current loop freeze:** levels, HUD, death/mines, R1–R11 ledger (prefer over stale brief) |
 | [`railgunner.md`](railgunner.md) | Original design brief (screen, controls, bonuses vision); defer to level-rework on conflict |
 | [`roadmap.md`](roadmap.md) | Stages, flow, **where we are**, ordered **Next steps**, matrix, open questions |
-| [`repo-layout.md`](repo-layout.md) | Repo tree, what exists vs Stage 2 files to add, include rules |
-| [`objects-sprites.md`](objects-sprites.md) | Pool/mux design + ABI (implemented; consumers still Stage 2+) |
+| [`repo-layout.md`](repo-layout.md) | Repo tree, current C64 files, include rules |
+| [`objects-sprites.md`](objects-sprites.md) | Pool/mux design + ABI (implemented; the game consumes it) |
 | [`sprite-mux-status.md`](sprite-mux-status.md) | Implemented mux status, demos, verification, remaining stress tests |
 | [`sprite-mux-issues.md`](sprite-mux-issues.md) | Mux review findings / integration hazards |
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
-| [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, **C64M/6** recipes (history, `when=`, frame + VIC rings), friction log |
+| [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, **C64M/8** recipes (history, `when=`, frame + VIC rings, inspect mode), friction log |
 | [`coop-debug.md`](coop-debug.md) | **Cooperative live debug** — human pause, `scrub`/`frame`/`vic`, guarded `arm`, evidence packs |
 
 **Optional / not in the handoff path:** [`reviews/`](reviews/) holds post-stage
@@ -61,20 +61,22 @@ them as required reading or as a work queue ahead of `roadmap.md`.
 
 | Path | Role |
 |------|------|
-| `src/main.asm` | Sole assemble root; includes everything else |
-| `src/boot/` | Cold init / bring-up |
-| `src/sys/` | ZP, constants, IRQ, input, memory map |
-| `src/frontend/` | Title, high scores, score entry, game over, victory |
-| `src/game/` | Play-mode logic (player, drones, collision, waves, …) |
-| `src/render/` | Character playfield, bullets, HUD |
-| `src/sprite/` | Player/drone sprites, multiplexer |
-| `src/data/` | Tables, strings, embeds |
-| `assets/` | Art / binary blobs for `.incbin` |
-| `tools/` | Symlinks to c64m binaries/client, `run-emulator.sh`, future generators |
+| `src/<platform>/` | One tree per machine. C64 is the only platform today |
+| `src/c64/main.asm` | Sole assemble root; includes everything else |
+| `src/c64/boot/` | Cold init / bring-up |
+| `src/c64/sys/` | ZP, constants, IRQ, input, memory map |
+| `src/c64/frontend/` | Title, high scores, score entry, game over, victory |
+| `src/c64/game/` | Play-mode logic (player, drones, collision, waves, …) |
+| `src/c64/render/` | Character playfield, bullets, HUD |
+| `src/c64/sprite/` | Player/drone sprites, multiplexer |
+| `src/c64/data/` | Tables, strings, embeds |
+| `assets/<platform>/` | Art for one machine. C64 blobs are `assets/c64/` |
+| `tools/<platform>/` | Host scripts for one machine. C64 is `tools/c64/` |
+| `tst/<platform>/` | Standalone programs for one machine. C64 mux demos are `tst/c64/` |
 | `build/` | Assembler outputs (not hand-edited) |
 
 Full rationale and vertical-slice file list: **`repo-layout.md`**.  
-Build/run/debug: **`build-debug.md`**. Tool path notes: **`tools/README.md`**.
+Build/run/debug: **`build-debug.md`**. Tool path notes: **`tools/c64/README.md`**.
 
 ## Project goal (how to work)
 
@@ -112,13 +114,13 @@ Prefer these over ad-hoc rituals; details live in `build-debug.md` and
 
 | Path | Who | What | Command |
 |------|-----|------|---------|
-| **Play (user)** | Human testing the game | Make rebuilds assets if needed, offline `c64masm` → `build/railgunner.prg` → windowed c64m `--prg --autorun`. No remote script stays attached. You just play. | **`make play`** (or `tools/play.sh` / `tools/run-emulator.sh`) |
-| **Agent session** | Agent chasing a bug | Windowed c64m **with control port**, live `assemble basic-run=1` (assemble → fix BASIC pointers → paste `RUN`), then breakpoints / memory / CPU / frames. | `tools/agent_session.py` |
+| **Play (user)** | Human testing the game | Make rebuilds assets if needed, offline `c64masm` → `build/railgunner.prg` → windowed c64m `--prg --autorun`. No remote script stays attached. You just play. | **`make play`** (or `tools/c64/play.sh` / `tools/c64/run-emulator.sh`) |
+| **Agent session** | Agent chasing a bug | Windowed c64m **with control port**, live `assemble basic-run=1` (assemble → fix BASIC pointers → paste `RUN`), then breakpoints / memory / CPU / frames. | `tools/c64/agent_session.py` |
 
 ```bash
 # You (human): assets + PRG + start the game — no OPT+SHIFT+A, no typing RUN
 make play
-# (or: tools/play.sh)
+# (or: tools/c64/play.sh)
 
 # Rebuild PRG only (still refreshes title bins if PNGs changed)
 make
@@ -128,9 +130,9 @@ make assets
 make screens
 
 # Agent: instrumentable session (port 6510), window still visible
-tools/agent_session.py              # start + assemble basic-run=1 (one-command boot)
-tools/agent_session.py --attach     # emu already up; re-assemble + basic-run (reset default)
-tools/agent_session.py --verify     # smoke title screen, then exit
+tools/c64/agent_session.py              # start + assemble basic-run=1 (one-command boot)
+tools/c64/agent_session.py --attach     # emu already up; re-assemble + basic-run (reset default)
+tools/c64/agent_session.py --verify     # smoke title screen, then exit
 ```
 
 When the agent **re-assembles without restarting the emulator**, use **`assemble reset=1`**
@@ -146,16 +148,16 @@ Default control port (agent path only): **6510**.
 
 | Piece | Where |
 |-------|--------|
-| Emulator | `tools/c64m` → `../c64m/build/c64m` |
-| **Play (user)** | `tools/play.sh` |
-| Build PRG only | `tools/build-prg.sh` → `build/railgunner.prg` |
-| **Agent session** | `tools/agent_session.py` |
-| CLI assembler | `tools/c64masm` |
-| Control client | `tools/c64_control_client.py` |
-| Coop watcher | `tools/coop_debug_rg.py` / `make coop` (`scrub`/`frame`/`vic`, guarded arms) |
+| Emulator | `tools/c64/c64m` → `../c64m/build/c64m` |
+| **Play (user)** | `tools/c64/play.sh` |
+| Build PRG only | `tools/c64/build-prg.sh` → `build/railgunner.prg` |
+| **Agent session** | `tools/c64/agent_session.py` |
+| CLI assembler | `tools/c64/c64masm` → `../c64m/build/am65` |
+| Control client | `tools/c64/c64_control_client.py` |
+| Coop watcher | `tools/c64/coop_debug_rg.py` / `make coop` (`scrub`/`frame`/`vic`, guarded arms) |
 | Project INI | `c64m.ini` (ROMs, Assembler tab defaults; auto_run=no) |
 | c64m manual (read-only) | `../c64m/manual/manual.md` |
-| Control protocol (read-only) | `../c64m/agents/control-port.md` (**C64M/6**) |
+| Control protocol (read-only) | `../c64m/agents/control-port.md` (**C64M/8**) |
 | Frame/VIC ring plan (read-only) | `../c64m/agents/frame-ring-plan.md` (Ring A + Ring B shipped) |
 
 ## Repo boundary (hard rule)

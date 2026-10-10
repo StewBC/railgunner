@@ -116,7 +116,7 @@ Inside `.if`:
 
 - Relational/equality: `.lt` `.le` `.gt` `.ge` `.eq` `.ne`
 - Existence: `.defined name`
-- Bare symbol: `.if FLAG` is true when `FLAG` is nonzero (works for `C64MASM`)
+- Bare symbol: `.if FLAG` is true when `FLAG` is nonzero (works for `AM65`)
 
 **CRITICAL — do not use `=` inside `.if`:**
 
@@ -134,7 +134,7 @@ MODE = 0
 ; MODE is now 2 (side effect). Both $22 and $33 were emitted.
 ```
 
-Verified with `tools/c64masm` (2026-07): `.if X = n` **assigns** `X := n` and treats
+Verified with `tools/c64/c64masm` (2026-07): `.if X = n` **assigns** `X := n` and treats
 the assigned value as the condition (0 = false, nonzero = true). So a mode switch
 written that way can assemble **multiple** branches and **mutate** the constant for
 later code. RailGunner hit this: `COLLISION_MODE = 0` still built hybrid + soft
@@ -156,22 +156,24 @@ paths (green/blue border dogfood in “HW-only” play).
 When changing a compile-time mode flag, **disassemble or check symbols** for the
 expected single `JSR` target — do not trust that only one `.if` body assembled.
 
-### Predefined define: `C64MASM`
+### Predefined define: `AM65`
 
-| Host | `C64MASM` value |
-|------|-----------------|
-| Command-line `c64masm` | `1` |
-| In-emulator Assembler tab / remote `assemble` | `0` |
+The old `C64MASM` symbol is gone. The CLI is `am65` (`tools/c64/c64masm` is a symlink to it).
+
+| Host | `AM65` | Also predefined |
+|------|--------|-----------------|
+| Command-line `am65` | `1` | nothing else (`C64` is not set) |
+| In-emulator Assembler tab / remote `assemble` | `0` | `C64=1` |
 
 ```asm
-.if C64MASM
+.if AM65
     * = $0801           ; file build
 .else
     * = $C000           ; live poke into spare RAM
 .endif
 ```
 
-Extra defines: `c64masm -D NAME[=value]` (value defaults to `1`).
+Extra defines: `am65 -D NAME[=value]` (value defaults to `1`). The symlink accepts the same `-i` / `-o` / `-s` / `-D` flags.
 
 ---
 
@@ -208,7 +210,7 @@ Standard 6502 mnemonics and addressing modes. Write them in the usual form:
 | `ldx $nn,y` | always absolute,Y (`$BE`) | zeropage,Y (`$B6`) when in range |
 | `stx $nn,y` | hard error (no abs,Y form) | zeropage,Y when the opcode exists |
 
-If you still see lone-opcode `lsr` or forced abs,Y, rebuild `tools/c64masm`
+If you still see lone-opcode `lsr` or forced abs,Y, rebuild `tools/c64/c64masm`
 from c64m (need ≥ 638d3c9). Prefer `c64masm -v` on a one-liner to verify.
 
 ---
@@ -530,7 +532,7 @@ Agents writing source only need correct syntax; invocation details for later doc
 |------|--------|
 | In-emulator Assembler tab | Writes into C64 RAM; optional reset-to-BASIC, auto-run PC, host origin |
 | Remote control `assemble` | Same engine; settings mirror the tab (`reset=`, `address=`, etc.) |
-| `c64masm -i file.asm -o out.bin` | Offline binary; `C64MASM=1`; supports `file=` scopes |
+| `tools/c64/c64masm -i file.asm -o out.bin` | Offline binary via `am65`; `AM65=1`; supports `file=` scopes |
 
 Labels from a successful assembly are exported to the debugger symbol table (Disasm / Symbol Lookup).
 

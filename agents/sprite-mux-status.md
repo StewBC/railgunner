@@ -41,20 +41,20 @@ layer battle-hardened.
 
 ## Demonstrations
 
-Both programs are standalone PRGs under `tst/` but include the production pool,
+Both programs are standalone PRGs under `tst/c64/` but include the production pool,
 builder, IRQ executor, collision handoff, and video-standard code directly.
 A red border means a build/publish error was latched.
 
 ```bash
 # Stable two-ribbon reuse case
-tst/play_sprite_mux_dance.sh
+tst/c64/play_sprite_mux_dance.sh
 
 # Fourteen objects orbit clockwise, continually crossing in Y
-tst/play_sprite_mux_circle.sh
+tst/c64/play_sprite_mux_circle.sh
 
 # Either demo accepts an explicit standard
-tst/play_sprite_mux_circle.sh --video PAL
-tst/play_sprite_mux_circle.sh --video NTSC
+tst/c64/play_sprite_mux_circle.sh --video PAL
+tst/c64/play_sprite_mux_circle.sh --video NTSC
 ```
 
 The circle is the stronger mux test: every logical object moves through both

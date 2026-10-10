@@ -6,9 +6,9 @@ build/*
 !build/.gitkeep
 
 # Generated C64 asset blobs (PNG / tools are source of truth; make assets)
-assets/screens/*_hires.bin
-assets/screens/*_hires_col.bin
-assets/sprites/*.bin
+assets/c64/screens/*_hires.bin
+assets/c64/screens/*_hires_col.bin
+assets/c64/sprites/*.bin
 
 # Editor / tooling noise
 *.swp

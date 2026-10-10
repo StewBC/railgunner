@@ -1,27 +1,30 @@
 # Repo layout — decision
 
-**Status:** chosen. Stage 1 scaffold + object pool/mux + rich frontend present.
-Play is still an art harness; Stage 2 vertical-slice files below are the next
-creates. Current phase and ordered work: [`roadmap.md`](roadmap.md) → **Next steps**.  
+**Status:** chosen. The C64 tree is the current game: level-centric combat
+(R1–R8), pool/mux, frontend, title music, and one-shot SFX. This file is the
+directory rules. What to build next: [`roadmap.md`](roadmap.md) → **Next steps**.  
 **Companion docs:** [`railgunner.md`](railgunner.md) (design), [`roadmap.md`](roadmap.md) (stages/flow), [`build-debug.md`](build-debug.md) (run/debug), [`assembler-syntax.md`](assembler-syntax.md) (syntax).
 
 ## Decision summary
 
 | Choice | Value |
 |--------|--------|
-| Source root | `src/` (not repo root) |
-| Depth | Two levels under `src/` max: `src/<area>/<file>.asm` |
-| Entry file | `src/main.asm` — only file that sets origin / BASIC stub and `.include`s the rest |
-| Binary / generated assets | `assets/` (inputs for `.incbin` or generators) |
-| Host tools | `tools/` (c64m symlinks, launch script, generators) |
+| Platform trees | `src/<platform>/`, `assets/<platform>/`, `tools/<platform>/`, `tst/<platform>/`. This game is `c64`. Siblings stay out of `c64/` |
+| Depth | Two levels under the platform root: `src/c64/<area>/<file>.asm` |
+| Entry file | `src/c64/main.asm` — only file that sets origin / BASIC stub and `.include`s the rest |
+| Binary / generated assets | `assets/c64/` (inputs for `.incbin` or generators) |
+| Host tools | `tools/c64/` (c64m symlinks, launch script, generators) |
 | Assemble output | `build/` (not source; may be gitignored later) |
 | Agent docs | `agents/` (already present) |
 
 **Why not a flat root or a single `game.asm`?**  
 The design is not a demo loop. Frontend states, rail/bullet character pipelines, sprite mux, collision disambiguation, wave tables, and bonuses are independent enough to want separate files, and there will be enough of them that a flat dump becomes unsearchable.
 
-**Why not deep nesting** (`src/game/enemies/types/...`)?  
-c64m `.include` paths are relative to the including file; deep trees make include lines brittle and encourage over-splitting. One area folder + clear filenames is enough.
+**Why not deep nesting** (`src/c64/game/enemies/types/...`)?  
+c64m `.include` paths are relative to the including file; deep trees make include lines brittle and encourage over-splitting. One area folder + clear filenames is enough. The platform directory is the one extra level: other versions of the game are siblings of `c64/`, not more folders inside it.
+
+**Why `c64/` under `src/`, `assets/`, `tools/`, and `tst/`?**  
+Each machine gets its own source, art, host scripts, and standalone tests. C64 is the only platform today. `agents/` and `build/` stay at the repo root: handoffs are shared, and `build/` is generated output. `.include` lines inside `src/c64/` are unchanged (relative to the including file). `.incbin` from `src/c64/data/` is `../../../assets/c64/...`. Demos in `tst/c64/` include production code with `../../src/c64/...`. Do not put platform files directly in `src/`, `assets/`, `tools/`, or `tst/`.
 
 ---
 
@@ -117,14 +120,14 @@ Logic that mutates game state; may call into render/sprite modules.
 
 ## Expected file count
 
-| Phase | Approx. `.asm` / `.inc` under `src/` | Notes |
+| Phase | Approx. `.asm` / `.inc` under `src/c64/` | Notes |
 |-------|--------------------------------------|--------|
 | Vertical slice (1 arm, 1 drone, no bonuses) | **8–12** | boot, zp, irq stub, rail, player, one drone, bullets, collision, main |
 | Playable single level + HUD | **18–25** | + HUD, health, damage, waves |
 | Full game + frontend shell | **30–45** | + title/scores/entry/game over, bonuses, mux, ammo |
 | Content-heavy (many levels, polish) | **40–55+** | mostly `data/` growth |
 
-**Conclusion:** too large for repo-root clutter or one monolith; small enough that **area folders under `src/`** (not a deep package tree) is the right grain. Rough steady state: **~35 files of logic + data includes**, plus `assets/` binaries and a few `tools/`.
+**Conclusion:** too large for repo-root clutter or one monolith; small enough that **area folders under `src/c64/`** (not a deep package tree) is the right grain. Rough steady state: **~35 files of logic + data includes**, plus `assets/c64/` binaries and a few `tools/c64/`.
 
 ---
 
@@ -133,36 +136,41 @@ Logic that mutates game state; may call into render/sprite modules.
 ```
 railgunner/
 ├── agents/                 # Handoffs (design, syntax, this layout)
-├── src/                    # All assembly source
-│   ├── main.asm            # Entry: stub, segments, include graph
-│   ├── boot/               # BASIC stub helpers, cold init
-│   ├── sys/                # ZP, constants, IRQ, input, memory map
-│   ├── frontend/           # Title, scores, game over, victory, entry
-│   ├── game/               # Play-mode logic
-│   ├── render/             # Screen, rail/bullet/HUD character presentation
-│   ├── sprite/             # Player/drone sprites, multiplexer
-│   └── data/               # Tables, strings, embeds (or includes of assets)
-├── assets/                 # Authoring inputs & binary blobs for .incbin
-│   ├── charset/
-│   ├── sprites/
-│   └── screens/            # Title / attract PNG + converted .bin
-├── tools/                  # c64m symlinks, play.sh, generators
+├── src/                    # One directory per platform
+│   └── c64/                # Commodore 64 — current game
+│       ├── main.asm        # Entry: stub, segments, include graph
+│       ├── boot/           # BASIC stub helpers, cold init
+│       ├── sys/            # ZP, constants, IRQ, input, memory map
+│       ├── frontend/       # Title, scores, game over, victory, entry
+│       ├── game/           # Play-mode logic
+│       ├── render/         # Screen, rail/bullet/HUD character presentation
+│       ├── sprite/         # Player/drone sprites, multiplexer
+│       └── data/           # Tables, strings, embeds (or includes of assets)
+├── assets/                 # One directory per platform
+│   └── c64/                # Commodore 64 art and .incbin blobs
+│       ├── charset/
+│       ├── sprites/
+│       └── screens/        # Title / attract PNG + converted .bin
+├── tools/                  # One directory per platform
+│   └── c64/                # c64m symlinks, play.sh, generators
+├── tst/                    # One directory per platform
+│   └── c64/                # Mux demos (not the game PRG)
 ├── Makefile                # assets → PRG → play (timestamp graph)
 └── build/                  # c64masm / snapshot outputs; not hand-edited
 ```
 
 Host build: root **`Makefile`** (`make`, `make play`, `make screens` / `assets`).  
-Toolchain paths and remote assemble/debug: **`build-debug.md`**, **`tools/README.md`**.
+Toolchain paths and remote assemble/debug: **`build-debug.md`**, **`tools/c64/README.md`**.
 
 ### Naming conventions
 
 | Kind | Convention | Example |
 |------|------------|---------|
-| Logic module | `src/<area>/<topic>.asm` | `src/game/collision.asm` |
-| Shared definitions / tables only | `*.inc` ok when no code entry | `src/data/waves.inc` |
+| Logic module | `src/c64/<area>/<topic>.asm` | `src/c64/game/collision.asm` |
+| Shared definitions / tables only | `*.inc` ok when no code entry | `src/c64/data/waves.inc` |
 | Labels | Prefer `.proc` / `.scope` per module; export with `module::label` only when needed | |
-| Constants | `src/sys/const.asm` (VIC, screen base, char codes) | |
-| Zero page | `src/sys/zeropage.asm` — single owner of ZP map | |
+| Constants | `src/c64/sys/const.asm` (VIC, screen base, char codes) | |
+| Zero page | `src/c64/sys/zeropage.asm` — single owner of ZP map | |
 
 ### Include graph (ownership)
 
@@ -178,11 +186,11 @@ main.asm
   └── data/*                  ; after code that references labels, or use two-pass freely
 ```
 
-Exact include order is fixed in `src/main.asm` when files appear. **Only `main.asm` should be passed to `c64masm` / the Assembler tab** as the root file (unless a test harness says otherwise).
+Exact include order is fixed in `src/c64/main.asm` when files appear. **Only `src/c64/main.asm` should be passed to `c64masm` / the Assembler tab** as the root file (unless a test harness says otherwise). From `src/c64/data/`, binary includes are `../../../assets/c64/...`.
 
 ### Assembler / load addresses (layout implication)
 
-Use **named segments** (as in c64m `c64-life.asm` style), defined once in `src/sys/memory.asm` or top of `main.asm`:
+Use **named segments** (as in c64m `c64-life.asm` style), defined once in `src/c64/sys/memory.asm` or top of `main.asm`:
 
 | Segment | Typical role |
 |---------|----------------|
@@ -192,7 +200,7 @@ Use **named segments** (as in c64m `c64-life.asm` style), defined once in `src/s
 | `DATA` | Tables, charset copies if resident |
 | Optional later | `SPRITES`, `CHARSET` at fixed VIC-friendly addresses |
 
-Live-in-emulator vs file build may differ via `C64MASM` (see assembler handoff); the **file tree stays the same**.
+Live-in-emulator vs file build may differ via `AM65` (see assembler handoff); the **file tree stays the same**.
 
 ---
 
@@ -213,65 +221,50 @@ Live-in-emulator vs file build may differ via `C64MASM` (see assembler handoff);
 | Bonuses | `game/` | `sprite/`, `render/` |
 | Wave tables | `data/` | `game/waves` |
 | Sprite mux | `sprite/` | `sys/irq` |
-| Title / scores / game over / victory | `frontend/` | `assets/screens`, `data/` |
+| Title / scores / game over / victory | `frontend/` | `assets/c64/screens`, `data/` |
 | Score entry / hiscores | `frontend/` | `data/` |
 
 ---
 
-## What does **not** go in `src/`
+## What does **not** go in `src/c64/`
 
 | Path | Why separate |
 |------|----------------|
+| `src/<other-platform>/` | Another machine's source. Sibling of `c64/`, not a folder inside it |
 | `agents/` | Human/agent prose, not assembled |
-| `assets/` | Large binaries and art sources; keep assemble unit small and `.incbin` explicit |
-| `tools/` | Host Python/shell; never run on the 6510 |
+| `assets/<platform>/` | That machine's art. C64 blobs live in `assets/c64/` and are `.incbin`'d, not assembled as source |
+| `tools/<platform>/` | That machine's host scripts. Never run on the 6510 |
 | `build/` | Outputs only |
 
-Repo root stays thin: optional top-level `README.md` / makefile later; **no game `.asm` at root**.
+Repo root stays thin: **no game `.asm` at root**, and no platform files directly under `src/`, `assets/`, `tools/`, or `tst/`.
 
 ---
 
-## Actual tree vs vertical-slice target
+## Actual tree
 
-### Already present (do not reinvent)
-
-```
-src/main.asm                 ; sole assemble root; main loop drains events + mux build
-src/boot/init.asm
-src/sys/{const,zeropage,memory,irq,input,video,sprite_install}.asm
-src/render/screen.asm        ; full-cross placeholder + print helpers
-src/game/{objects,game_init,stage,play,life}.asm
-src/sprite/{mux_build,mux_irq}.asm
-src/frontend/{mode,title,typewriter,story,instructions,gameover,hiscore}.asm
-src/data/{strings,sprites,title_gfx}.asm
-assets/sprites/              ; A/B/C × facings
-assets/screens/              ; title hires
-tst/                         ; mux demos (not the game)
-```
-
-**Play today:** `game/stage.asm` spawns a temporary drone art harness;
-`game/play.asm` cycles facings and FIRE → game over. Replace that path during
-Stage 2; keep pool/mux/frontend.
-
-### Still to add (Stage 2 — vertical slice)
-
-Aligned with the design brief (one arm / one combat type enough; no bonuses):
+### Present (do not reinvent)
 
 ```
-src/game/player.asm          ; rail-lock move, barrel, intersection
-src/game/shoot.asm           ; fire stream / ammo hook later
-src/game/drones.asm          ; one mover: edge → rail (replace harness spawn)
-src/game/collision.asm       ; drain IRQ events; bullet vs rail char peek
-src/render/bullets.asm       ; char bullet state machines / stand-ins
-src/sprite/player.asm        ; optional: player frame/composite helpers
-; drones: may stay in game/drones + data/sprites until a split is needed
+src/c64/main.asm                 ; sole assemble root; main loop drains events + mux build
+src/c64/boot/init.asm
+src/c64/sys/{const,zeropage,memory,irq,input,video,sprite_install,sound,music}.asm
+src/c64/render/{screen,charset,bullets}.asm
+src/c64/game/{objects,game_init,stage,play,life,player,drones,collision,cargo,parcels,rail,score,hud,message,tallies,waves}.asm
+src/c64/sprite/{mux_build,mux_irq}.asm
+src/c64/frontend/{mode,title,typewriter,story,instructions,gameover,hiscore}.asm
+src/c64/data/{strings,sprites,title_gfx,charset_font,waves,music_valkyrie}.asm
+assets/c64/{charset,screens,sprites}
+tst/c64/                         ; mux demos (not the game)
 ```
 
-Wire new files through `src/main.asm`. Prefer extending `play.asm` / `stage.asm`
-only for loop/enter glue; put real systems in the topic files above.
+Play is the level-centric loop in [`level-rework.md`](level-rework.md): full
+cross, A/B/C, parcels, cargo/mines, rank banner. There is no `shoot.asm` and
+no `sprite/player.asm`. Fire and the player object live in `game/player.asm`
+and `render/bullets.asm`. Frames live in `data/sprites.asm`.
 
-Bonuses, wave tables, and deeper Features remain **after** the slice exits
-([`roadmap.md`](roadmap.md) Next steps).
+Wire new files through `src/c64/main.asm`. Prefer extending `play.asm` /
+`stage.asm` only for loop/enter glue; put real systems in the topic files.
+Next work is the roadmap queue (R10, R9, bonus types, R11), not a second slice.
 
 ---
 
@@ -281,18 +274,18 @@ Bonuses, wave tables, and deeper Features remain **after** the slice exits
 |-------------|--------------|
 | All source in repo root | Clutters root; mixes with agents/tools; ~40 files unmanageable |
 | Single `railgunner.asm` | Fine for a 200-line demo; not for mux + waves + frontend |
-| `src/components/...` deep tree | Over-structured for asm; painful includes |
+| `src/c64/components/...` deep tree | Over-structured for asm; painful includes |
 | Separate repo per frontend/game | No; one PRG, one product |
-| `include/` vs `src/` split like C | Asm modules are both decls and code; one tree under `src/` |
+| `include/` vs `src/c64/` split like C | Asm modules are both decls and code; one tree under `src/c64/` |
 
 ---
 
 ## Maintenance rules for agents
 
-1. New gameplay feature → prefer `src/game/<topic>.asm` (or extend an existing topic file if it is still small).
-2. New pure presentation of existing state → `src/render/` or `src/sprite/`.
-3. New outer-loop screen → `src/frontend/`.
-4. New numbers/strings/frames → `src/data/` and/or `assets/`.
-5. Always wire new files through `src/main.asm` includes.
+1. New gameplay feature → prefer `src/c64/game/<topic>.asm` (or extend an existing topic file if it is still small).
+2. New pure presentation of existing state → `src/c64/render/` or `src/c64/sprite/`.
+3. New outer-loop screen → `src/c64/frontend/`.
+4. New numbers/strings/frames → `src/c64/data/` and/or `assets/c64/`.
+5. Always wire new files through `src/c64/main.asm` includes.
 6. Do not add assembler syntax variants; follow `assembler-syntax.md`.
 7. If this layout document drifts from reality, update it in the same change.

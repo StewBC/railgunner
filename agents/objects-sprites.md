@@ -1,8 +1,8 @@
 # Graphical objects and hardware-sprite system
 
 **Status:** design locked; **pool + mux implemented** in production
-(`src/game/objects.asm`, `src/sprite/mux_build.asm`, `src/sprite/mux_irq.asm`)
-and exercised by `tst/` demos. Live status, verification, and remaining stress
+(`src/c64/game/objects.asm`, `src/c64/sprite/mux_build.asm`, `src/c64/sprite/mux_irq.asm`)
+and exercised by `tst/c64/` demos. Live status, verification, and remaining stress
 tests: [`sprite-mux-status.md`](sprite-mux-status.md). Integration review:
 [`sprite-mux-issues.md`](sprite-mux-issues.md).
 
@@ -273,7 +273,7 @@ This page holds:
   write to a render-visible object field.
 
 Exact scalar order may be chosen when source is laid out, but it must remain
-inside this page and be documented in `src/sys/memory.asm`.
+inside this page and be documented in `src/c64/sys/memory.asm`.
 
 ### 4.5 Command plans and scratch
 
@@ -313,7 +313,7 @@ Exact plan layout, relative to `$C300` for plan 0 and `$C500` for plan 1:
 Builder scratch at `$C700–$C8FF` is not part of an IRQ or gameplay ABI. Its
 array labels may be arranged to suit the chosen implementation, but the same
 24-byte/no-page-crossing rule applies and the final arrangement must be listed
-in `src/sys/memory.asm`.
+in `src/c64/sys/memory.asm`.
 
 ---
 
@@ -534,12 +534,12 @@ Reserve two sprite blocks in VIC bank 0, preferably `$3E00` and `$3E40`
 3. After composition, change `obj_sprite_ptr[0]` to the inactive pointer.
 4. The next back plan captures that pointer.
 
-Sprite **source** frames live in the DATA segment (`src/data/sprites.asm`).
-`video::install_sprite_frames` (game-only, `src/sys/sprite_install.asm`) copies
+Sprite **source** frames live in the DATA segment (`src/c64/data/sprites.asm`).
+`video::install_sprite_frames` (game-only, `src/c64/sys/sprite_install.asm`) copies
 them to `$3000` on stage enter (title bitmap dest `$2000–$3F3F` would otherwise
 wipe a resident bank-0 image). After install: drones `$3000–$32FF` (ptr
 `$C0–$CB`), player bufs `$3E00/$3E40` (ptr `$F8/$F9`). Shared MC colours:
-`$D025`/`$D026` via `video::init_sprite_palette` (shared with `tst/` demos).
+`$D025`/`$D026` via `video::init_sprite_palette` (shared with `tst/c64/` demos).
 Demos do **not** include `sprite_install.asm` or game DATA — they place their
 own frame(s) in a `SPRITES` segment at `$3000`.
 
@@ -996,19 +996,19 @@ sprite frames. That is a test harness, not a public accessor API.
 
 | File | Responsibility |
 |------|----------------|
-| `src/sys/video.asm` | PAL/NTSC detection, normalized tick state, shared MC palette (safe for `tst/`) |
-| `src/sys/sprite_install.asm` | game-only: copy `spr_frames_src` DATA → `$3000` (not included by demos) |
-| `src/game/objects.asm` | pool layout API, free stack, retirement, events |
-| `src/sprite/mux_build.asm` | gather, sort, lane coloring, job schedule, plan emit |
-| `src/sprite/mux_irq.asm` | front-plan execution, owner maps, collision capture |
-| `src/game/collision.asm` | later event interpretation, not mux attribution |
-| `src/data/sprites.asm` | static MC drone frame SOURCE (`.incbin` from `assets/sprites/*.bin`) |
-| `src/sys/irq.asm` | vector install and dispatch shell |
-| `src/sys/memory.asm` | `$C000–$C8FF`, sprite install `$3000` (ptr `$C0–$CB`), bitmap `$2000–$3F3F` |
-| `src/sys/const.asm` | VIC sprite registers, flags, capacities, error IDs |
-| `src/sys/zeropage.asm` | IRQ pointers/masks/cursors only |
+| `src/c64/sys/video.asm` | PAL/NTSC detection, normalized tick state, shared MC palette (safe for `tst/c64/`) |
+| `src/c64/sys/sprite_install.asm` | game-only: copy `spr_frames_src` DATA → `$3000` (not included by demos) |
+| `src/c64/game/objects.asm` | pool layout API, free stack, retirement, events |
+| `src/c64/sprite/mux_build.asm` | gather, sort, lane coloring, job schedule, plan emit |
+| `src/c64/sprite/mux_irq.asm` | front-plan execution, owner maps, collision capture |
+| `src/c64/game/collision.asm` | later event interpretation, not mux attribution |
+| `src/c64/data/sprites.asm` | static MC drone frame SOURCE (`.incbin` from `assets/c64/sprites/*.bin`) |
+| `src/c64/sys/irq.asm` | vector install and dispatch shell |
+| `src/c64/sys/memory.asm` | `$C000–$C8FF`, sprite install `$3000` (ptr `$C0–$CB`), bitmap `$2000–$3F3F` |
+| `src/c64/sys/const.asm` | VIC sprite registers, flags, capacities, error IDs |
+| `src/c64/sys/zeropage.asm` | IRQ pointers/masks/cursors only |
 
-Wire every source through `src/main.asm`; it remains the sole assembly root.
+Wire every source through `src/c64/main.asm`; it remains the sole assembly root.
 
 ---
 

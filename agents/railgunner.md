@@ -35,7 +35,7 @@ row +----------------------------------------+
     +----------------------------------------+
 ```
 
-**Rail geometry (0-based cells)** — source of truth: `RAIL_*` in `src/sys/const.asm`:
+**Rail geometry (0-based cells)** — source of truth: `RAIL_*` in `src/c64/sys/const.asm`:
 
 | Band | Cells | Tiles (placeholder letters today) |
 |------|--------|-----------------------------------|
@@ -52,7 +52,7 @@ row +----------------------------------------+
 
 ### Top line (HUD) — row 0
 
-Exactly 40 columns; template in `src/data/strings.asm` (`str_hud`):
+Exactly 40 columns; template in `src/c64/data/strings.asm` (`str_hud`):
 
 ```
 000000  H:######## A:######## L:01  AAAA
@@ -75,7 +75,7 @@ Exactly 40 columns; template in `src/data/strings.asm` (`str_hud`):
 | *(pad)* | 34–35 | 2 | Spaces. |
 | **Lives** | 36–39 | 4 | One icon per reserve life, max 4. Today: letter `A`; final: life UDG. |
 
-Constants: `HUD_*` in `src/sys/const.asm` (must stay in sync with `str_hud`).
+Constants: `HUD_*` in `src/c64/sys/const.asm` (must stay in sync with `str_hud`).
 
 Live score/level/lives/bar fill is still partially placeholder (static template +
 static colouring); wire-up is a later roadmap item.

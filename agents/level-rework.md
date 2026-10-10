@@ -35,7 +35,7 @@ play (move + fire always, except game over)
 
 ### Level kill quota (B2)
 
-- Explicit per-level total in `level_kill_quota_tbl` (`src/data/strings.asm` data
+- Explicit per-level total in `level_kill_quota_tbl` (`src/c64/data/strings.asm` data
   area / tables next to rank strings — see `level_kill_quota_tbl`).
 - **1 destroy = 1 kill** (A, B, or C each count once; multi-HP still one kill at death).
 - Band **16–32** (L1–15 curve: 16,16,20,20,24,24,24,28,28,28,32×5).
@@ -127,14 +127,14 @@ play (move + fire always, except game over)
 
 | Area | Location |
 |------|----------|
-| Level quota / clear / banner tick / advance | `src/game/waves.asm` (name historical; **level** controller) |
-| HUD progress / level / lives | `src/game/hud.asm` |
-| Rank banner | `src/game/message.asm` |
-| C cargo + mines | `src/game/cargo.asm`; stacks in `rail_data::ghij_stack` |
-| Parcels | `src/game/parcels.asm` |
-| Quota + rank tables | `src/data/strings.asm` (`level_kill_quota_tbl`, nicety + rank title) |
+| Level quota / clear / banner tick / advance | `src/c64/game/waves.asm` (name historical; **level** controller) |
+| HUD progress / level / lives | `src/c64/game/hud.asm` |
+| Rank banner | `src/c64/game/message.asm` |
+| C cargo + mines | `src/c64/game/cargo.asm`; stacks in `rail_data::ghij_stack` |
+| Parcels | `src/c64/game/parcels.asm` |
+| Quota + rank tables | `src/c64/data/strings.asm` (`level_kill_quota_tbl`, nicety + rank title) |
 | HUD template | `str_hud` (`WAVE`) |
-| Constants | `src/sys/const.asm` (`LEVEL_*`, `MINE_STACK_K`, …) |
+| Constants | `src/c64/sys/const.asm` (`LEVEL_*`, `MINE_STACK_K`, …) |
 | ZP | `level_kills`, `level_quota`, `level_banner_t`, cargo/mine fields |
 
 **Stage init** is for **new game** (and rare full re-init), **not** every level-up.

@@ -48,7 +48,7 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Frontend attract | Done | Hires title ↔ text menu; typewriter |
 | Stage init | New game only | Full redraw + player start; **not** on level-up |
 | Play | **Level-centric combat** | Full cross, A/B/C, parcels, cargo/mines; see [level-rework.md](level-rework.md) |
-| Object pool + sprite mux | Done | Production path + `tst/` demos |
+| Object pool + sprite mux | Done | Production path + `tst/c64/` demos |
 | Player | Full cross | Mount/remap, both arms fire |
 | Bullets | Both streams | V + H UDGs; cell ROF lock |
 | Collision | Slice | `COLLISION_MODE=0` HW latch |
@@ -57,10 +57,10 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Rail damage A/B | In play | Multi-HP; core collapse → game over |
 | C threat | Cargo/mines | Cargo → GHIJ stacks → arm → centre costs a life |
 | Parcels | Score-only | 2/level @ ~⅓ & ~⅔ of level quota |
-| High score / disk | Stub | Always skip hiscore from game over |
+| High score / disk | Entry wired | Game over calls `hiscore_qualifies`. Disk load/save is not implemented (`hiscore_reset` is empty) |
 | Fairness / sets | **Todo R9** | Deferred design |
 | Bonus types (repair/shield/…) | Not started | After R10 |
-| Audio | Not started | Steps 13–15 |
+| Audio | **In play** | Title music (3-voice Valkyries) + one-shot SFX. No in-game music bed, no fire-stream sound, no alarm |
 
 **Intentional early work (keep):** mux foundation, title art, drone art (all
 sizes/facings), mode skeleton, full-cross placeholder playfield.
@@ -98,7 +98,7 @@ playtest pass says “this is fun enough to build on.”
 - Multi-direction **C** pressure proven under load (8.3), then A/B + rail in the
   mix (8.5), under a real spawn policy (8.4–8.6).
 - A **short** level/wave shape exists and has been **playtested for fun** (8.7).
-- Still **no** bonuses, ammo rationing, disk HS, or music.
+- Bonuses, ammo rationing, and disk high scores stayed out of this step. Title music and one-shot SFX came later (steps 13–15).
 
 **Notes / decisions while doing Step 8:**
 
@@ -191,7 +191,7 @@ Full freeze + ledger: **[`level-rework.md`](level-rework.md)**.
 
 | ID | Work | Notes |
 |----|------|--------|
-| **11.1** | High-score entry if qualified | 3 initials; wire from game over (today always skips). |
+| **11.1** | High-score entry if qualified | 3 initials. Game over already enters hiscore when `hiscore_qualifies` is set. |
 | **11.2** | Load high-score table | Cold init / frontend; RAM defaults if no disk. |
 | **11.3** | Save high-score table | After entry confirm/timeout. |
 
@@ -210,23 +210,27 @@ coding.
 
 ---
 
-### Step 13 — Audio SFX (gameplay)
+### Step 13 — Audio SFX (gameplay) — partial
+
+One-shots live in `src/c64/sys/sound.asm` (`sfx::play` / `sfx::update`). Lower id wins a voice. No continuous fire.
 
 | ID | Work | Notes |
 |----|------|--------|
-| **13.1** | Explosion, shoot, alarms | Alarm e.g. pre-boss or critical rail/health. Channel budget TBD with c64m/SID reality. |
+| **13.1** | ~~Explosions~~ **done** | `SFX_DRONE_DIE`, `SFX_PLAYER_DIE` |
+| **13.2** | ~~Mines, parcels, heal, level whoop~~ **done** | `SFX_MINE`, `SFX_PARCEL`, `SFX_HEAL`, `SFX_WAVE` |
+| **13.3** | Fire stream / alarms | Not built. Alarm (critical rail, pre-boss) still open |
 
 ---
 
-### Step 14 — UI SFX
+### Step 14 — UI SFX — done
 
-Menu confirms, mode transitions, hiscore entry blips — keep short and quiet vs 13.
+`SFX_UI_FIRE` on title, story, instructions, and game over. `SFX_HS_TICK` on high-score entry. `SFX_EXTRA` / `SFX_PING` on parcel collect.
 
 ---
 
-### Step 15 — Music
+### Step 15 — Music — title only
 
-Stage / danger / game over / celebrate hooks. Do not block 11 on music.
+`src/c64/sys/music.asm` plays the 3-voice Valkyries loop from `src/c64/data/music_valkyrie.asm` on the title (`music::start_title`). Game init, story, and instructions call `music::stop`. SFX may steal a voice; the pattern keeps advancing. Stage, danger, game-over, and celebrate beds are not started. Do not block R9–R11 on them.
 
 ---
 
@@ -238,7 +242,7 @@ smoke full path title → play → death → HS → title. Ship checklist lives 
 ---
 
 **File ownership (new work):** see vertical-slice / game lists in
-[`repo-layout.md`](repo-layout.md). Wire every new `.asm` through `src/main.asm`.
+[`repo-layout.md`](repo-layout.md). Wire every new `.asm` through `src/c64/main.asm`.
 
 **Mapping to maturity stages (guide, not a second queue):**
 
@@ -249,7 +253,7 @@ smoke full path title → play → death → HS → title. Ship checklist lives 
 | 9, 11 | **5. Features** |
 | 10, 16 | **6. Polish** |
 | 12 | Optional systems/features |
-| 13–15 | Audio (late Features / Polish) |
+| 13–15 | Audio — title music + one-shots landed; beds / fire stream / alarm still open |
 | Ship smoke | **7. Ship** |
 
 ---
@@ -494,14 +498,16 @@ the pool/mux — **consume** it for player/drone sprites and events.
 1. **Scaffold** — **done.** Boot, modes, title attract, stub game over.
 2. **Vertical slice** — **done** (steps 1–7). H-arm, V bullets, one C, collision,
    score, death.
-3. **Full player + spawn (Step 8)** — **active.** Kill auto-spawn → mount/remap
-   (8.1a) → V-arm travel (8.1b) → H-stream fire → multi-direction **C** pressure →
-   A/B + rail → short wave tables + spawn engine → fun pass.
-4. **Features (Step 9 + 11)** — Bonus mechanism, messages, ammo scarcity, bonus
-   types, balance, extra life; then high-score load/save/entry.
+3. **Full player + spawn (Step 8)** — **done** as the level-centric loop
+   ([`level-rework.md`](level-rework.md)). Next ordered work is **R10**, then
+   **R9**, then bonus types, then **R11**.
+4. **Features (Step 9 + 11)** — repair, shield, and multiplier bonuses after
+   R10; then high-score disk load/save. Parcel score and the rank banner are
+   already in. Ammo scarcity is cancelled. Hiscore entry already runs when the
+   score qualifies.
 5. **Visual polish (Step 10)** — Explosions, animation, UDG/font pass.
 6. **Optional bosses (Step 12)** — Only if set-pieces still missing after fun pass.
-7. **Audio (Steps 13–15)** — Gameplay SFX → UI SFX → music.
+7. **Audio** — title music and one-shot SFX are in. Still open: fire-stream sound, alarms, in-game music beds.
 8. **Ship polish (Step 16 + Stage 7)** — Loose ends, disk, full-path smoke.
 
 ---
