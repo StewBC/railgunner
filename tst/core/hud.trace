@@ -1,0 +1,53 @@
+# Stage enter paints the live HUD before the first play tick.
+# Full progress bar replaces the template '#'; a reserve icon replaces 'A'.
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+fire 1
+tick
+fire 0
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+fire 1
+tick
+dump
+===
+frame 42
+mode 3 MODE_PLAY
+cell 0 17 94 3
+cell 0 39 111 1

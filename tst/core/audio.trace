@@ -1,0 +1,46 @@
+# Boot gates the title loop. Menu fire leases voice 0 to SFX_UI_FIRE,
+# then that voice gates the B4 again. Voice 1 keeps the harmony note.
+dump
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+fire 1
+tick
+dump
+tick
+tick
+tick
+tick
+dump
+===
+frame 0
+music 1
+voice 0 wave 64 freq 8410 gate 1 ad 33 sr 168 pw 2048
+voice 1 wave 64 freq 6300 gate 1 ad 33 sr 152 pw 2048
+voice 2 wave 16 freq 2103 gate 1 ad 17 sr 200 pw 2048
+---
+frame 21
+mode 9 MODE_TITLE_TEXT
+voice 0 wave 64 freq 3584 gate 1 ad 0 sr 129 pw 2048
+voice 1 wave 64 freq 6300 gate 1 ad 33 sr 152 pw 2048
+---
+frame 25
+music 1
+voice 0 wave 64 freq 8410 gate 1 ad 33 sr 168 pw 2048

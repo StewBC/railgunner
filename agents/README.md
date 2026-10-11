@@ -33,6 +33,9 @@ the tool (and fix the handoff).
    plus **`sprite-mux-status.md`** / **`sprite-mux-issues.md`** (live status).
 9. Source under `src/c64/` (root unit: `src/c64/main.asm`) and samples under
    `../c64m/samples/` when learning idioms.
+10. **`c64-to-sdl.md`** only when the human asked for the portable C / SDL
+    port. It is not the default work queue. C64 feature work still follows
+    `roadmap.md`.
 
 Do not invent assembler syntax. If something is missing from
 `assembler-syntax.md`, check `../c64m/manual/manual.md` (Assembler section), then
@@ -52,6 +55,7 @@ update the handoff so the next agent does not rediscover it.
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
 | [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, **C64M/8** recipes (history, `when=`, frame + VIC rings, inspect mode), friction log |
 | [`coop-debug.md`](coop-debug.md) | **Cooperative live debug** — human pause, `scrub`/`frame`/`vic`, guarded `arm`, evidence packs |
+| [`c64-to-sdl.md`](c64-to-sdl.md) | **Port script** (on request): `src/core` then `src/sdl`. Not the C64 feature queue |
 
 **Optional / not in the handoff path:** [`reviews/`](reviews/) holds post-stage
 code reviews (historical + disposition tables). Agents should **not** treat
@@ -61,7 +65,8 @@ them as required reading or as a work queue ahead of `roadmap.md`.
 
 | Path | Role |
 |------|------|
-| `src/<platform>/` | One tree per machine. C64 is the only platform today |
+| `src/c64/` | Commodore 64 game. Sole assemble root is `src/c64/main.asm` |
+| `src/core/`, `src/sdl/` | Portable simulation and SDL frontend. See [`c64-to-sdl.md`](c64-to-sdl.md). Not a machine tree, and not the C64 feature queue |
 | `src/c64/main.asm` | Sole assemble root; includes everything else |
 | `src/c64/boot/` | Cold init / bring-up |
 | `src/c64/sys/` | ZP, constants, IRQ, input, memory map |
@@ -72,8 +77,8 @@ them as required reading or as a work queue ahead of `roadmap.md`.
 | `src/c64/data/` | Tables, strings, embeds |
 | `assets/<platform>/` | Art for one machine. C64 blobs are `assets/c64/` |
 | `tools/<platform>/` | Host scripts for one machine. C64 is `tools/c64/` |
-| `tst/<platform>/` | Standalone programs for one machine. C64 mux demos are `tst/c64/` |
-| `build/` | Assembler outputs (not hand-edited) |
+| `tst/c64/`, `tst/core/` | C64 mux demos, and the headless traces `make core` runs |
+| `build/` | Generated PRG, `railgunner-core`, and `railgunner-sdl`. Not hand-edited |
 
 Full rationale and vertical-slice file list: **`repo-layout.md`**.  
 Build/run/debug: **`build-debug.md`**. Tool path notes: **`tools/c64/README.md`**.

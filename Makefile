@@ -12,7 +12,7 @@
 # Generators live under tools/c64/; this file only wires timestamps and targets.
 # Agent path stays tools/c64/agent_session.py (live assemble; no Makefile required).
 
-.PHONY: all prg assets screens charset sprites play coop clean help ensure_prg_header
+.PHONY: all prg assets screens charset sprites play coop clean help ensure_prg_header core sdl
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 TOOLS := $(ROOT)/tools/c64
@@ -72,6 +72,8 @@ help:
 	@echo "  make charset      railgunner_charset.png → .bin (2K font)"
 	@echo "  make sprites      assets/c64/sprites/*.png → *.bin (64-byte MC)"
 	@echo "  make clean        wipe build/ (keeps assets/c64/ PNGs; bins via make assets)"
+	@echo "  make core        headless C simulation and tst/core traces"
+	@echo "  make sdl         build and open the SDL window; not part of make/play"
 
 # Drop a mis-tagged PRG (raw c64masm image written to .prg without $0801 load
 # header). Make would otherwise treat it as up-to-date and play/--autorun fails.
@@ -124,6 +126,40 @@ play: prg
 coop: prg
 	RAILGUNNER_SKIP_BUILD=1 $(TOOLS)/coop.sh
 
+# ---------------------------------------------------------------------------
+# Portable core (headless) and SDL frontend.
+# These are not prerequisites of prg or play. The C64 assemble glob only
+# matches .asm/.inc, so C sources under src/core and src/sdl do not rebuild
+# the PRG.
+# ---------------------------------------------------------------------------
+
+CORE_BIN := $(ROOT)/build/railgunner-core
+SDL_BIN := $(ROOT)/build/railgunner-sdl
+CORE_C := $(shell find $(ROOT)/src/core -name '*.c' | sort)
+CORE_H := $(shell find $(ROOT)/src/core -name '*.h' | sort)
+CORE_LIB_C := $(filter-out $(ROOT)/src/core/main.c,$(CORE_C))
+SDL_C := $(shell find $(ROOT)/src/sdl -name '*.c' | sort)
+CC ?= cc
+CORE_CFLAGS := -std=c11 -Wall -Wextra -Werror -I$(ROOT)/src/core
+
+core: $(CORE_BIN)
+	sh $(ROOT)/tst/core/run.sh
+
+$(CORE_BIN): $(CORE_C) $(CORE_H)
+	@mkdir -p $(ROOT)/build
+	$(CC) $(CORE_CFLAGS) -o $@ $(CORE_C)
+
+# Opens the window. Not a prerequisite of prg or play, so a machine
+# without SDL2 can still assemble the C64 game.
+$(SDL_BIN): $(SDL_C) $(CORE_LIB_C) $(CORE_H)
+	@command -v sdl2-config >/dev/null 2>&1 || { echo "sdl2-config not found" >&2; exit 1; }
+	@mkdir -p $(ROOT)/build
+	$(CC) $(CORE_CFLAGS) $$(sdl2-config --cflags) -DRAILGUNNER_ROOT=\"$(ROOT)\" -o $@ $(SDL_C) $(CORE_LIB_C) $$(sdl2-config --libs)
+
+sdl: $(SDL_BIN)
+	$(SDL_BIN)
+
 clean:
 	rm -f $(RAW) $(PRG) $(SYM)
+	rm -f $(CORE_BIN) $(SDL_BIN)
 	rm -f $(ROOT)/build/title_hires_preview.png

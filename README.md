@@ -85,6 +85,8 @@ From the `railgunner` root, with c64m already built as a sibling:
 make          # assets if needed → build/railgunner.prg
 make play     # build, then open c64m with the PRG (autorun)
 make coop     # build, then windowed emu + control port + live-debug watcher
+make core     # headless C simulation, then tst/core traces
+make sdl      # SDL2 window (needs SDL2). Not part of make or make play
 ```
 
 Useful variants:
@@ -125,11 +127,14 @@ is the load test for the tools the agents themselves depend on.
 
 | Path | What |
 |------|------|
-| `src/c64/` | Commodore 64 6502 sources (`main.asm` is the assemble root). Other platforms will be siblings under `src/` |
-| `assets/c64/` | Commodore 64 art and converted blobs. Other platforms will be siblings under `assets/` |
-| `tools/c64/` | C64 build/play scripts and c64m symlinks. Other platforms will be siblings under `tools/` |
-| `tst/c64/` | C64 standalone tests (sprite-mux demos). Other platforms will be siblings under `tst/` |
-| `build/` | Assembler outputs (generated) |
+| `src/c64/` | Commodore 64 6502 sources (`main.asm` is the assemble root). Other machines would be siblings of `c64/`, not folders inside it |
+| `src/core/` | Portable C11 simulation of those rules. No SDL. Headless driver is `src/core/main.c` |
+| `src/sdl/` | SDL2 window: 2× blit, three-voice samples, keyboard mapping. No gameplay rules |
+| `assets/c64/` | Commodore 64 art and converted blobs. Other machines would be siblings under `assets/` |
+| `tools/c64/` | C64 build/play scripts and c64m symlinks |
+| `tst/c64/` | C64 sprite-mux demos, not the game PRG |
+| `tst/core/` | Headless traces run by `make core` |
+| `build/` | Generated PRG, `railgunner-core`, and `railgunner-sdl` |
 | `agents/` | Agent handoffs — design, roadmap, assembler notes (for AI sessions, not required to play) |
 
 ---

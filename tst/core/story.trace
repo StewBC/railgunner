@@ -1,0 +1,55 @@
+# A launched shot is counted when the bullet is spawned.
+# Destroying the C counts as one C kill. A and B stay at zero.
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+fire 1
+tick
+fire 0
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+key S 1
+tick
+key S 0
+tick
+tick
+dump
+===
+mode 10 MODE_STORY
+guard 1
+cell 0 1 20 12

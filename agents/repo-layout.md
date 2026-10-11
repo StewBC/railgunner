@@ -1,9 +1,11 @@
 # Repo layout — decision
 
-**Status:** chosen. The C64 tree is the current game: level-centric combat
-(R1–R8), pool/mux, frontend, title music, and one-shot SFX. This file is the
-directory rules. What to build next: [`roadmap.md`](roadmap.md) → **Next steps**.  
-**Companion docs:** [`railgunner.md`](railgunner.md) (design), [`roadmap.md`](roadmap.md) (stages/flow), [`build-debug.md`](build-debug.md) (run/debug), [`assembler-syntax.md`](assembler-syntax.md) (syntax).
+**Status:** chosen. `src/c64/` is the Commodore 64 game: level-centric combat
+(R1–R8), pool/mux, frontend, title music, and one-shot SFX. `src/core/` and
+`src/sdl/` are the portable port in [`c64-to-sdl.md`](c64-to-sdl.md). The core
+owns those rules. SDL blits the frame and synthesizes samples. This file is
+the directory rules. C64 feature work still follows [`roadmap.md`](roadmap.md).  
+**Companion docs:** [`railgunner.md`](railgunner.md) (design), [`roadmap.md`](roadmap.md) (stages/flow), [`build-debug.md`](build-debug.md) (run/debug), [`assembler-syntax.md`](assembler-syntax.md) (syntax), [`c64-to-sdl.md`](c64-to-sdl.md) (port).
 
 ## Decision summary
 
@@ -24,7 +26,7 @@ The design is not a demo loop. Frontend states, rail/bullet character pipelines,
 c64m `.include` paths are relative to the including file; deep trees make include lines brittle and encourage over-splitting. One area folder + clear filenames is enough. The platform directory is the one extra level: other versions of the game are siblings of `c64/`, not more folders inside it.
 
 **Why `c64/` under `src/`, `assets/`, `tools/`, and `tst/`?**  
-Each machine gets its own source, art, host scripts, and standalone tests. C64 is the only platform today. `agents/` and `build/` stay at the repo root: handoffs are shared, and `build/` is generated output. `.include` lines inside `src/c64/` are unchanged (relative to the including file). `.incbin` from `src/c64/data/` is `../../../assets/c64/...`. Demos in `tst/c64/` include production code with `../../src/c64/...`. Do not put platform files directly in `src/`, `assets/`, `tools/`, or `tst/`.
+Each machine gets its own source, art, host scripts, and standalone tests. C64 is the only machine. `src/core/` and `src/sdl/` are the portable port, not another platform directory. `agents/` and `build/` stay at the repo root: handoffs are shared, and `build/` is generated output. `.include` lines inside `src/c64/` are unchanged (relative to the including file). `.incbin` from `src/c64/data/` is `../../../assets/c64/...`. Demos in `tst/c64/` include production code with `../../src/c64/...`. Do not put platform files directly in `src/`, `assets/`, `tools/`, or `tst/`.
 
 ---
 
@@ -136,16 +138,18 @@ Logic that mutates game state; may call into render/sprite modules.
 ```
 railgunner/
 ├── agents/                 # Handoffs (design, syntax, this layout)
-├── src/                    # One directory per platform
-│   └── c64/                # Commodore 64 — current game
-│       ├── main.asm        # Entry: stub, segments, include graph
-│       ├── boot/           # BASIC stub helpers, cold init
-│       ├── sys/            # ZP, constants, IRQ, input, memory map
-│       ├── frontend/       # Title, scores, game over, victory, entry
-│       ├── game/           # Play-mode logic
-│       ├── render/         # Screen, rail/bullet/HUD character presentation
-│       ├── sprite/         # Player/drone sprites, multiplexer
-│       └── data/           # Tables, strings, embeds (or includes of assets)
+├── src/
+│   ├── c64/                # Commodore 64 — authoritative machine game
+│   │   ├── main.asm        # Entry: stub, segments, include graph
+│   │   ├── boot/           # BASIC stub helpers, cold init
+│   │   ├── sys/            # ZP, constants, IRQ, input, memory map
+│   │   ├── frontend/       # Title, scores, game over, victory, entry
+│   │   ├── game/           # Play-mode logic
+│   │   ├── render/         # Screen, rail/bullet/HUD character presentation
+│   │   ├── sprite/         # Player/drone sprites, multiplexer
+│   │   └── data/           # Tables, strings, embeds (or includes of assets)
+│   ├── core/               # Portable C11 simulation. No SDL, no .asm
+│   └── sdl/                # SDL2 frontend: window, blit, samples
 ├── assets/                 # One directory per platform
 │   └── c64/                # Commodore 64 art and .incbin blobs
 │       ├── charset/
@@ -153,14 +157,22 @@ railgunner/
 │       └── screens/        # Title / attract PNG + converted .bin
 ├── tools/                  # One directory per platform
 │   └── c64/                # c64m symlinks, play.sh, generators
-├── tst/                    # One directory per platform
-│   └── c64/                # Mux demos (not the game PRG)
-├── Makefile                # assets → PRG → play (timestamp graph)
-└── build/                  # c64masm / snapshot outputs; not hand-edited
+├── tst/
+│   ├── c64/                # Mux demos (not the game PRG)
+│   └── core/               # Headless traces (make core)
+├── Makefile                # make, make core, make sdl
+└── build/                  # PRG, railgunner-core, railgunner-sdl; not hand-edited
 ```
 
-Host build: root **`Makefile`** (`make`, `make play`, `make screens` / `assets`).  
-Toolchain paths and remote assemble/debug: **`build-debug.md`**, **`tools/c64/README.md`**.
+Host build is the root **`Makefile`**. Three entry points:
+
+| Command | Product | Not a prerequisite of |
+|---------|---------|------------------------|
+| `make` / `make prg` | `build/railgunner.prg` from `src/c64` | `make core`, `make sdl` |
+| `make core` | `build/railgunner-core`, then every `tst/core/*.trace` | the PRG |
+| `make sdl` | `build/railgunner-sdl`, then the window | the PRG. Needs `sdl2-config` |
+
+`make play` and `make coop` still launch the C64 emulator. They are not port entry points. The assemble glob is `.asm` / `.inc` only, so C under `src/core` and `src/sdl` does not rebuild the PRG. Toolchain paths and remote assemble/debug: **`build-debug.md`**, **`tools/c64/README.md`**.
 
 ### Naming conventions
 
@@ -231,6 +243,7 @@ Live-in-emulator vs file build may differ via `AM65` (see assembler handoff); th
 | Path | Why separate |
 |------|----------------|
 | `src/<other-platform>/` | Another machine's source. Sibling of `c64/`, not a folder inside it |
+| `src/core/`, `src/sdl/` | The portable port ([`c64-to-sdl.md`](c64-to-sdl.md)). Not C64 sources. No `.asm` (the PRG glob would assemble it). Core includes no SDL header. SDL does not own a gameplay rule |
 | `agents/` | Human/agent prose, not assembled |
 | `assets/<platform>/` | That machine's art. C64 blobs live in `assets/c64/` and are `.incbin`'d, not assembled as source |
 | `tools/<platform>/` | That machine's host scripts. Never run on the 6510 |
@@ -264,7 +277,33 @@ and `render/bullets.asm`. Frames live in `data/sprites.asm`.
 
 Wire new files through `src/c64/main.asm`. Prefer extending `play.asm` /
 `stage.asm` only for loop/enter glue; put real systems in the topic files.
-Next work is the roadmap queue (R10, R9, bonus types, R11), not a second slice.
+Next C64 work is the roadmap queue (R10, R9, bonus types, R11), not a second slice.
+
+### Portable port (present)
+
+`src/c64/` stays the oracle. `src/core/` is the C11 simulation of those rules.
+`src/sdl/` links the core except `src/core/main.c`.
+
+```
+src/core/sim.c main.c            ; 50 Hz tick; headless driver reads tst/core traces
+src/core/{cells,objects,input,mode,music,sfx}.c
+src/core/{title,typewriter,story,instructions,hiscore,gameover,tallies}.c
+src/core/{game_init,stage,play,player,life,bullets,drones,collision}.c
+src/core/{cargo,parcels,rail,score,hud,message,waves}.c
+src/core/data/tables.c           ; wave, music, and SFX step bytes
+src/core/const.h
+src/sdl/{main,blit,audio}.c      ; clock, keys, 2× blit, three-voice samples
+tst/core/*.trace                 ; run by tst/core/run.sh from make core
+```
+
+SDL's `main.c` maps the keyboard onto the core's held buttons, publishes one
+tick per 20 ms, and drops a backlog. `blit.c` paints cells, sprites, and the
+hires title. `audio.c` synthesizes pulse, triangle, saw, and noise from the
+core's voice registers. Score, spawns, and collision stay in `src/core/`.
+
+`Object` has no multiplexer fields (`pending_events`, `irq_events`,
+`hw_owner`, `mux_*`, `profile_marker`). `hitbox_id` is the assembly field.
+Nothing in the core reads it.
 
 ---
 

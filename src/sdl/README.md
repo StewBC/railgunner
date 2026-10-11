@@ -1,0 +1,1 @@
+SDL frontend for the portable core. It links `src/core` (not `src/core/main.c`) and does not reimplement rules. `make sdl` builds `build/railgunner-sdl` and opens the 2× window. The work script is [`agents/c64-to-sdl.md`](../../agents/c64-to-sdl.md).

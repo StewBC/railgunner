@@ -1,0 +1,6291 @@
+# Four armed hubs detonate on a centre pass. Two respawns peel the
+# reserve; the third pass reaches game over with no pilots left.
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+fire 1
+tick
+fire 0
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+fire 1
+tick
+fire 0
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+dir R
+tick
+tick
+tick
+dir U
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+dir R
+tick
+tick
+tick
+tick
+tick
+tick
+fire 1
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir D
+tick
+dir D
+tick
+dir D
+tick
+dir D
+tick
+dir D
+tick
+dir D
+tick
+dir D
+tick
+dir D
+tick
+dir D
+tick
+dir D
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir R
+tick
+tick
+tick
+tick
+dir U
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+dir R
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+fire 1
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir R
+tick
+tick
+tick
+tick
+dir U
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+dir R
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+fire 1
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir N
+fire 1
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir L
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dir N
+tick
+dump
+===
+frame 2423
+mode 7 MODE_GAME_OVER
+guard 30
+player rail 0 rest 2 frame 2 dir 2 x 177 y 146 lives 0 deploy 0
+cell 1 15 7 2
+cell 1 23 18 2
