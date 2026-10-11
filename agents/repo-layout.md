@@ -350,8 +350,8 @@ Generated binaries, maps, diagnostic evidence and release packages live in
 - `make archie-test`: renderer comparisons under ASan/UBSan.
 - `make archie-audio-test`: sound synthesis comparisons under ASan/UBSan.
 
-The emulator release is complete, with occasional missed VSyncs accepted by the
-user and retained in the evidence. Actual hardware acceptance remains pending.
+The release is complete. Emulator and actual A3010 hardware evaluation passed;
+the user confirmed full operation. Earlier emulator timing remains in the evidence.
 Controls, installation and hardware procedure: [`src/archie/README.md`](../src/archie/README.md).
 Execution record and performance limits: [`archie-port.md`](archie-port.md).
 The default C64 build and existing launch targets retain their behavior;

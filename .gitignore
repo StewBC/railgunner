@@ -1,9 +1,8 @@
 # macOS
 .DS_Store
 
-# Assembler / build outputs (keep directory via .gitkeep)
-build/*
-!build/.gitkeep
+# Generated build outputs; build targets create the directory as needed.
+/build/
 
 # Generated C64 asset blobs (PNG / tools are source of truth; make assets)
 assets/c64/screens/*_hires.bin

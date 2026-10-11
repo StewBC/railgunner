@@ -16,7 +16,7 @@ APP.mkdir(parents=True,exist_ok=True)
 boot='Set RailGunner$Dir <Obey$Dir>\nIconSprites <RailGunner$Dir>.!Sprites\n'
 (APP/'!Boot,feb').write_text(boot)
 (APP/'!Run,feb').write_text(boot+'WimpSlot -min 896K -max 896K\n<RailGunner$Dir>.!RunImage\n')
-(APP/'!Help,fff').write_text('RailGunner for A3010 / 2 MB / RISC OS 3.11\n\nEither joystick port or cursors/WASD: direction.\nJoystick fire or Space: fire/start/select.\nS: story (also down). I: instructions. Escape: RUN/STOP.\nCtrl-Q: quit and restore sound/display. Scores remain in RAM.\n\nNative 20.833 kHz sound; no external sound module required.\nHardware acceptance pending. See src/archie/README.md in the source tree.\n')
+(APP/'!Help,fff').write_text('RailGunner for A3010 / 2 MB / RISC OS 3.11\n\nEither joystick port or cursors/WASD: direction.\nJoystick fire or Space: fire/start/select.\nS: story (also down). I: instructions. Escape: RUN/STOP.\nCtrl-Q: quit and restore sound/display. Scores remain in RAM.\n\nNative 20.833 kHz sound; no external sound module required.\nEmulator and actual A3010 hardware evaluation passed. See src/archie/README.md in the source tree.\n')
 # Old-format Mode 12 sprite: independent palette, packed pixels and mask.
 width,height,row=34,17,20
 pixels=bytearray(row*height); mask=bytearray(row*height)

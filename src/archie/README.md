@@ -1,7 +1,7 @@
 # Archimedes frontend
 
 A native frontend on the unchanged game core, targeting A3010 / ARM250,
-2 MB RAM and RISC OS 3.11. Emulator validation and packaging are complete; see the
+2 MB RAM and RISC OS 3.11. Emulator and actual A3010 hardware evaluation passed; see the
 execution ledger in `agents/archie-port.md` for accepted gates and limitations.
 
 ```
@@ -32,8 +32,8 @@ fires/starts/selects. S opens story and also moves
 down, I opens instructions, Escape retains RUN/STOP behavior. **Ctrl-Q exits**.
 Both ports are polled once per tick through XJoystick_Read, with an axis dead
 zone from -32 to 32. Keyboard input stays active; unavailable/erroring ports
-are disabled until relaunch. Native joystick hardware and its incremental
-polling cost have not yet been measured.
+are disabled until relaunch. Incremental joystick polling cost has not been
+separately measured.
 The core keeps its existing edge detection, 50 Hz tick order and RAM scores.
 There are no catch-up ticks. No core, C64 or SDL source has been changed.
 
@@ -82,15 +82,19 @@ fine timing percentiles are not claimed.
 
 The current ELF footprint is about 744 KB including the SDK's stack reservation.
 The application slot is 896 KB; rounded screen storage is 163,840 bytes and
-sound RMA about 1.3 KB, separate from the slot. Baseline emulator allocations and packaged launch/exit passed. Actual hardware
-acceptance, native ZIP extraction and failure injection remain pending.
+sound RMA about 1.3 KB, separate from the slot. Baseline emulator allocations
+and packaged launch/exit passed. On 11 October 2026, the user confirmed that
+actual A3010 hardware evaluation was complete and the game works fully.
+Emulator and hardware evaluation are both passed. Injected initialization
+failures remain outside the completed evaluation.
 
-For hardware validation, extract the native ZIP with an Acorn-aware unzip tool,
+For repeat evaluation on another machine, extract the native ZIP with an Acorn-aware unzip tool,
 launch `!RGunner` on A3010/2 MB/RISC OS 3.11, and exercise title music, S/I,
 play with multiple effects, deaths, banners, game over and initials. Check
 sprite/rail restoration, flicker, sound crackle and keyboard response; quit with
 Ctrl-Q and repeat launch/exit. Run for ten minutes and report machine/OS, sound
-and cadence observations. Emulator evidence does not establish hardware acceptance.
+and cadence observations. The completed A3010 hardware acceptance is based
+on the user’s evaluation, separate from emulator benchmark measurements.
 
 Native interfaces follow the RISC OS PRM:
 [VDU](https://riscos.com/support/developers/prm/vdu.html),

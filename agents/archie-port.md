@@ -4,7 +4,8 @@
 banked Mode 9 rendering and sound, and is delivered as `!RGunner` plus HostFS
 and native RISC OS ZIPs. Packaged launch, play, exit and relaunch passed. The
 user accepted occasional missed VSyncs and ended further performance testing.
-Actual hardware acceptance remains pending. The phases below retain the original
+Actual A3010 hardware evaluation passed, confirmed by the user on 2026-10-11.
+The phases below retain the original
 plan; the ledger and final delivery record describe the completed work and limits.
 
 **Goal:** The shipped RailGunner game, with the same art, sound events, controls,
@@ -442,7 +443,7 @@ prevents the agreed outcome.
 | 4 Native audio — G3 | Transport/fidelity complete; user approved budget progression | 2,251,800 host samples: exact phase/noise, max error 3 signed-16 units. Native 128-block audit passes. 60.90 seconds: zero underruns and VSync misses. Latest representative production batch 6.84 ms/interval; original 4 ms allowance exceeded. |
 | 5 Complete frontend | Complete on baseline emulator | Native SDL-equivalent controls, Ctrl-Q exit, unchanged core dispatch, coherent sound snapshots, two banks, and audible game loop. Short actual play test has zero routine misses/underruns; two initial full-scene misses. |
 | 6 Integrated performance/fidelity — G4 | User accepted available evidence; rare misses retained | Three 30,500-frame audible runs: title 97 misses/611.00 s; seeded level-15 play 49/610.13 s; eight sprites 2/609.18 s. All zero underruns and checked cleanup. 24-sprite short test: 1,100 frames, zero misses/underruns. Strict zero-miss gate is not claimed. |
-| 7 Packaging/hardware/handoff — G5 | Emulator/package delivery complete; hardware pending | !RailGunner and both ZIPs generated, archive/file type/Acorn metadata checked. Clean packaged guest launch, Space starts play, Ctrl-Q returns to OS. Hardware, native ZIP extraction and failure injection remain unverified. |
+| 7 Packaging/hardware/handoff — G5 | Complete — emulator and hardware evaluation passed | !RGunner and both ZIPs generated; archive/file type/Acorn metadata checked. Packaged guest launch/play/quit/relaunch passed. User confirmed actual A3010 evaluation complete and fully working on 2026-10-11. Injected initialization failures were not separately tested. |
 
 The critical order is **banking proof → correct renderer → incremental graphics
 gate → native audio gate → full integration → combined performance gate →
@@ -572,8 +573,8 @@ RailGunner-RISCOS.zip and SHA256 manifest. The HostFS application was launched
 from its packaged launcher in a clean booted guest, entered play with Space,
 and returned to the OS with Ctrl-Q; a second launch/exit also passed. Archive contents and Acorn metadata are
 validated on the host; native ZIP extraction, listening captures, injected
-missing-module/partial-initialization failures and actual hardware remain
-unverified. See `src/archie/README.md` for the hardware procedure.
+missing-module/partial-initialization failures were unverified at this stage.
+Subsequent actual hardware acceptance is recorded below.
 
 
 ### Joystick addition (2026-10-11)
@@ -585,8 +586,8 @@ keyboard shortcuts and Ctrl-Q remain active. Host input fixtures cover both
 ports, signed directions, dead-zone boundaries, combined keys and unavailable
 ports. `make archie-input-test` uses ASan/UBSan. Native build/package pass.
 Earlier long-run evidence predates this input addition; no new long runs
-were made. Actual joystick hardware and incremental polling timing remain
-unverified.
+were made. Incremental polling timing was not separately measured. Subsequent
+hardware evaluation passed as recorded below.
 
 
 ### RISC OS 3 application-name compatibility fix
@@ -598,4 +599,14 @@ the `!railgunner` icon sprite. Current packaging uses `!RGunner` and a matching
 remain `RailGunner-HostFS.zip` and `RailGunner-RISCOS.zip`. Packaging asserts
 the directory and every file leaf fit ten characters, and the sprite name
 matches the application. Historical launch records above used the old name.
-Actual hardware icon confirmation for the renamed package remains pending.
+The subsequent completed A3010 evaluation is recorded below.
+
+
+### Actual hardware acceptance (2026-10-11)
+
+The user confirmed that hardware evaluation on the actual A3010 is complete
+and the game works fully ("works 100%"). Emulator and hardware evaluation
+are therefore both passed; hardware acceptance is no longer pending. This
+records the user’s actual-machine evaluation, not an inferred emulator result.
+Earlier timing reports remain historical evidence; no new timing measurements
+or separate initialization-failure injection are claimed by this update.

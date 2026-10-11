@@ -162,9 +162,8 @@ On RISC OS, extract `RailGunner-RISCOS.zip` with an Acorn-aware unzip tool.
 
 Either joystick port or cursors/WASD move; joystick fire or Space fires/starts/selects.
 S opens story, I opens instructions
-and Ctrl-Q quits. The playable emulator release and packaged launch/exit checks
-are complete. Occasional missed VSyncs are documented and accepted; actual
-hardware validation remains pending. See [Archimedes instructions](src/archie/README.md)
+and Ctrl-Q quits. Evaluation passed both in the emulator and on an actual
+A3010; the user confirmed the hardware evaluation works fully. See [Archimedes instructions](src/archie/README.md)
 and [release record](agents/archie-port.md).
 
 ## Layout (brief)
