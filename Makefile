@@ -163,3 +163,6 @@ clean:
 	rm -f $(RAW) $(PRG) $(SYM)
 	rm -f $(CORE_BIN) $(SDL_BIN)
 	rm -f $(ROOT)/build/title_hires_preview.png
+
+# Optional native frontend; existing default and launch targets are unchanged.
+include tools/archie/build.mk

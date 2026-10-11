@@ -331,3 +331,28 @@ Nothing in the core reads it.
 5. Always wire new files through `src/c64/main.asm` includes.
 6. Do not add assembler syntax variants; follow `assembler-syntax.md`.
 7. If this layout document drifts from reality, update it in the same change.
+
+## Archimedes frontend
+
+`src/archie/` is the completed ARM2 frontend on the unchanged core: native
+keyboard input, Mode 9 banked rendering, integer sound synthesis and checked
+OS restoration. It targets A3010 / ARM250, 2 MB and RISC OS 3.11.
+`tools/archie/` owns the isolated build, deterministic asset embedding,
+application packaging and private Arculator deployment. `tst/archie/` compares
+packed rendering and sound synthesis with unchanged SDL references.
+Generated binaries, maps, diagnostic evidence and release packages live in
+`build/archie/`; `build/archie/release/` contains `!RailGunner`,
+`RailGunner-HostFS.zip` and `RailGunner-RISCOS.zip`.
+
+- `make archie`: native executable, ELF and linker map.
+- `make archie-run`: private windowed baseline emulator; open HostFS/`!RGDiag`.
+- `make archie-package`: application and both ZIP transports.
+- `make archie-test`: renderer comparisons under ASan/UBSan.
+- `make archie-audio-test`: sound synthesis comparisons under ASan/UBSan.
+
+The emulator release is complete, with occasional missed VSyncs accepted by the
+user and retained in the evidence. Actual hardware acceptance remains pending.
+Controls, installation and hardware procedure: [`src/archie/README.md`](../src/archie/README.md).
+Execution record and performance limits: [`archie-port.md`](archie-port.md).
+The default C64 build and existing launch targets retain their behavior;
+`make sdl-build` builds SDL without opening its window.

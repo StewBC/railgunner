@@ -132,6 +132,17 @@ is the load test for the tools the agents themselves depend on.
 
 ---
 
+## Archimedes port
+
+The native A3010 / 2 MB / RISC OS 3.11 frontend builds with `make archie`.
+Use `make archie-run` for the private Arculator deployment and `make archie-package`
+for `!RailGunner` and HostFS/native ZIPs under `build/archie/release`.
+Cursors/WASD move, Space fires/starts/selects, S opens story, I opens instructions
+and Ctrl-Q quits. The playable emulator release and packaged launch/exit checks
+are complete. Occasional missed VSyncs are documented and accepted; actual
+hardware validation remains pending. See [Archimedes instructions](src/archie/README.md)
+and [release record](agents/archie-port.md).
+
 ## Layout (brief)
 
 | Path | What |

@@ -34,13 +34,16 @@ the tool (and fix the handoff).
 7. **`coop-debug.md`** when hunting intermittent visual/mux bugs with a human
    at the window (`make coop`, evidence packs, `scrub` / `frame` / `vic` /
    `when=`).
-8. Component handoffs relevant to the task. For graphical objects, hardware
+8. **`archie-port.md`** and **`../src/archie/README.md`** for the completed
+   Archimedes frontend, performance decisions, packaging and pending hardware
+   validation. The execution plan also retains historical measurements.
+9. Component handoffs relevant to the task. For graphical objects, hardware
    sprites, the mux, or collision attribution: **`objects-sprites.md`** (ABI)
    plus **`sprite-mux-status.md`** / **`sprite-mux-issues.md`** (historical
    C64 mux record; SDL does not use the mux).
-9. Source under `src/c64/` (root unit: `src/c64/main.asm`) and samples under
+10. Source under `src/c64/` (root unit: `src/c64/main.asm`) and samples under
    `../c64m/samples/` when learning idioms.
-10. **`c64-to-sdl.md`** — finished record of the C core and the SDL frontend
+11. **`c64-to-sdl.md`** — finished record of the C core and the SDL frontend
     (accepted differences, what was left on the C64). The port is done.
 
 Do not invent assembler syntax. If something is missing from
@@ -61,6 +64,7 @@ update the handoff so the next agent does not rediscover it.
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
 | [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, **C64M/8** recipes (history, `when=`, frame + VIC rings, inspect mode), friction log |
 | [`coop-debug.md`](coop-debug.md) | **Cooperative live debug** — human pause, `scrub`/`frame`/`vic`, guarded `arm`, evidence packs |
+| [`archie-port.md`](archie-port.md) | Archimedes implementation and release record, accepted performance limits, pending hardware validation |
 | [`c64-to-sdl.md`](c64-to-sdl.md) | **Finished port record:** `src/core` from the 6502 sources, `src/sdl` as the first platform frontend |
 
 **Optional / not in the handoff path:** [`reviews/`](reviews/) holds post-stage
@@ -74,6 +78,7 @@ code reviews (historical + disposition tables). They are not a work queue.
 | `src/c64/` | Commodore 64 game. Sole assemble root is `src/c64/main.asm` |
 | `src/core/` | Portable C11 simulation of the C64 rules. No SDL. Headless driver is `src/core/main.c` |
 | `src/sdl/` | First platform frontend on the core: window, blit, samples, keys. See [`c64-to-sdl.md`](c64-to-sdl.md) |
+| `src/archie/` | Archimedes frontend, native sound and packaged application; hardware validation pending. See [`archie-port.md`](archie-port.md) and `src/archie/README.md` |
 | `src/c64/main.asm` | Sole assemble root; includes everything else |
 | `src/c64/boot/` | Cold init / bring-up |
 | `src/c64/sys/` | ZP, constants, IRQ, input, memory map |
