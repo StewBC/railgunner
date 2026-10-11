@@ -2,9 +2,11 @@
 
 A Commodore 64 rail shooter written in 6502 assembly, built against **c64m** — emulator, debugger, and assembler.
 
-A **C core** (`src/core/`) was written from those 6502 sources. An **SDL** build (`src/sdl/`) sits on that core. It is the first platform port; further ports can target the same core.
+A **C core** (`src/core/`) was written from those 6502 sources. Both the **SDL** build (`src/sdl/`) and the native **Acorn Archimedes** port (`src/archie/`) use that core. The Archimedes port targets A3010 / ARM250, 2 MB RAM and RISC OS 3.11, with native graphics, keyboard input and sound.
 
 This project was made by AI. **Grok** wrote essentially all of the game code. The **sprite multiplexer** was written by **Codex**. **Claude** reviewed the work and made the improvements to **c64m** that came out of building and debugging this game.
+
+**Codex** made the **Archimedes port**.
 
 YouTube Video: https://youtu.be/UlGNZt61dxk
 
@@ -36,6 +38,8 @@ It is a game about **quick decisions under pressure**:
 
 **Controls (SDL):** arrows or **WASD**, **Space** to fire, **S** for the story, **I** for instructions, **Escape** for RUN/STOP. This port is keyboard only.
 
+**Controls (Archimedes):** the same keyboard controls as SDL; **Ctrl-Q** quits and returns to RISC OS.
+
 In-game story and instructions screens have the full fiction and enemy table; you do not need them to start playing.
 
 ---
@@ -44,14 +48,19 @@ In-game story and instructions screens have the full fiction and enemy table; yo
 
 | Tool | Role |
 |------|------|
-| **make** | Build orchestration (assets → PRG, play launch) |
-| **Python 3** | Asset converters (`tools/c64/png_to_c64_*.py`) and helper scripts |
+| **make** | Build orchestration for C64, core, SDL and Archimedes targets |
+| **Python 3** | Asset conversion, Archimedes packaging and helper scripts; PNG converters require Pillow |
 | **c64masm** | Offline assembler (from c64m) |
 | **c64m** | Emulator window to run the PRG |
 | **C compiler** | `make core` and `make sdl` (C11) |
 | **SDL2** | `make sdl` (`sdl2-config` on `PATH`). The C64 build does not need it |
+| **ArchieSDK** | `make archie` and `make archie-package`; set `ARCHIESDK` to its installation root |
+| **Arculator** | Optional emulator for `make archie-run`; set `ARCU_HOME` to its installation root |
 
-The Commodore 64 build needs **c64m** as a sibling checkout. `make core` and `make sdl` do not. They read `assets/c64/` and the C sources.
+Install the tools for the target you want to build. The Commodore 64 build needs
+**c64m** as a sibling checkout. Core, SDL and Archimedes builds use the shared
+C sources and `assets/c64/` without needing c64m. Archimedes uses ArchieSDK
+instead of the host compiler and does not require SDL2.
 
 **c64m must sit next to this repo** (sibling checkout), not inside it:
 
@@ -88,7 +97,7 @@ Caveats:
 ## Build and play
 
 From the `railgunner` root. `make`, `make play`, and `make coop` need c64m
-built as a sibling. `make core` and `make sdl` do not:
+built as a sibling. Core, SDL and Archimedes targets are independent of c64m:
 
 ```bash
 make          # assets if needed → build/railgunner.prg
@@ -96,13 +105,19 @@ make play     # build, then open c64m with the PRG (autorun)
 make coop     # build, then windowed emu + control port + live-debug watcher
 make core     # headless C simulation, then tst/core traces
 make sdl      # SDL2 window (needs SDL2). Not part of make or make play
+make sdl-build       # build SDL without opening a window
+make archie          # ARM2 executable, ELF and linker map (needs ArchieSDK)
+make archie-run      # build and launch private A3010 Arculator deployment
+make archie-package  # build !RailGunner and both release ZIPs
 ```
 
 Useful variants:
 
 ```bash
 make assets   # regenerate title / charset / sprite bins from PNGs
-make clean    # wipe build/ outputs
+make clean    # remove C64/core/SDL outputs; retains Archimedes outputs
+make archie-test        # host renderer comparisons (ASan/UBSan)
+make archie-audio-test  # host sound comparisons (ASan/UBSan)
 ```
 
 `make play` is the simple human path: rebuild if needed, launch a windowed emulator, and play. No control-port session, no typing `RUN`.
@@ -137,6 +152,13 @@ is the load test for the tools the agents themselves depend on.
 The native A3010 / 2 MB / RISC OS 3.11 frontend builds with `make archie`.
 Use `make archie-run` for the private Arculator deployment and `make archie-package`
 for `!RailGunner` and HostFS/native ZIPs under `build/archie/release`.
+`ARCHIESDK` defaults to `$HOME/Develop/gitlab/archiesdk`; `ARCU_HOME` defaults to
+`$HOME/Applications/arculator`. Override either on the make command line if needed.
+The emulator keeps its configuration and HostFS inside `build/archie/arculator`;
+open HostFS and `!RGDiag` to play. Extract `RailGunner-HostFS.zip` into HostFS,
+preserving comma file-type suffixes, to use the packaged `!RailGunner` application.
+On RISC OS, extract `RailGunner-RISCOS.zip` with an Acorn-aware unzip tool.
+
 Cursors/WASD move, Space fires/starts/selects, S opens story, I opens instructions
 and Ctrl-Q quits. The playable emulator release and packaged launch/exit checks
 are complete. Occasional missed VSyncs are documented and accepted; actual
@@ -147,21 +169,26 @@ and [release record](agents/archie-port.md).
 
 | Path | What |
 |------|------|
-| `src/c64/` | Commodore 64 6502 sources (`main.asm` is the assemble root). Other machines would be siblings of `c64/`, not folders inside it |
+| `src/c64/` | Commodore 64 6502 sources (`main.asm` is the assemble root) |
 | `src/core/` | Portable C11 simulation of those rules. No SDL. Headless driver is `src/core/main.c` |
 | `src/sdl/` | SDL2 window: 2× blit, three-voice samples, keyboard mapping. No gameplay rules |
-| `assets/c64/` | Commodore 64 art and converted blobs. Other machines would be siblings under `assets/` |
+| `src/archie/` | Native ARM2 frontend: banked Mode 9 graphics, three-voice synthesis, keyboard input and OS restoration |
+| `assets/c64/` | Original art and converted blobs, shared by all frontends |
 | `tools/c64/` | C64 build/play scripts and c64m symlinks |
+| `tools/archie/` | Isolated SDK build, asset embedding, private emulator deployment and release packaging |
 | `tst/c64/` | C64 sprite-mux demos, not the game PRG |
 | `tst/core/` | Headless traces run by `make core` |
+| `tst/archie/` | Renderer and sound comparisons against SDL references |
 | `build/` | Generated PRG, `railgunner-core`, and `railgunner-sdl` |
+| `build/archie/` | Native executable, ELF/map, generated assets, emulator files and test outputs; `release/` holds the app and ZIPs |
 | `agents/` | Agent handoffs — design, roadmap, assembler notes (for AI sessions, not required to play) |
 
 ---
 
 Title screen, font and sprites by Grok.  Cleanup and tile graphics by Stefan.  
 Code by Grok & Codex.  Support from Claude.  
+Archimedes port by Codex, completed 11 October 2026.\
 Music and Sound Effects by Grok.  
 No human read, changed or edited the code in the making of this game.  
-Game written over 5 days with 1st commit on 26 July 2026.  
+Original C64 game written over 5 days with 1st commit on 26 July 2026.\
 Produced by Stefan Wessels, 2026.
