@@ -38,7 +38,7 @@ It is a game about **quick decisions under pressure**:
 
 **Controls (SDL):** arrows or **WASD**, **Space** to fire, **S** for the story, **I** for instructions, **Escape** for RUN/STOP. This port is keyboard only.
 
-**Controls (Archimedes):** the same keyboard controls as SDL; **Ctrl-Q** quits and returns to RISC OS.
+**Controls (Archimedes):** either native joystick port, or the same keyboard controls as SDL. Joystick fire starts/selects/fires; **Ctrl-Q** quits and returns to RISC OS.
 
 In-game story and instructions screens have the full fiction and enemy table; you do not need them to start playing.
 
@@ -108,7 +108,7 @@ make sdl      # SDL2 window (needs SDL2). Not part of make or make play
 make sdl-build       # build SDL without opening a window
 make archie          # ARM2 executable, ELF and linker map (needs ArchieSDK)
 make archie-run      # build and launch private A3010 Arculator deployment
-make archie-package  # build !RailGunner and both release ZIPs
+make archie-package  # build !RGunner and both release ZIPs
 ```
 
 Useful variants:
@@ -118,6 +118,7 @@ make assets   # regenerate title / charset / sprite bins from PNGs
 make clean    # remove C64/core/SDL outputs; retains Archimedes outputs
 make archie-test        # host renderer comparisons (ASan/UBSan)
 make archie-audio-test  # host sound comparisons (ASan/UBSan)
+make archie-input-test  # keyboard/joystick mapping and fallback checks
 ```
 
 `make play` is the simple human path: rebuild if needed, launch a windowed emulator, and play. No control-port session, no typing `RUN`.
@@ -151,15 +152,16 @@ is the load test for the tools the agents themselves depend on.
 
 The native A3010 / 2 MB / RISC OS 3.11 frontend builds with `make archie`.
 Use `make archie-run` for the private Arculator deployment and `make archie-package`
-for `!RailGunner` and HostFS/native ZIPs under `build/archie/release`.
+for `!RGunner` and HostFS/native ZIPs under `build/archie/release`.
 `ARCHIESDK` defaults to `$HOME/Develop/gitlab/archiesdk`; `ARCU_HOME` defaults to
 `$HOME/Applications/arculator`. Override either on the make command line if needed.
 The emulator keeps its configuration and HostFS inside `build/archie/arculator`;
 open HostFS and `!RGDiag` to play. Extract `RailGunner-HostFS.zip` into HostFS,
-preserving comma file-type suffixes, to use the packaged `!RailGunner` application.
+preserving comma file-type suffixes, to use the packaged `!RGunner` application.
 On RISC OS, extract `RailGunner-RISCOS.zip` with an Acorn-aware unzip tool.
 
-Cursors/WASD move, Space fires/starts/selects, S opens story, I opens instructions
+Either joystick port or cursors/WASD move; joystick fire or Space fires/starts/selects.
+S opens story, I opens instructions
 and Ctrl-Q quits. The playable emulator release and packaged launch/exit checks
 are complete. Occasional missed VSyncs are documented and accepted; actual
 hardware validation remains pending. See [Archimedes instructions](src/archie/README.md)

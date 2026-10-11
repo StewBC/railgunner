@@ -1,7 +1,7 @@
 # RailGunner — Archimedes port execution and release record
 
 **Status:** Emulator release completed 2026-10-11. The full game has native input,
-banked Mode 9 rendering and sound, and is delivered as `!RailGunner` plus HostFS
+banked Mode 9 rendering and sound, and is delivered as `!RGunner` plus HostFS
 and native RISC OS ZIPs. Packaged launch, play, exit and relaunch passed. The
 user accepted occasional missed VSyncs and ended further performance testing.
 Actual hardware acceptance remains pending. The phases below retain the original
@@ -574,3 +574,28 @@ and returned to the OS with Ctrl-Q; a second launch/exit also passed. Archive co
 validated on the host; native ZIP extraction, listening captures, injected
 missing-module/partial-initialization failures and actual hardware remain
 unverified. See `src/archie/README.md` for the hardware procedure.
+
+
+### Joystick addition (2026-10-11)
+
+Both native ports now use checked XJoystick_Read once per tick, merging
+directions and the first fire button with keyboard input. Signed X/Y use the
+PRM dead zone of -32 through 32. A failed port is disabled until relaunch;
+keyboard shortcuts and Ctrl-Q remain active. Host input fixtures cover both
+ports, signed directions, dead-zone boundaries, combined keys and unavailable
+ports. `make archie-input-test` uses ASan/UBSan. Native build/package pass.
+Earlier long-run evidence predates this input addition; no new long runs
+were made. Actual joystick hardware and incremental polling timing remain
+unverified.
+
+
+### RISC OS 3 application-name compatibility fix
+
+The original `!RailGunner` directory name exceeded the ten-character filing
+system limit. On actual A3010 media it appeared as `!RailGunne`, mismatching
+the `!railgunner` icon sprite. Current packaging uses `!RGunner` and a matching
+`!rgunner` sprite; the internal executable remains `!RunImage`. Archive names
+remain `RailGunner-HostFS.zip` and `RailGunner-RISCOS.zip`. Packaging asserts
+the directory and every file leaf fit ten characters, and the sprite name
+matches the application. Historical launch records above used the old name.
+Actual hardware icon confirmation for the renamed package remains pending.

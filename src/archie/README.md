@@ -7,27 +7,33 @@ execution ledger in `agents/archie-port.md` for accepted gates and limitations.
 ```
 make archie                # ARM2 C11/O2 executable, ELF and map
 make archie-run            # private windowed A3010 Arculator deployment
-make archie-package        # !RailGunner and both ZIP transports
+make archie-package        # !RGunner and both ZIP transports
 make archie-test           # 10,161 SDL/reference/incremental pixel comparisons
 make archie-audio-test     # 2,251,800 SDL synthesis comparisons
+make archie-input-test     # keyboard/joystick mapping and fallback checks
 ```
 
 `ARCHIESDK` defaults to `$HOME/Develop/gitlab/archiesdk`; `ARCU_HOME` defaults
  to `$HOME/Applications/arculator`. External installations are read-only.
 Emulator CMOS, configuration, HostFS and writable files live under
 `build/archie/arculator`. The baseline uses 2 MB, RISC OS 3.11 and normal speed.
-Open HostFS and `!RGDiag` to play. The packaged application is `!RailGunner`.
+Open HostFS and `!RGDiag` to play. The packaged application is `!RGunner`.
 
 Release files are under `build/archie/release/`. Extract `RailGunner-HostFS.zip`
 into an emulator HostFS directory, preserving comma file-type suffixes, and
-open `!RailGunner`. For RISC OS disks, extract `RailGunner-RISCOS.zip` with an
+open `!RGunner`. For RISC OS disks, extract `RailGunner-RISCOS.zip` with an
 Acorn-aware unzip tool that restores native file types. The package includes
 its icon, executable, launcher and licence notices; no external sound module
 installation is required. Clean packaged launch, play and repeated quit/relaunch
 passed on the baseline emulator.
 
-Cursors or WASD move; Space fires/starts/selects. S opens story and also moves
+Either native joystick port or cursors/WASD move; joystick fire or Space
+fires/starts/selects. S opens story and also moves
 down, I opens instructions, Escape retains RUN/STOP behavior. **Ctrl-Q exits**.
+Both ports are polled once per tick through XJoystick_Read, with an axis dead
+zone from -32 to 32. Keyboard input stays active; unavailable/erroring ports
+are disabled until relaunch. Native joystick hardware and its incremental
+polling cost have not yet been measured.
 The core keeps its existing edge detection, 50 Hz tick order and RAM scores.
 There are no catch-up ticks. No core, C64 or SDL source has been changed.
 
@@ -80,7 +86,7 @@ sound RMA about 1.3 KB, separate from the slot. Baseline emulator allocations an
 acceptance, native ZIP extraction and failure injection remain pending.
 
 For hardware validation, extract the native ZIP with an Acorn-aware unzip tool,
-launch `!RailGunner` on A3010/2 MB/RISC OS 3.11, and exercise title music, S/I,
+launch `!RGunner` on A3010/2 MB/RISC OS 3.11, and exercise title music, S/I,
 play with multiple effects, deaths, banners, game over and initials. Check
 sprite/rail restoration, flicker, sound crackle and keyboard response; quit with
 Ctrl-Q and repeat launch/exit. Run for ten minutes and report machine/OS, sound

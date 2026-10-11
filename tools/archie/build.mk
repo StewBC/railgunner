@@ -57,6 +57,13 @@ $(ROOT)/build/archie/audio-test: tst/archie/audio.c src/archie/synth.c src/archi
 archie-audio-test: $(ROOT)/build/archie/audio-test
 	$<
 
+.PHONY: archie-input-test
+$(ROOT)/build/archie/input-test: tst/archie/input.c src/archie/input.c src/archie/input.h $(CORE_H) | archie-check-sdk
+	@mkdir -p $(@D)
+	$(CC) $(CORE_CFLAGS) -I$(ROOT)/src/archie -idirafter $(ARCHIESDK)/SDK/include -fsanitize=address,undefined -g -o $@ tst/archie/input.c src/archie/input.c
+archie-input-test: $(ROOT)/build/archie/input-test
+	$<
+
 $(ROOT)/build/archie/noise-table.S: tools/archie/noise-table.py
 	@mkdir -p $(@D)
 	$(PYTHON) $< $@

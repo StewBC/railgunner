@@ -6,7 +6,8 @@ import struct
 import zipfile
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'build/archie/release'
-APP=OUT/'!RailGunner'
+APP_NAME='!RGunner'
+APP=OUT/APP_NAME
 APP.mkdir(parents=True,exist_ok=True)
 (APP/'COPYING,fff').write_bytes((ROOT/'UNLICENSE').read_bytes())
 (APP/'SDKLicence,fff').write_bytes((ROOT/'src/archie/SDK-LICENSE.txt').read_bytes())
@@ -15,7 +16,7 @@ APP.mkdir(parents=True,exist_ok=True)
 boot='Set RailGunner$Dir <Obey$Dir>\nIconSprites <RailGunner$Dir>.!Sprites\n'
 (APP/'!Boot,feb').write_text(boot)
 (APP/'!Run,feb').write_text(boot+'WimpSlot -min 896K -max 896K\n<RailGunner$Dir>.!RunImage\n')
-(APP/'!Help,fff').write_text('RailGunner for A3010 / 2 MB / RISC OS 3.11\n\nCursors or WASD: direction. Space: fire/start/select.\nS: story (also down). I: instructions. Escape: RUN/STOP.\nCtrl-Q: quit and restore sound/display. Scores remain in RAM.\n\nNative 20.833 kHz sound; no external sound module required.\nHardware acceptance pending. See src/archie/README.md in the source tree.\n')
+(APP/'!Help,fff').write_text('RailGunner for A3010 / 2 MB / RISC OS 3.11\n\nEither joystick port or cursors/WASD: direction.\nJoystick fire or Space: fire/start/select.\nS: story (also down). I: instructions. Escape: RUN/STOP.\nCtrl-Q: quit and restore sound/display. Scores remain in RAM.\n\nNative 20.833 kHz sound; no external sound module required.\nHardware acceptance pending. See src/archie/README.md in the source tree.\n')
 # Old-format Mode 12 sprite: independent palette, packed pixels and mask.
 width,height,row=34,17,20
 pixels=bytearray(row*height); mask=bytearray(row*height)
@@ -28,16 +29,22 @@ for y in range(height):
             pixels[i]|=(9 if disc else 5)<<shift; mask[i]|=15<<shift
 palette=b''.join(struct.pack('<II',c,c) for c in [0xffffff00,0xdddddd00,0xbbbbbb00,0x99999900,0x77777700,0x55555500,0x33333300,0,0x99440000,0x00eeee00,0x00cc0000,0x0000dd00,0xbbeeee00,0x00885500,0x00bbff00,0xffbb0000])
 image_offset=44+len(palette); mask_offset=image_offset+len(pixels); size=mask_offset+len(mask)
-header=struct.pack('<I12s7I',size,b'!railgunner',row//4-1,height-1,0,(width*4-1)%32,image_offset,mask_offset,12)
+header=struct.pack('<I12s7I',size,APP_NAME.lower().encode('ascii'),row//4-1,height-1,0,(width*4-1)%32,image_offset,mask_offset,12)
 (APP/'!Sprites,ff9').write_bytes(struct.pack('<III',1,16,16+size)+header+palette+pixels+mask)
 files=sorted(APP.iterdir())
-(OUT/'SHA256.txt').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  !RailGunner/'+p.name+'\n' for p in files))
+# RISC OS 3 filing systems limit leaf names to ten characters. The Filer
+# looks up the icon sprite using the application directory's name.
+assert len(APP_NAME)<=10
+assert all(len(p.name.rsplit(',',1)[0])<=10 for p in files)
+sprite=(APP/'!Sprites,ff9').read_bytes()
+assert sprite[16:28].split(b'\0',1)[0]==APP_NAME.lower().encode('ascii')
+(OUT/'SHA256.txt').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+APP_NAME+'/'+p.name+'\n' for p in files))
 for native in (False,True):
     target=OUT/('RailGunner-RISCOS.zip' if native else 'RailGunner-HostFS.zip')
     with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED) as z:
         for p in files:
             name,ft=p.name.rsplit(',',1)
-            info=zipfile.ZipInfo('!RailGunner/'+(name if native else p.name),(2026,10,11,0,0,0))
+            info=zipfile.ZipInfo(APP_NAME+'/'+(name if native else p.name),(2026,10,11,0,0,0))
             info.compress_type=zipfile.ZIP_DEFLATED
             if native:
                 cs=(2208988800+1791676800)*100

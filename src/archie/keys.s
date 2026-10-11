@@ -17,6 +17,18 @@ rg_key_held:
     ldmfd sp!,{pc}
 .size rg_key_held,.-rg_key_held
 
+/* XJoystick_Read: packed signed Y/X and buttons; -1 on unavailable/error.
+ * Reserved high byte is zero in a valid result. */
+.align 2
+.global rg_joystick_read
+.type rg_joystick_read,%function
+rg_joystick_read:
+    stmfd sp!,{lr}
+    swi 0x63f40
+    mvnvs r0,#0
+    ldmfd sp!,{pc}
+.size rg_joystick_read,.-rg_joystick_read
+
 /* Checked VSync/display/write-bank SWIs; return NULL or OS error pointer. */
 .align 2
 .global rg_present_banks

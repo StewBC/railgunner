@@ -341,7 +341,7 @@ OS restoration. It targets A3010 / ARM250, 2 MB and RISC OS 3.11.
 application packaging and private Arculator deployment. `tst/archie/` compares
 packed rendering and sound synthesis with unchanged SDL references.
 Generated binaries, maps, diagnostic evidence and release packages live in
-`build/archie/`; `build/archie/release/` contains `!RailGunner`,
+`build/archie/`; `build/archie/release/` contains `!RGunner`,
 `RailGunner-HostFS.zip` and `RailGunner-RISCOS.zip`.
 
 - `make archie`: native executable, ELF and linker map.
