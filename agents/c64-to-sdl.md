@@ -1,25 +1,26 @@
 # C64 → portable C → SDL
 
-**Role:** Work script for the port. Another agent follows the phases in order.
-This is **not** the C64 feature queue. [`roadmap.md`](roadmap.md) still owns
-R9–R11. Read this document only when the human asked for the port.
+**Role:** Record of the finished port. The phases below are how it was built.
+The game is feature-complete. This file is not a work queue, and neither is
+[`roadmap.md`](roadmap.md).
 
-**Status:** Phase 9 landed (2026-10-10). The port is `src/core/` (rules, no
-SDL include) and `src/sdl/` (blit, samples, key mapping). `src/c64/` is the
-Commodore 64 game and stays the oracle. `make`, `make core`, and `make sdl`
-are the three build entry points. `make play` and `make coop` still launch
-the C64 emulator. The Phase 3 temporary spawn comment is already gone. No
-mux-shaped fields remain on `Object`.
+**Status:** Finished. Phase 9 landed (2026-10-10). `src/core/` is the C
+simulation of the 6502 rules (no SDL include). `src/sdl/` is the first
+platform frontend on that core (blit, samples, key mapping). A later port
+would be another frontend on `src/core/`, and would not need `src/sdl` or
+`src/c64`. `src/c64/` stays the Commodore 64 game and the oracle. `make`,
+`make core`, and `make sdl` are the three build entry points. `make play` and
+`make coop` still launch the C64 emulator. The Phase 3 temporary spawn
+comment is gone. No mux-shaped fields remain on `Object`.
 
-Skipped, on purpose: disk high scores (`hiscore_reset` is empty); no
+Left out of the port, because the assembly does not have them or because the
+frontend is not the C64: disk high scores (`hiscore_reset` is empty); no
 fire-stream SFX and no in-game music bed; no NTSC "drop 1 tick in 6"; no
 collision modes 1 and 2, no VIC latch, no border diagnostics; no sprite
-multiplexer (SDL shows every `OBJF_RENDER` object); no gamepad. R9–R11 stay
-on [`roadmap.md`](roadmap.md). An SFX started during a tick is one frame
-shorter than on the C64, because `sfx_update` then `music_update` run after
+multiplexer (SDL shows every `OBJF_RENDER` object); no gamepad. Those are not
+remaining feature work. An SFX started during a tick is one frame shorter
+than on the C64, because `sfx_update` then `music_update` run after
 `mode_run`. `hitbox_id` is still on `Object` and nothing reads it.
-The implementing agent updates the checklist at the end of each phase
-in the same change as the code.
 
 **Rules live here.** Game behavior still comes from the assembly and from
 [`level-rework.md`](level-rework.md). If this document and the assembly
@@ -67,6 +68,9 @@ own way. It should not need `src/sdl` or `src/c64`.
 
 ## Hard rules for every phase
 
+The phases are done. These rules still apply if the core or the SDL frontend
+is touched.
+
 1. **One module at a time.** Read the `.asm`, write the C, compile the headless
    driver, then the next module. Do not translate several large files in one
    untested batch.
@@ -96,20 +100,13 @@ own way. It should not need `src/sdl` or `src/c64`.
    Makefile globs `src/**/*.asm` as rebuild inputs. Do not put `.asm` files
    under `src/core` or `src/sdl`. New targets (`make core`, `make sdl`) must
    not become dependencies of `prg` or `play`.
-10. **No gameplay improvements.** Missing features in the assembly (disk high
-    scores, in-game music beds, R9–R11) stay missing. Note them. Do not fill
-    them in.
-11. **Run Phases 0 through 9 in order without waiting for approval.** The
-    human asked for a straight run. Update this file's checklist as each
-    phase exits. If a session runs out of room, the next session continues
-    at the first phase that is not checked. Do not stop to ask whether to
-    continue.
-12. **Stop only when an exit test fails and you cannot fix it.** Say which
-    phase and what failed. The one ordering constraint inside the run: Phase
-    5's window must actually show the title and the play slice before Phase
-    6 starts. A broken blit makes the later cell-writing work land on the
-    wrong presentation. Fix that here, then continue. That is not a request
-    for the human to play the game first.
+10. **No gameplay improvements.** The assembly is the rule set. Disk high
+    scores, a fire-stream sound, and in-game music are not in it. Do not add
+    them here.
+11. **Phases 0 through 9 already ran.** The checklist at the end is complete.
+    Do not start the port over.
+12. **A broken blit is a bug in `src/sdl`,** and a wrong rule is a bug in
+    `src/core`. Fix the tree that owns it. Do not add gameplay.
 
 ---
 
@@ -626,9 +623,7 @@ this arrangement is original to this repo. Keeping the tables is the port.
 
 ## Checklist
 
-The implementing agent sets the date and notes the first time a phase exits.
-Do not check a phase off because the code compiled. The exit condition is
-the test named in that phase.
+Every phase below is done. The notes are the exit that was actually run.
 
 | Phase | Exit | State |
 |-------|------|--------|

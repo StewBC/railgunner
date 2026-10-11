@@ -8,10 +8,10 @@ tests: [`sprite-mux-status.md`](sprite-mux-status.md). Integration review:
 
 **Scope:** the common pool for objects drawn with VIC-II hardware sprites, the
 frame snapshot, the general-purpose raster multiplexer, and collision-event
-attribution. Character objects (rail and bullets), drone AI, wave composition,
-and motion helpers are consumers of this system and remain separate — the
-**gameplay collision consumer** and motion/AI layer are still Stage 2+ work
-(see [`roadmap.md`](roadmap.md) → Next steps).
+attribution. Character objects (rail and bullets), drone AI, and motion are
+consumers of this system. They shipped in the play loop
+([`level-rework.md`](level-rework.md)). SDL does not run this multiplexer; it
+draws every object with `OBJF_RENDER` set.
 
 Companions:
 

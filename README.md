@@ -2,6 +2,8 @@
 
 A Commodore 64 rail shooter written in 6502 assembly, built against **c64m** — emulator, debugger, and assembler.
 
+A **C core** (`src/core/`) was written from those 6502 sources. An **SDL** build (`src/sdl/`) sits on that core. It is the first platform port; further ports can target the same core.
+
 This project was made by AI. **Grok** wrote essentially all of the game code. The **sprite multiplexer** was written by **Codex**. **Claude** reviewed the work and made the improvements to **c64m** that came out of building and debugging this game.
 
 YouTube Video: https://youtu.be/UlGNZt61dxk
@@ -30,7 +32,9 @@ It is a game about **quick decisions under pressure**:
 - **Think ahead on clears** — pick up a clear when cargo is stacking, not when the hub is empty. Clear *arms* on pickup and wipes stacks/mines on the **next centre pass**, so timing matters as much as collecting it.
 - **Survive the quota** — clear the kill bar, take the rank banner, and the next wave hits harder.
 
-**Controls:** joystick, or **WASD** + **Space**. Move along the rail you are on; push perpendicular to switch barrel (or mount the other rail at the cross). Hold fire for continuous shot.
+**Controls (C64):** joystick, or **WASD** + **Space**. Move along the rail you are on; push perpendicular to switch barrel (or mount the other rail at the cross). Hold fire for continuous shot.
+
+**Controls (SDL):** arrows or **WASD**, **Space** to fire, **S** for the story, **I** for instructions, **Escape** for RUN/STOP. This port is keyboard only.
 
 In-game story and instructions screens have the full fiction and enemy table; you do not need them to start playing.
 
@@ -44,6 +48,10 @@ In-game story and instructions screens have the full fiction and enemy table; yo
 | **Python 3** | Asset converters (`tools/c64/png_to_c64_*.py`) and helper scripts |
 | **c64masm** | Offline assembler (from c64m) |
 | **c64m** | Emulator window to run the PRG |
+| **C compiler** | `make core` and `make sdl` (C11) |
+| **SDL2** | `make sdl` (`sdl2-config` on `PATH`). The C64 build does not need it |
+
+The Commodore 64 build needs **c64m** as a sibling checkout. `make core` and `make sdl` do not. They read `assets/c64/` and the C sources.
 
 **c64m must sit next to this repo** (sibling checkout), not inside it:
 
@@ -79,7 +87,8 @@ Caveats:
 
 ## Build and play
 
-From the `railgunner` root, with c64m already built as a sibling:
+From the `railgunner` root. `make`, `make play`, and `make coop` need c64m
+built as a sibling. `make core` and `make sdl` do not:
 
 ```bash
 make          # assets if needed → build/railgunner.prg

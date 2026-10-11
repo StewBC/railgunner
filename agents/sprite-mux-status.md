@@ -1,19 +1,19 @@
 # Sprite multiplexer implementation status
 
-This is the short implementation handoff for the graphical-object pool and
-hardware-sprite multiplexer. The full design and ABI remain in
-[`objects-sprites.md`](objects-sprites.md).
+Historical record of the C64 pool and multiplexer. The game shipped with this
+code. It is not a work queue. SDL does not use the multiplexer.
+
+The full design and ABI remain in [`objects-sprites.md`](objects-sprites.md).
 
 ## Current verdict
 
-The pool and multiplexer are ready for RailGunner gameplay integration. They
-are a rendering/event facet for graphical game objects, not a complete entity
-or AI system. Movement accessors, hitboxes, AI state, and gameplay lifecycle
-remain higher-level work.
+The pool and multiplexer are the C64 rendering path for hardware sprites.
+Movement, hitboxes, and gameplay lifecycle live in the play loop
+([`level-rework.md`](level-rework.md)).
 
-The most important unproven path is collision attribution immediately before a
-hardware lane is reused. Test that before calling the entire graphical-object
-layer battle-hardened.
+Collision attribution immediately before a hardware lane is reused was the
+open question when this note was written. The shipped game uses the layer
+as it stands. This file does not assign a follow-up.
 
 ## Implemented
 

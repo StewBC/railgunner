@@ -369,6 +369,11 @@ These were scrutinized and look correct relative to the design:
 
 ---
 
+## Review notes (not a queue)
+
+The game shipped with this multiplexer. The list below is the review from
+integration. It is not remaining feature work.
+
 ## Recommended next work (priority order)
 
 1. **Collision handoff proof** — BG collision one line before every lane reuse; assert old logical owner once.
@@ -381,6 +386,4 @@ These were scrutinized and look correct relative to the design:
 
 ## Bottom line
 
-The mux feature is a solid, design-faithful implementation. The lower-left PLAY stack **does stack and reuses a hardware lane correctly**. C/B/A priority coloring is correct. Deadline and capacity failures fail closed.
-
-Do **not** treat the layer as finished until collision attribution is proven under reuse, demos build again, and wave/motion code is constrained (or diagnostically noisy) when a layout cannot be scheduled.
+The mux feature is a solid, design-faithful implementation. The lower-left PLAY stack **does stack and reuses a hardware lane correctly**. C/B/A priority coloring is correct. Deadline and capacity failures fail closed. The shipped game uses this layer. The notes above are the review, not a backlog.

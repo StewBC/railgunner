@@ -1,45 +1,44 @@
 # RailGunner — Development Roadmap
 
-**Role:** Higher-level build and flow guide. Stages say *how mature* a slice of
-the game should be; elements say *which runtime pieces* exist. Depth is uneven
-on purpose — sketches and open questions are fine. Detailed specs live in later
-docs; this file only keeps the map coherent.
+**Role:** Historical build map. The game is finished. There is no feature
+backlog and no next stage.
 
-**Companions:** [`level-rework.md`](level-rework.md) (**current loop / R1–R11**),
-[`railgunner.md`](railgunner.md) (original brief — defer to level-rework on
-conflict), [`repo-layout.md`](repo-layout.md), [`README.md`](README.md).
-Optional reviews: [`reviews/`](reviews/) (not a work queue).
+**Shipped:** the level-centric loop in [`level-rework.md`](level-rework.md)
+(R1–R8 and R8b): full cross, A/B/C, cargo and mines, parcels, rank banner,
+title music, one-shot SFX, and RAM high-score entry. A **C core**
+(`src/core/`) was written from the 6502 sources. **SDL** (`src/sdl/`) is the
+first platform frontend on that core (`make sdl`). The Commodore 64 game
+remains `src/c64/` (`make` / `make play`).
 
-**Current phase:** **Level-centric baseline R1–R8 done.** See
-[`level-rework.md`](level-rework.md) for the freeze, ledger, and code map.
-**Next (ordered):** **R10** fun tune → **R9** fairness/sets (design first) →
-bonus types / polish → **R11** victory/boss hooks. Ammo scarcity cancelled for
-now (ammo removed). Post–step-7 hygiene:
-[`reviews/2026-07-27-clade-post-step7.md`](reviews/2026-07-27-clade-post-step7.md).
+Sketches that never landed — fairness sets (R9), a further tune pass (R10),
+victory and bosses (R11), a shield parcel, disk high scores, a fire-stream
+sound, in-game music — are not remaining work.
+
+**Companions:** [`level-rework.md`](level-rework.md) (shipped loop),
+[`railgunner.md`](railgunner.md) (original brief; defer to level-rework on
+conflict), [`repo-layout.md`](repo-layout.md), [`c64-to-sdl.md`](c64-to-sdl.md)
+(finished port record), [`README.md`](README.md).
+Optional reviews: [`reviews/`](reviews/) (historical, not a work queue).
 
 ---
 
 ## How to use this document
 
-- **Stages** = maturity of the product (scaffold → ship). Pick the next stage
-  that is still incomplete and work the elements that matter for it.
-- **Elements** = game modes / flow nodes (init, title, play, game over, …).
-  Each element lists sketch behaviour and which stage first makes it real.
-- Prefer implementing **one vertical path through the flow** early (init →
-  title → game init → stage init → thin play → death/game over stubs) rather
-  than perfecting a single system in isolation — except where the design brief
-  calls out hard unknowns (mux, collision disambiguation). The mux exception
-  was taken: pool + mux exist; **use them**, do not rebuild them.
-- **Next steps** (below) is the ordered work list. Prefer it over freestyle
-  feature picks when unsure what to do next.
-- When a sketch becomes load-bearing, spin out a detail doc and leave a
-  one-line pointer here. Do not bloat this file into a full design rewrite.
+This file records how the game was built. It is not a work order.
+
+- **Stages** and the build record below are that history. Do not pick an open
+  row and implement it.
+- **Elements** describe the flow as it was planned. Where they disagree with
+  [`level-rework.md`](level-rework.md) or the source, trust those.
+- **Where we are** is the shipped snapshot.
+- The mux exception was taken during the build: pool + mux exist; **use them**,
+  do not rebuild them.
 
 ---
 
 ## Where we are (reconciled with the tree)
 
-Honest snapshot for agents. Update this when a Next-steps item lands.
+Shipped snapshot. The lists further down are the build record, not a queue.
 
 | Area | Status | Notes |
 |------|--------|--------|
@@ -47,27 +46,31 @@ Honest snapshot for agents. Update this when a Next-steps item lands.
 | Mode dispatcher | Done | Jump table; story/instructions extras |
 | Frontend attract | Done | Hires title ↔ text menu; typewriter |
 | Stage init | New game only | Full redraw + player start; **not** on level-up |
-| Play | **Level-centric combat** | Full cross, A/B/C, parcels, cargo/mines; see [level-rework.md](level-rework.md) |
-| Object pool + sprite mux | Done | Production path + `tst/c64/` demos |
+| Play | **Shipped** | Full cross, A/B/C, parcels, cargo/mines; see [level-rework.md](level-rework.md) |
+| Object pool + sprite mux | Done | Production path on the C64 + `tst/c64/` demos. SDL draws every `OBJF_RENDER` object and does not run the mux |
 | Player | Full cross | Mount/remap, both arms fire |
 | Bullets | Both streams | V + H UDGs; cell ROF lock |
-| Collision | Slice | `COLLISION_MODE=0` HW latch |
-| HUD | **Rework done** | `000000 - LVL nn - bar - PILOTS:AAAA`; no health/ammo |
-| Level / spawn | **R1–R8** | Level kill quota; stop spawn; quiescence → rank banner; no player waves |
+| Collision | Production | `COLLISION_MODE=0`. Software tests are the authority. SDL has no VIC latch |
+| HUD | **Shipped** | `000000   WAVE 01 ########    PILOTS AAAA`; no health/ammo |
+| Level / spawn | **R1–R8** | Level kill quota; stop spawn; quiescence → rank banner |
 | Rail damage A/B | In play | Multi-HP; core collapse → game over |
 | C threat | Cargo/mines | Cargo → GHIJ stacks → arm → centre costs a life |
-| Parcels | Score-only | 2/level @ ~⅓ & ~⅔ of level quota |
-| High score / disk | Entry wired | Game over calls `hiscore_qualifies`. Disk load/save is not implemented (`hiscore_reset` is empty) |
-| Fairness / sets | **Todo R9** | Deferred design |
-| Bonus types (repair/shield/…) | Not started | After R10 |
-| Audio | **In play** | Title music (3-voice Valkyries) + one-shot SFX. No in-game music bed, no fire-stream sound, no alarm |
+| Parcels | **Shipped** | 2/level. Clear, repair, extra life, points, power 2×, score 2×. No shield |
+| High score | RAM entry | Game over calls `hiscore_qualifies`. Disk load/save was never written (`hiscore_reset` is empty) and is not remaining work |
+| Audio | **Shipped as title + one-shots** | 3-voice Valkyries on the title. No in-game music bed, no fire-stream sound. Those are not remaining work |
+| C core | **Done** | `src/core/`. Headless traces via `make core`. Rules only; no SDL |
+| SDL | **Done** | `src/sdl/`. First platform frontend on the core. `make sdl` opens the 2× window |
 
-**Intentional early work (keep):** mux foundation, title art, drone art (all
-sizes/facings), mode skeleton, full-cross placeholder playfield.
+The C64 build is `make` / `make play`. The portable builds are `make core` and
+`make sdl`. Accepted differences for the port are in
+[`c64-to-sdl.md`](c64-to-sdl.md).
 
 ---
 
-## Next steps (do these in order)
+## Build record
+
+The steps below are how the game was built. Items that never landed are marked
+**not shipped**. They are not a backlog.
 
 ### Stage 2 — Vertical slice (done)
 
@@ -146,44 +149,49 @@ playtest pass says “this is fun enough to build on.”
 | ~~**8.6**~~ | ~~**Spawn engine v2**~~ **done** | Dice composer: kill debts, random cooldown, quad/approach/coord; piggyback C on A/B; teach waves MAIN_C. |
 | ~~**8.7**~~ | ~~**Tune basic spawn / gameplay; evaluate fun**~~ **passed** | Knobs in (velocity tiers, class tier pick, quotas/cd/max, composition, hard-tail growth). Human: “better than it ever was / enough that we know we have a game.” **Parked:** C threat / health relevance redesign (revisit mid–late Step 9). Side armour / force V-rail still deferred. |
 
-**Step 8 complete.** Features (bonuses, ammo, messages), disk HS, music, bosses,
-explosion polish remain later steps (9+).
+**Step 8 complete.** The level rework (R1–R8, R8b) is the shipped game.
+Later step numbers below are the record of what followed, including ideas that
+were not built.
 
 ---
 
-### Level rework R9–R11 (active queue after R1–R8)
+### Level rework R9–R11 (not shipped)
 
-Full freeze + ledger: **[`level-rework.md`](level-rework.md)**.
+Full freeze + ledger: **[`level-rework.md`](level-rework.md)**. R1–R8 and R8b
+shipped. These three did not, and they are not remaining work.
 
 | ID | Work | Notes |
 |----|------|--------|
-| **R9** | **Sets + fairness gate** | A/B launch separation; close-shave curve; design first |
-| **R10** | **Fun tune** | Quotas, banner time, density, `MINE_STACK_K`, cargo feel |
-| **R11** | **Victory / boss hooks** | Empty hooks; possible set-pieces after 5/10/15 |
+| **R9** | Sets + fairness gate | **Not shipped.** |
+| **R10** | Fun tune | **Not shipped** as a separate pass. The numbers in the source are the game. |
+| **R11** | Victory / boss hooks | **Not shipped.** |
 
-### Step 9 — Features (parcels done; rest after R10)
+### Step 9 — Features
 
 | ID | Work | Notes |
 |----|------|--------|
 | ~~**9.1**~~ | ~~**Parcel mechanism + score**~~ **done** | See level-rework §2 parcels |
-| ~~**9.2**~~ | ~~**Messages**~~ **done as rank banner** | HUD rank line on level clear (not wave clear) |
-| ~~**9.3**~~ | ~~**Ammo scarcity**~~ **cancelled** | Ammo removed in rework; revisit only if design returns ammo |
-| **9.4** | **Repair bonus** | After R10; rail damage still live |
-| **9.5** | **Shield bonus** | Needs new damage model (mines / future hits) |
-| **9.6** | **Damage multiplier** | 2× on score/hits |
-| **9.7** | **Score consolation parcel** | When other types held |
-| **9.8** | **Balance pass** | With R10 |
-| **9.9** | **Extra life** | Score thresholds |
+| ~~**9.2**~~ | ~~**Messages**~~ **done as rank banner** | HUD rank line on level clear |
+| ~~**9.3**~~ | ~~**Ammo scarcity**~~ **cancelled** | Ammo removed in the rework. Not remaining work |
+| ~~**9.4**~~ | ~~**Repair bonus**~~ **done** | Even-level second parcel. See level-rework |
+| **9.5** | Shield bonus | **Not shipped.** |
+| ~~**9.6**~~ | ~~**Damage multiplier**~~ **done** | Power 2× parcel |
+| ~~**9.7**~~ | ~~**Score consolation parcel**~~ **done** | Points filler and score 2× |
+| **9.8** | Balance pass | **Not shipped** as a separate pass. |
+| ~~**9.9**~~ | ~~**Extra life**~~ **done** | Extra-life parcel on session kills |
 
 ---
 
 ### Step 10 — Gameplay polish (visual)
 
+Not a remaining pass. Death already explodes and holds; drone death and rail
+hits already have cues. Shield-ring and repair-orbit art were not built.
+
 | ID | Work | Notes |
 |----|------|--------|
-| **10.1** | Explosions | Player, drone, rail-arrival feedback. |
-| **10.2** | More animations | As needed (repair orbit, shield ring, barrel polish). |
-| **10.3** | Graphical refinements | Font / UDG pass, HUD icons, rail damage readability. |
+| **10.1** | Explosions | Death sequence and `SFX_DRONE_DIE` / `SFX_PLAYER_DIE` shipped. No further pass. |
+| **10.2** | More animations | **Not shipped** (repair orbit, shield ring). |
+| **10.3** | Graphical refinements | The shipped font, HUD, and rail tiles are the game. |
 
 ---
 
@@ -191,22 +199,17 @@ Full freeze + ledger: **[`level-rework.md`](level-rework.md)**.
 
 | ID | Work | Notes |
 |----|------|--------|
-| **11.1** | High-score entry if qualified | 3 initials. Game over already enters hiscore when `hiscore_qualifies` is set. |
-| **11.2** | Load high-score table | Cold init / frontend; RAM defaults if no disk. |
-| **11.3** | Save high-score table | After entry confirm/timeout. |
+| ~~**11.1**~~ | ~~High-score entry if qualified~~ **done** | 3 initials when `hiscore_qualifies` is set. |
+| **11.2** | Load high-score table | **Not shipped.** RAM defaults. `hiscore_reset` is empty. |
+| **11.3** | Save high-score table | **Not shipped.** |
 
-Disk format = detail doc when 11.2 starts. Failure path: keep playing with RAM table.
+Disk load/save is not remaining work. The table lives in RAM for the session.
 
 ---
 
-### Step 12 — Bosses (optional exploration)
+### Step 12 — Bosses
 
-| ID | Work | Notes |
-|----|------|--------|
-| **12.1** | **Decide if bosses belong** | Scripted pattern enemies; e.g. every N levels. Only build if Step 8–9 fun still has a “set-piece” gap. If no, skip without guilt — the game can ship on wave pressure alone. |
-
-If yes, spin a short boss design note (HP, patterns, telegraph, reward) before
-coding.
+**Not shipped.** The game shipped on the level loop alone. Not remaining work.
 
 ---
 
@@ -218,7 +221,7 @@ One-shots live in `src/c64/sys/sound.asm` (`sfx::play` / `sfx::update`). Lower i
 |----|------|--------|
 | **13.1** | ~~Explosions~~ **done** | `SFX_DRONE_DIE`, `SFX_PLAYER_DIE` |
 | **13.2** | ~~Mines, parcels, heal, level whoop~~ **done** | `SFX_MINE`, `SFX_PARCEL`, `SFX_HEAL`, `SFX_WAVE` |
-| **13.3** | Fire stream / alarms | Not built. Alarm (critical rail, pre-boss) still open |
+| **13.3** | Fire stream / alarms | **Not shipped.** Not remaining work |
 
 ---
 
@@ -230,19 +233,19 @@ One-shots live in `src/c64/sys/sound.asm` (`sfx::play` / `sfx::update`). Lower i
 
 ### Step 15 — Music — title only
 
-`src/c64/sys/music.asm` plays the 3-voice Valkyries loop from `src/c64/data/music_valkyrie.asm` on the title (`music::start_title`). Game init, story, and instructions call `music::stop`. SFX may steal a voice; the pattern keeps advancing. Stage, danger, game-over, and celebrate beds are not started. Do not block R9–R11 on them.
+`src/c64/sys/music.asm` plays the 3-voice Valkyries loop from `src/c64/data/music_valkyrie.asm` on the title (`music::start_title`). Game init, story, and instructions call `music::stop`. SFX may steal a voice; the pattern keeps advancing. Stage, danger, game-over, and celebrate beds were not written. That is the shipped audio. The SDL port plays the same tables.
 
 ---
 
 ### Step 16 — Final polish
 
-Loose ends: stuck transitions, message timing, edge-case mounts, last balance,
-smoke full path title → play → death → HS → title. Ship checklist lives here.
+The game shipped. This step is not an open punch list.
 
 ---
 
-**File ownership (new work):** see vertical-slice / game lists in
-[`repo-layout.md`](repo-layout.md). Wire every new `.asm` through `src/c64/main.asm`.
+**File ownership:** see [`repo-layout.md`](repo-layout.md). The C64 game is
+assembled from `src/c64/main.asm`. Portable rules live in `src/core/`. The SDL
+frontend is `src/sdl/`.
 
 **Mapping to maturity stages (guide, not a second queue):**
 
@@ -250,18 +253,21 @@ smoke full path title → play → death → HS → title. Ship checklist lives 
 |-------|-------------|
 | 1–7 | **2. Vertical slice** (done) |
 | 8.0–8.7 | **3. Core loop** + **4. Systems** (full arms, multi-C, A/B/rail, spawn) |
-| 9, 11 | **5. Features** |
-| 10, 16 | **6. Polish** |
-| 12 | Optional systems/features |
-| 13–15 | Audio — title music + one-shots landed; beds / fire stream / alarm still open |
-| Ship smoke | **7. Ship** |
+| 9, 11 | **5. Features** — parcels, banner, and RAM high-score entry shipped; shield and disk I/O did not |
+| 10, 16 | **6. Polish** — no further pass |
+| 12 | Bosses — not shipped |
+| 13–15 | Audio — title music + one-shots shipped |
+| C core + SDL | Port of the shipped rules. See [`c64-to-sdl.md`](c64-to-sdl.md) |
+| Ship | **7. Ship** — this is where the project stopped |
 
 ---
 
 ## Game flow (control map)
 
-Cold start and mode transitions. Solid lines are the main path; dashed are
-optional or later content.
+Historical sketch from early in the build. The shipped loop is
+[`level-rework.md`](level-rework.md): level quotas and a rank banner, reserve
+lives, rail collapse and four mines, RAM high scores. There is no disk save.
+The diagram below still shows the earlier wave and health wording.
 
 ```
                     ┌─────────────┐
@@ -321,9 +327,9 @@ See [`railgunner.md`](railgunner.md).
 
 ## Stages
 
-Names are maturity labels, not commit tags. Work can advance one element ahead
-of another; the table is a *guide*. Prefer the **Next steps** IDs for day-to-day
-order.
+Original maturity labels from the build. The project stopped at ship. Unmet
+exit lines (disk high scores, bosses, in-game music) were dropped. They are
+not a queue. The shipped snapshot is **Where we are** above.
 
 | Stage | Intent | Exit criteria (rough) |
 |-------|--------|------------------------|
@@ -336,15 +342,18 @@ order.
 | **7. Ship** | Release readiness | Audio as desired, final tables, disk layout, smoke of full path |
 
 **Relation to design brief:** Stage 2 matched the “one arm, one drone, no
-bonuses” bet in [`railgunner.md`](railgunner.md). Steps 8–9 expand to the full
-design without reopening mux architecture.
+bonuses” bet in [`railgunner.md`](railgunner.md). The shipped game is the
+level-centric loop, plus the C core and the SDL frontend. The mux architecture
+stays as built.
 
 ---
 
 ## Elements
 
-Sketch behaviour only. Numbers in parentheses are **first stage where this
-should exist in non-stub form** (stubs may appear earlier).
+Historical sketches. Numbers in parentheses are the stage where each piece was
+first expected. Where a sketch still mentions health, ammo, disk save, or a
+wave-clear screen, the shipped behaviour is
+[`level-rework.md`](level-rework.md).
 
 ### Cold Init (1)
 
@@ -493,43 +502,34 @@ the pool/mux — **consume** it for player/drone sprites and events.
 
 ---
 
-## Suggested build sequence (narrative)
+## What shipped
 
-1. **Scaffold** — **done.** Boot, modes, title attract, stub game over.
-2. **Vertical slice** — **done** (steps 1–7). H-arm, V bullets, one C, collision,
-   score, death.
-3. **Full player + spawn (Step 8)** — **done** as the level-centric loop
-   ([`level-rework.md`](level-rework.md)). Next ordered work is **R10**, then
-   **R9**, then bonus types, then **R11**.
-4. **Features (Step 9 + 11)** — repair, shield, and multiplier bonuses after
-   R10; then high-score disk load/save. Parcel score and the rank banner are
-   already in. Ammo scarcity is cancelled. Hiscore entry already runs when the
-   score qualifies.
-5. **Visual polish (Step 10)** — Explosions, animation, UDG/font pass.
-6. **Optional bosses (Step 12)** — Only if set-pieces still missing after fun pass.
-7. **Audio** — title music and one-shot SFX are in. Still open: fire-stream sound, alarms, in-game music beds.
-8. **Ship polish (Step 16 + Stage 7)** — Loose ends, disk, full-path smoke.
+1. **Scaffold** — boot, modes, title attract, game over.
+2. **Vertical slice** — H-arm, V bullets, one C, collision, score, death.
+3. **Level-centric loop** — full cross, spawn, cargo, mines, parcels, rank
+   banner ([`level-rework.md`](level-rework.md)).
+4. **Around the game** — story, instructions, tallies, RAM high-score entry,
+   title music, one-shot SFX.
+5. **Ports** — `src/core/` from the 6502 sources, then `src/sdl/` as the first
+   platform frontend ([`c64-to-sdl.md`](c64-to-sdl.md)).
+
+Nothing follows. Shield, disk high scores, bosses, a fire-stream sound, and
+in-game music were not built.
 
 ---
 
-## Open questions (deliberately deferred)
+## Decisions the shipped game closed
 
-Record decisions here when made; do not block early stages on them.
-
-| Topic | Default for now | Later |
-|-------|-----------------|--------|
-| Waves per level | **4** (level-1 table) | Grow in 8.7; never pad empty waves |
-| Starting lives | 3 | Tuning / 9.8–9.9 |
-| Starting health | 32 (8×4 bar steps) | Tuning with C-blast costs |
-| Rail/health on next life | Reset full | Confirm vs carry damage |
-| High scores without disk | RAM zeros / no persist | Load/save file format (11.x) |
-| Wave-clear vs level-clear UI | Short pause + text | Message system 9.2; art / SFX |
-| Ammo inactive early | Grayed bar present | Radio message unlock (9.2–9.3); mini fun pass after 9.3 |
-| Mode implementation | **Done:** jump table in `frontend/mode.asm` | — |
-| Bosses | Undecided — evaluate in 12.1; bias **no** until 8.7+9.8 need set pieces | Scripted patterns if yes |
-| Player start position | Left of V-rail (slice) | **Centre** once V-arm works (8.1b) |
-| Auto-spawn during dev | **Off (8.0 done)** | Re-enable via spawn engine / ensure_* when 8.3 starts |
-| 8.1a mount/remap | Must be correct before 8.1b done | Not deferred to 8.7 polish |
+| Topic | Shipped |
+|-------|---------|
+| Session shape | Level kill quotas and a rank banner. HUD text still says `WAVE`. |
+| Lives | Reserve icons, max 4. New game shows 3, then the deploy peel leaves 2. |
+| Health and ammo | Removed. |
+| High scores | RAM table for the session. No disk load or save. |
+| Bosses | Not in the game. |
+| Player start | `PLAYER_X_START` / `PLAYER_Y_HRAIL` on the horizontal rail, at the left edge of the centre gap. |
+| Spawn | The level spawner in `game/waves.asm` and `game/drones.asm`. |
+| Modes | Jump table in `frontend/mode.asm`. The same mode ids exist in `src/core`. |
 
 ---
 
@@ -542,33 +542,24 @@ Present:
 
 - [`objects-sprites.md`](objects-sprites.md) — graphical-object pool, sprite
   mux, IRQ/collision attribution, PAL/NTSC cadence (design + ABI).
-- [`sprite-mux-status.md`](sprite-mux-status.md) — implementation status, demos,
-  verification, remaining stress tests.
-- [`sprite-mux-issues.md`](sprite-mux-issues.md) — review findings / integration
-  hazards for the mux (read before relying on collision).
+- [`sprite-mux-status.md`](sprite-mux-status.md) — mux implementation record
+  and demos. Historical. Not a work queue.
+- [`sprite-mux-issues.md`](sprite-mux-issues.md) — mux review findings.
+  Historical. Not a work queue.
 - [`reviews/`](reviews/) — optional post-stage code reviews + dispositions.
 
-Future candidates:
-
-- Play loop & frame timing (IRQ vs main, update order) — main already drains
-  events and builds plans; formalize when play grows
-- Wave / level data format + spawn engine contract (Step 8.4–8.6)
-- Bonus spawn and parcel motion (Step 9.1)
-- Message system (Step 9.2)
-- High-score file format and disk I/O (Step 11)
-- Audio / music triggers per mode (Steps 13–15)
-- Boss patterns (only if 12.1 is yes)
-- HUD character set (health/ammo bars, lives icons)
+Not written, and not remaining work: disk high-score format, boss patterns,
+in-game music beds. Shipped behaviour is in
+[`level-rework.md`](level-rework.md), [`c64-to-sdl.md`](c64-to-sdl.md), and
+the source.
 
 ---
 
 ## Doc hygiene
 
-- Update this roadmap when a stage’s exit criteria or the control map changes.
-- Tick or rewrite **Next steps** when an item ships; keep **Where we are** honest.
-- Keep mechanics rules in [`railgunner.md`](railgunner.md); keep file placement
-  in [`repo-layout.md`](repo-layout.md).
-- Prefer a short matrix/flow edit over long prose when the only change is
-  “this element moved earlier/later.”
-- Numbered steps (8.0, 9.3, …) are the day-to-day queue; stage names are the
-  maturity summary only.
+- This file is a record. Do not reopen it as a feature queue.
+- Keep the shipped loop in [`level-rework.md`](level-rework.md) and file
+  placement in [`repo-layout.md`](repo-layout.md).
+- Keep the port record in [`c64-to-sdl.md`](c64-to-sdl.md).
+- If a sentence here still reads like an assignment, fix the sentence. Do not
+  implement it.

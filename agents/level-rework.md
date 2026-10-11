@@ -1,12 +1,15 @@
 # Level-centric rework (design freeze + status)
 
-**Role:** Authoritative model for the **post–R1–R8** game loop. Prefer this over
-older wave/health/ammo text in [`railgunner.md`](railgunner.md) when they
-conflict. Work queue and maturity still live in [`roadmap.md`](roadmap.md).
+**Role:** Authoritative model for the **shipped** play loop. Prefer this over
+older wave/health/ammo text in [`railgunner.md`](railgunner.md) and over the
+historical sketches in [`roadmap.md`](roadmap.md).
 
-**Landed:** commit baseline **R1–R8** (`0c391c7` and successors).  
-**Not in this freeze:** spawn fairness / sets (R9), deep fun tune (R10),
-victory/bosses (R11).
+**Landed:** **R1–R8** and **R8b** (`0c391c7` and successors). The same rules
+are in `src/c64/` and in the C core (`src/core/`). SDL presents them; it does
+not own them.
+
+**Not in the game:** spawn fairness / sets (R9), a further tune pass (R10),
+victory/bosses (R11). Those are not a work queue. The game is feature-complete.
 
 ---
 
@@ -17,7 +20,7 @@ victory/bosses (R11).
 | **Level is the only external unit** | HUD, parcels, rank banner, kill quota, spawn stop. |
 | **No player-facing waves** | No “wave clear,” no wave counter. Internal spawn may still change mix/density by **level progress**. |
 | **Spawner is level-aware; world mostly is not** | Player, rail scars, score, parcels-in-flight do not soft-reset on level-up. |
-| **Don’t pull every lever at once** | Fairness scheduling and deep C cargo polish are later steps. |
+| **Don’t pull every lever at once** | Fairness scheduling and further cargo polish were not built. |
 
 ---
 
@@ -155,25 +158,18 @@ play (move + fire always, except game over)
 | **R7** | Parcels on level_quota | **done** |
 | **R8** | C cargo → GHIJ stacks → mines → lives | **done** (basic) |
 | **R8b** | Reserve lives + deploy peel; A/B HP colour; full parcel types | **done** |
-| **R9** | Sets + fairness gate (A/B close-shave scheduling) | **todo** — design postponed |
-| **R10** | Fun tune (quotas, banner time, density, `MINE_STACK_K`, repair window) | **todo** |
-| **R11** | Victory / boss hooks (e.g. after 5 / 10 / 15) | **todo** |
+| **R9** | Sets + fairness gate (A/B close-shave scheduling) | **not shipped** |
+| **R10** | Fun tune (quotas, banner time, density, `MINE_STACK_K`, repair window) | **not shipped** as a separate pass. The numbers in the source are the game |
+| **R11** | Victory / boss hooks (e.g. after 5 / 10 / 15) | **not shipped** |
 
-### Suggested next order
-
-1. **R10** playtest + number tweaks (and cargo/mine feel).  
-2. **R9** fairness (own mini-design first).  
-3. Bonus types / repair / etc. when the loop is fun.  
-4. **R11** victory/bosses.
-
-**Explicitly deferred / cancelled for now:** ammo scarcity (old 9.3), wave-clear UI,
-C blast HP, stage reset on level clear.
+The shipped loop ends at **R8b**. Ammo scarcity (old 9.3), a wave-clear screen,
+C blast HP, and a stage reset on level clear are not in the game.
 
 ---
 
-## 8. Fairness (R9 — deferred notes only)
+## 8. Fairness (R9 — not built)
 
-Intent (not implemented):
+Notes kept so the idea is not rediscovered as a task. Not remaining work.
 
 - Player cover rate ~4 px/frame; A needs ~3 hits + human slack (~30 frames on-station).
 - Do not launch A/B so that concurrent rail attackers are impossible to clear.

@@ -1,8 +1,14 @@
 # RailGunner agent handoff
 
-This directory is the concise, implementation-oriented handoff for agents working
-on **RailGunner** — a Commodore 64 game written in 6502 assembly and developed
-against **c64m** (emulator, debugger, assembler, remote API) at `../c64m/`.
+The game is feature-complete. There is no feature backlog.
+
+- `src/c64/` is the Commodore 64 game in 6502, developed against **c64m**
+  (emulator, debugger, assembler, remote API) at `../c64m/`.
+- `src/core/` is the C simulation written from those 6502 sources.
+- `src/sdl/` is the first platform frontend on that core. Further ports would
+  be new frontends on `src/core/`, siblings of `sdl/`.
+
+This directory is the concise, implementation-oriented handoff for agents.
 
 Game design and technical intent live here. The c64m **source and tests** remain
 authoritative for the toolchain; if a handoff doc and the tool disagree, trust
@@ -10,12 +16,12 @@ the tool (and fix the handoff).
 
 ## Read in this order
 
-1. **`level-rework.md`** — **current** loop freeze (levels, HUD, mines, R-ledger).
-2. **`railgunner.md`** — original design brief (layout, long-horizon systems).
-3. **`roadmap.md`** — stages, **where we are**, ordered **Next steps** (default
-   work order). Living guide; detail docs hang off it later.
-4. **`repo-layout.md`** — where source lives and the include rules. Create new
-   files only under this plan.
+1. **`level-rework.md`** — shipped play loop (levels, HUD, mines, parcels).
+2. **`railgunner.md`** — original design brief. Defer to level-rework on conflict.
+3. **`roadmap.md`** — historical build map. The game is finished. Do not treat
+   an open row as work.
+4. **`repo-layout.md`** — where source lives (`src/c64`, `src/core`, `src/sdl`)
+   and the include rules.
 5. **`assembler-syntax.md`** — **required before writing any `.asm`**. c64m
    assembler language only (not ACME / ca65 / KickAsm / 64tass unless listed
    there). Syntax, directives, macros, scopes, segments (including `locked` /
@@ -30,12 +36,12 @@ the tool (and fix the handoff).
    `when=`).
 8. Component handoffs relevant to the task. For graphical objects, hardware
    sprites, the mux, or collision attribution: **`objects-sprites.md`** (ABI)
-   plus **`sprite-mux-status.md`** / **`sprite-mux-issues.md`** (live status).
+   plus **`sprite-mux-status.md`** / **`sprite-mux-issues.md`** (historical
+   C64 mux record; SDL does not use the mux).
 9. Source under `src/c64/` (root unit: `src/c64/main.asm`) and samples under
    `../c64m/samples/` when learning idioms.
-10. **`c64-to-sdl.md`** only when the human asked for the portable C / SDL
-    port. It is not the default work queue. C64 feature work still follows
-    `roadmap.md`.
+10. **`c64-to-sdl.md`** — finished record of the C core and the SDL frontend
+    (accepted differences, what was left on the C64). The port is done.
 
 Do not invent assembler syntax. If something is missing from
 `assembler-syntax.md`, check `../c64m/manual/manual.md` (Assembler section), then
@@ -45,28 +51,29 @@ update the handoff so the next agent does not rediscover it.
 
 | Doc | Role |
 |-----|------|
-| [`level-rework.md`](level-rework.md) | **Current loop freeze:** levels, HUD, death/mines, R1–R11 ledger (prefer over stale brief) |
+| [`level-rework.md`](level-rework.md) | **Shipped loop:** levels, HUD, death/mines, parcels (prefer over the original brief and over roadmap sketches) |
 | [`railgunner.md`](railgunner.md) | Original design brief (screen, controls, bonuses vision); defer to level-rework on conflict |
-| [`roadmap.md`](roadmap.md) | Stages, flow, **where we are**, ordered **Next steps**, matrix, open questions |
+| [`roadmap.md`](roadmap.md) | Historical build map. Feature work is finished |
 | [`repo-layout.md`](repo-layout.md) | Repo tree, current C64 files, include rules |
 | [`objects-sprites.md`](objects-sprites.md) | Pool/mux design + ABI (implemented; the game consumes it) |
-| [`sprite-mux-status.md`](sprite-mux-status.md) | Implemented mux status, demos, verification, remaining stress tests |
+| [`sprite-mux-status.md`](sprite-mux-status.md) | C64 mux implementation record and demos. Historical |
 | [`sprite-mux-issues.md`](sprite-mux-issues.md) | Mux review findings / integration hazards |
 | [`assembler-syntax.md`](assembler-syntax.md) | c64m 6502 assembler syntax for all game source |
 | [`build-debug.md`](build-debug.md) | Launch emulator, remote assemble, **C64M/8** recipes (history, `when=`, frame + VIC rings, inspect mode), friction log |
 | [`coop-debug.md`](coop-debug.md) | **Cooperative live debug** — human pause, `scrub`/`frame`/`vic`, guarded `arm`, evidence packs |
-| [`c64-to-sdl.md`](c64-to-sdl.md) | **Port script** (on request): `src/core` then `src/sdl`. Not the C64 feature queue |
+| [`c64-to-sdl.md`](c64-to-sdl.md) | **Finished port record:** `src/core` from the 6502 sources, `src/sdl` as the first platform frontend |
 
 **Optional / not in the handoff path:** [`reviews/`](reviews/) holds post-stage
-code reviews (historical + disposition tables). Agents should **not** treat
-them as required reading or as a work queue ahead of `roadmap.md`.
+code reviews (historical + disposition tables). They are not a work queue.
+`roadmap.md` is not one either.
 
 ## Source tree (summary)
 
 | Path | Role |
 |------|------|
 | `src/c64/` | Commodore 64 game. Sole assemble root is `src/c64/main.asm` |
-| `src/core/`, `src/sdl/` | Portable simulation and SDL frontend. See [`c64-to-sdl.md`](c64-to-sdl.md). Not a machine tree, and not the C64 feature queue |
+| `src/core/` | Portable C11 simulation of the C64 rules. No SDL. Headless driver is `src/core/main.c` |
+| `src/sdl/` | First platform frontend on the core: window, blit, samples, keys. See [`c64-to-sdl.md`](c64-to-sdl.md) |
 | `src/c64/main.asm` | Sole assemble root; includes everything else |
 | `src/c64/boot/` | Cold init / bring-up |
 | `src/c64/sys/` | ZP, constants, IRQ, input, memory map |

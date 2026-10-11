@@ -1,11 +1,13 @@
 # Repo layout — decision
 
-**Status:** chosen. `src/c64/` is the Commodore 64 game: level-centric combat
-(R1–R8), pool/mux, frontend, title music, and one-shot SFX. `src/core/` and
-`src/sdl/` are the portable port in [`c64-to-sdl.md`](c64-to-sdl.md). The core
-owns those rules. SDL blits the frame and synthesizes samples. This file is
-the directory rules. C64 feature work still follows [`roadmap.md`](roadmap.md).  
-**Companion docs:** [`railgunner.md`](railgunner.md) (design), [`roadmap.md`](roadmap.md) (stages/flow), [`build-debug.md`](build-debug.md) (run/debug), [`assembler-syntax.md`](assembler-syntax.md) (syntax), [`c64-to-sdl.md`](c64-to-sdl.md) (port).
+**Status:** chosen, and the game is feature-complete. `src/c64/` is the
+Commodore 64 game: the shipped level-centric loop, pool/mux, frontend, title
+music, and one-shot SFX. `src/core/` is the C simulation of those rules,
+written from the 6502 sources. `src/sdl/` is the first platform frontend on
+that core (blit and samples). A later port is another frontend on the core,
+a sibling of `sdl/`. This file is the directory rules.
+[`roadmap.md`](roadmap.md) is the build record, not a feature queue.  
+**Companion docs:** [`level-rework.md`](level-rework.md) (shipped loop), [`railgunner.md`](railgunner.md) (original brief), [`roadmap.md`](roadmap.md) (build record), [`build-debug.md`](build-debug.md) (run/debug), [`assembler-syntax.md`](assembler-syntax.md) (syntax), [`c64-to-sdl.md`](c64-to-sdl.md) (finished port).
 
 ## Decision summary
 
@@ -26,7 +28,7 @@ The design is not a demo loop. Frontend states, rail/bullet character pipelines,
 c64m `.include` paths are relative to the including file; deep trees make include lines brittle and encourage over-splitting. One area folder + clear filenames is enough. The platform directory is the one extra level: other versions of the game are siblings of `c64/`, not more folders inside it.
 
 **Why `c64/` under `src/`, `assets/`, `tools/`, and `tst/`?**  
-Each machine gets its own source, art, host scripts, and standalone tests. C64 is the only machine. `src/core/` and `src/sdl/` are the portable port, not another platform directory. `agents/` and `build/` stay at the repo root: handoffs are shared, and `build/` is generated output. `.include` lines inside `src/c64/` are unchanged (relative to the including file). `.incbin` from `src/c64/data/` is `../../../assets/c64/...`. Demos in `tst/c64/` include production code with `../../src/c64/...`. Do not put platform files directly in `src/`, `assets/`, `tools/`, or `tst/`.
+Each machine gets its own source, art, host scripts, and standalone tests. The Commodore 64 tree is the original machine game. `src/core/` is the shared C simulation, not a machine directory. `src/sdl/` is the first platform frontend on that core, not a second copy of the rules and not a folder inside `c64/`. `agents/` and `build/` stay at the repo root: handoffs are shared, and `build/` is generated output. `.include` lines inside `src/c64/` are unchanged (relative to the including file). `.incbin` from `src/c64/data/` is `../../../assets/c64/...`. Demos in `tst/c64/` include production code with `../../src/c64/...`. Do not put platform files directly in `src/`, `assets/`, `tools/`, or `tst/`.
 
 ---
 
@@ -243,7 +245,7 @@ Live-in-emulator vs file build may differ via `AM65` (see assembler handoff); th
 | Path | Why separate |
 |------|----------------|
 | `src/<other-platform>/` | Another machine's source. Sibling of `c64/`, not a folder inside it |
-| `src/core/`, `src/sdl/` | The portable port ([`c64-to-sdl.md`](c64-to-sdl.md)). Not C64 sources. No `.asm` (the PRG glob would assemble it). Core includes no SDL header. SDL does not own a gameplay rule |
+| `src/core/`, `src/sdl/` | Finished port ([`c64-to-sdl.md`](c64-to-sdl.md)). Core is the C rules. SDL is the first platform frontend. No `.asm` (the PRG glob would assemble it). Core includes no SDL header. SDL does not own a gameplay rule |
 | `agents/` | Human/agent prose, not assembled |
 | `assets/<platform>/` | That machine's art. C64 blobs live in `assets/c64/` and are `.incbin`'d, not assembled as source |
 | `tools/<platform>/` | That machine's host scripts. Never run on the 6510 |
@@ -277,7 +279,8 @@ and `render/bullets.asm`. Frames live in `data/sprites.asm`.
 
 Wire new files through `src/c64/main.asm`. Prefer extending `play.asm` /
 `stage.asm` only for loop/enter glue; put real systems in the topic files.
-Next C64 work is the roadmap queue (R10, R9, bonus types, R11), not a second slice.
+There is no feature backlog. Do not start a second slice from
+[`roadmap.md`](roadmap.md).
 
 ### Portable port (present)
 
@@ -321,7 +324,7 @@ Nothing in the core reads it.
 
 ## Maintenance rules for agents
 
-1. New gameplay feature → prefer `src/c64/game/<topic>.asm` (or extend an existing topic file if it is still small).
+1. The game is feature-complete. A bugfix in the C64 rules still belongs in `src/c64/game/<topic>.asm` (or an existing topic file if it is still small), with the same change in `src/core/` when the portable game should match.
 2. New pure presentation of existing state → `src/c64/render/` or `src/c64/sprite/`.
 3. New outer-loop screen → `src/c64/frontend/`.
 4. New numbers/strings/frames → `src/c64/data/` and/or `assets/c64/`.
