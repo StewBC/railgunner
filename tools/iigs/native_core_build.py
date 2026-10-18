@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 from native_core import Adapter
+from asm_transform import replace_once
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'build/iigs/nativecore'
 FIELDS='flags kind x_frac x_lo x_hi y_frac y_int sprite_ptr sprite_color sprite_attr vx_frac vx_lo vx_hi vy_frac vy_int hitbox_id pending_events anim_state user reserved'.split()
@@ -86,11 +87,12 @@ def main():
         driver_source=OUT/'coretest.asm';driver_source.write_text((ROOT/'src/iigs/coretest.asm').read_text().replace('build/iigs/nativecore/core.s',relative+'/core.s'))
     if args.group>=5:
         text=driver_source.read_text()
-        text=text.replace('                          cmp #3\n', '                          cmp #2\n                          beq core_tick\n                          cmp #3\n',1)
-        text=text.replace('core_reset                lda core_variant\n                          beq core_bare_reset', 'core_reset                lda core_variant\n                          beq core_bare_reset\n                          cmp #1\n                          beq core_bare_reset')
-        text=text.replace('                          stz core_frame+2\ncore_invoke', '                          stz core_frame+2\n                          bra core_invoke\ncore_invoke')
-        text=text.replace('core_invoke               jsl game_entry', 'core_tick                 jsl game_entry\n                          lda core_status\n                          bne core_complete\n                          inc core_frame\n                          bne core_complete\n                          inc core_frame+2\n                          bra core_complete\ncore_invoke               jsl game_entry')
-        text=text.replace("core_variant              dc i2'0'", "core_variant              ENTRY\n                          dc i2'0'").replace("core_ticks                dc i2'0'", "core_ticks                ENTRY\n                          dc i2'0'")
+        text=replace_once(text,'                          cmp #3\n', '                          cmp #2\n                          beq core_tick\n                          cmp #3\n')
+        text=replace_once(text,'core_reset                lda core_variant\n                          beq core_bare_reset', 'core_reset                lda core_variant\n                          beq core_bare_reset\n                          cmp #1\n                          beq core_bare_reset')
+        text=replace_once(text,'                          stz core_frame+2\ncore_invoke', '                          stz core_frame+2\n                          bra core_invoke\ncore_invoke')
+        text=replace_once(text,'core_invoke               jsl game_entry', 'core_tick                 jsl game_entry\n                          lda core_status\n                          bne core_complete\n                          inc core_frame\n                          bne core_complete\n                          inc core_frame+2\n                          bra core_complete\ncore_invoke               jsl game_entry')
+        text=replace_once(text,"core_variant              dc i2'0'", "core_variant              ENTRY\n                          dc i2'0'")
+        text=replace_once(text,"core_ticks                dc i2'0'", "core_ticks                ENTRY\n                          dc i2'0'")
         driver_source.write_text(text)
     run(['iix','assemble','+L','+S',str(driver_source.relative_to(ROOT)),'keep='+relative+'/main'],'main.listing')
     (OUT/'link.script').write_text('+S +L\n'+relative+'/main\n')

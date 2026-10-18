@@ -5,6 +5,7 @@ same generated body. Platform owns game_dp allocation and held input delivery.
 """
 from pathlib import Path
 import json
+import re
 
 
 def emit(root, out, core_source):
@@ -14,7 +15,19 @@ def emit(root, out, core_source):
     translated=(out/'translated.s').read_text()
     boundary=translated.index('; src/')
     constants=translated[:boundary]
-    (out/'game-translated.s').write_text(translated[boundary:])
+    shipping = translated[boundary:]
+    # Presentation-only IIgs override. CORETEST retains the original C64 colour
+    # wheel for semantic equivalence; the shipping game uses two-row updates.
+    for name, replacement in [
+        ('title_text_rotate_colors', ' copy src/iigs/highscore_color.asm\n'),
+        ('title_text_color_scores', ''),
+    ]:
+        pattern = r'^' + name + r' anop\n.*?(?=^; src/|\Z)'
+        shipping, count = re.subn(pattern, lambda match: replacement, shipping,
+                                  flags=re.M | re.S)
+        if count != 1:
+            raise RuntimeError(f'Shipping frontend procedure {name}: expected once, found {count}')
+    (out/'game-translated.s').write_text(shipping)
     body=body.replace(marker,' copy '+relative+'/game-translated.s\n',1)
     lines = ['; Generated shipping GAME body. Native16 JSL API, native E=0.',
              '; All API calls preserve A/X/Y/P/D/DBR/SP; result is game_status.',

@@ -12,79 +12,79 @@
 ; until committed; rc_capture returns1 and preserves it while rc_pending=1.
 ; Call rc_publish ONLY after an admitted full E1 generation has completed.
 ; This module does not publish or clear pending merely because composition ends.
-; Publish services every64words AFTERE1completion; hook must not reenter renderer.
+; Publish services every256words AFTERE1completion; hook must not reenter renderer.
 ; Capture cannot service midcopy: liveproducer could change and tear snapshot.
 ; Caller services immediatelybefore the bounded2388byte atomic capture.
-                          longa on
-                          longi on
-rc_reset                  stz rc_pending
-                          stz rc_display_valid
-                          stz rc_generation
-                          stz rc_display_generation
-                          rts
-rc_capture                lda rc_pending
-                          beq rc_capture_free
-                          lda #1
-                          rts
-rc_capture_free           ldx #2386
-rc_capture_word           lda >rc_live,x
-                          sta >rc_candidate,x
-                          dex
-                          dex
-                          bpl rc_capture_word
-                          inc rc_generation
-                          lda #1
-                          sta rc_pending
-                          lda #0
-                          rts
-rc_publish                lda rc_pending
-                          bne rc_publish_ready
-                          lda #1
-                          rts
-rc_publish_ready          ldx #2386
-rc_publish_word           lda >rc_candidate,x
-                          sta >rc_displayed,x
-                          txa
-                          and #127
-                          bne rc_publish_no_service
-                          jsr render_service
-rc_publish_no_service     dex
-                          dex
-                          bpl rc_publish_word
-                          lda rc_generation
-                          sta rc_display_generation
-                          lda #1
-                          sta rc_display_valid
-                          stz rc_pending
-                          lda #0
-                          rts
-rc_pending                ds 2
-rc_display_valid          ds 2
-rc_generation             ds 2
-rc_display_generation     ds 2
-rc_live                   anop
-rc_live_glyphs            ENTRY
-                          ds 1000
-rc_live_colors            ENTRY
-                          ds 1000
-rc_live_objects           ENTRY
-                          ds 384
-rc_live_present           ENTRY
-                          ds 2
-rc_live_mode              ENTRY
-                          ds 2
-rc_live_end               anop
-rc_candidate              anop
-rc_candidate_glyphs       ds 1000
-rc_candidate_colors       ds 1000
-rc_candidate_objects      ds 384
-rc_candidate_present      ds 2
-rc_candidate_mode         ds 2
-rc_candidate_end          anop
-rc_displayed              anop
-rc_displayed_glyphs       ds 1000
-rc_displayed_colors       ds 1000
-rc_displayed_objects      ds 384
-rc_displayed_present      ds 2
-rc_displayed_mode         ds 2
-rc_displayed_end          anop
+                       longa  on
+                       longi  on
+rc_reset               stz    rc_pending
+                       stz    rc_display_valid
+                       stz    rc_generation
+                       stz    rc_display_generation
+                       rts
+rc_capture             lda    rc_pending
+                       beq    rc_capture_free
+                       lda    #1
+                       rts
+rc_capture_free        ldx    #2386
+rc_capture_word        lda    >rc_live,x
+                       sta    >rc_candidate,x
+                       dex
+                       dex
+                       bpl    rc_capture_word
+                       inc    rc_generation
+                       lda    #1
+                       sta    rc_pending
+                       lda    #0
+                       rts
+rc_publish             lda    rc_pending
+                       bne    rc_publish_ready
+                       lda    #1
+                       rts
+rc_publish_ready       ldx    #2386
+rc_publish_word        lda    >rc_candidate,x
+                       sta    >rc_displayed,x
+                       txa
+                       and    #511
+                       bne    rc_publish_no_service
+                       jsr    render_service
+rc_publish_no_service  dex
+                       dex
+                       bpl    rc_publish_word
+                       lda    rc_generation
+                       sta    rc_display_generation
+                       lda    #1
+                       sta    rc_display_valid
+                       stz    rc_pending
+                       lda    #0
+                       rts
+rc_pending             ds     2
+rc_display_valid       ds     2
+rc_generation          ds     2
+rc_display_generation  ds     2
+rc_live                anop
+rc_live_glyphs         ENTRY
+                       ds     1000
+rc_live_colors         ENTRY
+                       ds     1000
+rc_live_objects        ENTRY
+                       ds     384
+rc_live_present        ENTRY
+                       ds     2
+rc_live_mode           ENTRY
+                       ds     2
+rc_live_end            anop
+rc_candidate           anop
+rc_candidate_glyphs    ds     1000
+rc_candidate_colors    ds     1000
+rc_candidate_objects   ds     384
+rc_candidate_present   ds     2
+rc_candidate_mode      ds     2
+rc_candidate_end       anop
+rc_displayed           anop
+rc_displayed_glyphs    ds     1000
+rc_displayed_colors    ds     1000
+rc_displayed_objects   ds     384
+rc_displayed_present   ds     2
+rc_displayed_mode      ds     2
+rc_displayed_end       anop

@@ -369,5 +369,7 @@ C runtime. Shared `src/core`, SDL, Archie and C64 sources remain separate.
 
 Public targets are `iigs-game`, `iigs-game-play`, `iigs-game-package`; outputs live
 under `build/iigs/`. The old IIgs C/runtime and standalone demo paths are removed.
-The current game still flashes: beam-following erase/redraw is the next task, as
-specified in [the authoritative handoff](iigs-beam-renderer-handoff.md).
+Beam-following erase/redraw is implemented; the practical target is 7.159 MHz
+or faster. Stock 2.8 MHz remains unplayable. See
+[the authoritative handoff](iigs-beam-renderer-handoff.md) for measured limits,
+IIgs-only frontend overrides, and final package names.

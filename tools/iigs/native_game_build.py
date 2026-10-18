@@ -7,6 +7,7 @@ from pathlib import Path
 import argparse,hashlib,json,re,subprocess
 from native_render_assets import source_frames,generate
 from native_render_glyph_test import data
+from asm_transform import replace_once as asm_replace_once, replace_all, label_offset
 ROOT=Path(__file__).resolve().parents[2]
 PROFILES={'2.8mhz':0,'7.159mhz':1,'14.3mhz':2}
 def replace_once(text,old,new):
@@ -52,18 +53,17 @@ def main():
     out.mkdir(parents=True,exist_ok=True);relative=out.relative_to(ROOT).as_posix();generate(out)
     frames,_,_=source_frames()
     source=(ROOT/'src/iigs/main.asm').read_text()
-    source=replace_once(source,'                          pea    256','                          pea    512')
-    source=replace_once(source,'                          lda    debug_dp\n                          tcd','                          lda debug_dp\n                          beq ng_bad_dp\n                          and #$ff\n                          bne ng_bad_dp\n                          lda debug_dp\n                          cmp #$FE01\n                          bcc ng_allocated_dp_ok\nng_bad_dp                 jmp shutdown\nng_allocated_dp_ok        lda debug_dp\n                          tcd')
-    source=replace_once(source,'                          ldx    #254\n                          lda    #0\nclear_dp','                          ldx    #510\n                          lda    #0\nclear_dp')
-    source=replace_once(source,'; GAME_RENDERER_INSERT',f'                          copy   {relative}/renderer.s\n                          copy src/iigs/input.asm\n                          copy {relative}/platform.s\n                          copy src/iigs/profile.asm')
+    source=asm_replace_once(source,'                          pea    256','                          pea    512')
+    source=asm_replace_once(source,'                          lda    debug_dp\n                          tcd','                          lda debug_dp\n                          beq ng_bad_dp\n                          and #$ff\n                          bne ng_bad_dp\n                          lda debug_dp\n                          cmp #$FE01\n                          bcc ng_allocated_dp_ok\nng_bad_dp                 jmp shutdown\nng_allocated_dp_ok        lda debug_dp\n                          tcd')
+    source=asm_replace_once(source,'                          ldx    #254\n                          lda    #0\nclear_dp','                          ldx    #510\n                          lda    #0\nclear_dp')
+    source=asm_replace_once(source,'; GAME_RENDERER_INSERT',f'                          copy   {relative}/renderer.s\n                          copy src/iigs/input.asm\n                          copy {relative}/platform.s\n                          copy src/iigs/profile.asm')
     platform=(ROOT/'src/iigs/platform.asm').read_text()
-    platform=replace_once(platform,'                          jsl game_tick','                          jsr ng_fixture_input\n                          jsr ng_timed_game_tick')
+    platform=asm_replace_once(platform,'                          jsl game_tick','                          jsr ng_fixture_input\n                          jsr ng_timed_game_tick')
     platform+='\nng_profile_enabled dc i2\''+str(int(a.profile))+"'\n"
     platform+='\nng_fixture_enabled dc i2\''+str(int(a.fixture_input))+"'\n"
     platform+='\nng_fixture_fire_hold dc i2\''+str(int(a.held_fire))+"'\n"
     (out/'platform.s').write_text(platform)
-    source=source.replace('                          jsr rs_render','                          jsr ng_profile_render')
-    source=replace_once(source,'clock_test_good           jsr    slice_init\n                          jsr    clock_init', '''clock_test_good           lda debug_dp
+    source=asm_replace_once(source,'clock_test_good           jsr    slice_init\n                          jsr    clock_init', '''clock_test_good           lda debug_dp
                           cmp #$FE01
                           bcc ng_dp_valid
                           jmp shutdown
@@ -97,14 +97,14 @@ ng_initial_copied         jsr input_init
                           jmp shutdown
 ng_input_ready            jsr input_poll
                           jsr clock_init''')
-    source=replace_once(source,'clock_ready               anop','''clock_ready               lda #1
+    source=asm_replace_once(source,'clock_ready               anop','''clock_ready               lda #1
                           sta render_service_enabled''')
-    source=replace_once(source,'                          lda    #1\n                          sta    debug_ready',f'''                          jsr rwp_init
+    source=asm_replace_once(source,'                          lda    #1\n                          sta    debug_ready',f'''                          jsr rwp_init
                           beq ng_budget_ok
                           jmp shutdown
 ng_budget_ok              lda #1
                           sta debug_ready''')
-    start=source.index('main_loop                 jsr    clock_due');end=source.index('\nshutdown                  anop',start)
+    start=label_offset(source,'main_loop');end=label_offset(source,'shutdown')
     source=source[:start]+'''main_loop                 jsl platform_service
                           lda platform_quit
                           ora platform_fault
@@ -132,7 +132,7 @@ ng_render_fault           lda #4
                           sta platform_fault
 ng_exit                   jmp shutdown
 ''' +source[end:]
-    source=replace_once(source,'shutdown                  anop\n                          rep    #$30','''shutdown                  anop
+    source=asm_replace_once(source,'shutdown                  anop\n                          rep    #$30','''shutdown                  anop
                           rep #$30
                           longa on
                           longi on
@@ -141,7 +141,7 @@ ng_close_input            jsr input_close
                           cmp #0
                           bne ng_close_input
                           rep    #$30''')
-    source=replace_once(source,'debug_ready               ds     2','debug_game_base           ds 4\ndebug_game_dp             ds 2\ndebug_ready               ds     2')
+    source=asm_replace_once(source,'debug_ready               ds     2','debug_game_base           ds 4\ndebug_game_dp             ds 2\ndebug_ready               ds     2')
     # Dedicated game DP is the second page of the one owned allocation.
     source+='\n copy src/iigs/render_storage.asm\n ALIGN 32768\nRENDERART START RENDERART\n'
     for label,path,size in [('rg_charset','charset/railgunner_charset.bin',2048),('rg_title_bits','screens/title_hires.bin',8000),('rg_title_colors','screens/title_hires_col.bin',1000)]:
@@ -161,7 +161,7 @@ ng_close_input            jsr input_close
     for i,(label,segment) in enumerate([('rd_spans_a','RDSPANA'),('rd_spans_b','RDSPANB'),('rr_background','RDBACK'),('rr_candidate','RDCAND'),('rg_charset','RENDERART'),('game_prod_base','GAME'),('ro_parity_0','ROPAR0'),('ro_parity_1','ROPAR1')]):
         renderer += [f' lda #{label}',' and #$7fff',f' beq ng_align_{i}',' jmp ng_bad',f'ng_align_{i} lda #^{segment}',' and #$ff',' cmp #2',f' bcs ng_bank_low_{i}',' jmp ng_bad',f'ng_bank_low_{i} cmp #$80',f' bcc ng_bank_ok_{i}',' jmp ng_bad',f'ng_bank_ok_{i} anop']
     renderer+=[' lda #0',' rts','ng_bad lda #1',' rts','debug_misses ds 2','beam_sample ds 2']
-    source=source.replace('                          jsr rs_render','                          jsr ng_profile_render')
+    source=replace_all(source,'                          jsr rs_render','                          jsr ng_profile_render',expected=2)
     (out/'renderer.s').write_text('\n'.join(renderer)+'\n');(out/'main.asm').write_text(source)
     if a.prepare_only:print('Prepared '+str(out/'main.asm'));return
     (out/'link.script').write_text('+S +L\n'+relative+'/main\n')

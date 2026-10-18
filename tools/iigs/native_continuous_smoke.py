@@ -11,6 +11,7 @@ ROOT=Path(__file__).resolve().parents[2]
 def main():
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--session',type=Path,required=True)
+ p.add_argument('--highscore-roll',action='store_true',help='Check twelve completed two-row frontend animation steps')
  p.add_argument('--base',type=lambda x:int(x,0),default=0xa0000)
  a=p.parse_args();folder=a.session.parent;s=json.loads(a.session.read_text());m=json.loads((folder/'build-manifest.json').read_text());sy=m['symbols'];base=a.base
  assert not m.get('fixture_input'), 'Real input image required'
@@ -70,6 +71,26 @@ def main():
   tap(44)
   wait_for(lambda:word('rc_displayed_mode')==9,60)
   c.pause();c.wait_stopped(timeout=5);reach('main_loop');frame('past-heroes')
+  if a.highscore_roll:
+   previous=read(base+sy['rc_displayed'],2388);steps=[]
+   for index in range(12):
+    reach('rwp_complete')
+    current=read(base+sy['rc_displayed'],2388)
+    assert current[:1000]==previous[:1000], 'Animation changed glyphs'
+    changed=[i for i in range(1000) if current[1000+i]!=previous[1000+i]]
+    rows=sorted({i//40 for i in changed})
+    assert len(changed)==80 and len(rows)==2 and all(5<=y<15 for y in rows),(index,rows,len(changed))
+    assert word('rb_changed')==80,(index,word('rb_changed'))
+    highlights=[]
+    for row in range(5,15):
+     colors=set(current[1000+row*40:1000+(row+1)*40])
+     assert colors in ({7},{15}),(row,colors)
+     if colors=={7}:highlights.append(row)
+    assert len(highlights)==1,highlights
+    frame(f'highscore-roll-{index:02d}')
+    steps.append({'rows':rows,'changed_cells':len(changed),'highlight':highlights[0]})
+    previous=current
+   result['highscore_roll']=steps
   c.continue_();ticks(30);tap(44)
   wait_for(lambda:word('rc_displayed_mode')==3,60)
   ticks(60)

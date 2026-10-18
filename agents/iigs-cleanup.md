@@ -1,5 +1,9 @@
 # IIgs cleanup — 2026-10-18
 
+Historical cleanup record. Subsequent beam scheduling, formatting-safe generators,
+frontend animation and packaging changes are documented in the
+[current handoff](iigs-beam-renderer-handoff.md).
+
 Scope: remove abandoned IIgs implementation paths and misleading entry points;
 preserve native gameplay, current renderer inputs, useful tests, shared platforms,
 and matching evidence. The beam scheduler was NOT changed.

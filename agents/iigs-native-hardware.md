@@ -5,10 +5,14 @@ and timing results do not establish hardware acceptance.
 
 Use the packaged native S16 from `build/iigs/native-game-package/RAILGUNNER`, preserving
 ProDOS type `$B3` and auxiliary type `$DB03`. The 800 KiB
-`railgunner-transfer.2mg` contains the same executable on a ProDOS volume.
-`railgunner-boot.2mg` is a private copy of the caller's supplied GS/OS template
+`railgunner-iigs-transfer.2mg` contains the same executable on a ProDOS volume.
+`railgunner-iigs.2mg` is a private copy of the caller's supplied GS/OS template
 with System/Start replaced; it is not an independently supplied GS/OS release.
-Packaging verifies both disks by extracting the executable and comparing bytes.
+`railgunner-iigs-800K.po` is the same non-bootable transfer volume in raw
+ProDOS order (819,200 bytes). Mount it under an existing GS/OS system.
+Packaging checks all three volumes and extracts/compares the executable bytes.
+The emulator speed option changes metadata/configuration only, not the game
+executable. Target 7.159 MHz or faster; stock 2.8 MHz is currently unplayable.
 
 Record the machine's ROM revision, installed RAM, accelerator model/speed, GS/OS
 version and the build manifest's binary SHA256 and timing profile. Initial

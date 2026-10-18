@@ -40,8 +40,9 @@ autopoll already disabled and an unrelated mode bit set. Component cleanup
 preserves both bits, and test-fixture cleanup restores the caller’s original
 mode. These functional proofs use actual ROM callbacks at2.8MHz, simultaneous holds, independent releases,
 modifier ordering, duplicate downs, fully drained short taps and a submitted
-callback before quit. Saved modes are reread before ADBShutDown. Real-input gameplay smoke now passes. Revised beam scheduling must recheck
-service latency and blackout interaction; physical hardware acceptance is pending.
+callback before quit. Saved modes are reread before ADBShutDown. Real-input gameplay smoke passed after beam scheduling and again after the
+two-row frontend animation change at 7.159 MHz, including key release, black
+transitions and Ctrl-Q cleanup. Physical hardware acceptance is pending.
 
 Matching GSSquared aff788b only refills its two-byte keyboard register inside
 ADB_Keyboard::process_event, not Talk. Three host key events before a poll strand

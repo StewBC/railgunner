@@ -49,7 +49,7 @@ def main():
     prebuilt_map = args.binary.parent / 'link.map'
     if not prebuilt_map.is_file(): prebuilt_map = args.binary.parent / 'native-link.log'
     folder = Path(tempfile.mkdtemp(prefix='railgunner-iigs-', dir='/tmp'))
-    disk = folder / 'native.2mg'
+    disk = folder / 'railgunner-iigs.2mg'
     shutil.copy2(args.template, disk)
     shutil.copy2(args.binary, folder / 'Start')
     if prebuilt_map.is_file(): shutil.copy2(prebuilt_map, folder / 'native-link.log')
@@ -73,14 +73,14 @@ def main():
     run(['cadius', 'DELETEFILE', disk, '/' + args.volume + '/System/Start'])
     run(['cadius', 'ADDFILE', disk, '/' + args.volume + '/System', folder / 'Start'])
     socket = folder / 'debug.sock'
-    config = folder / 'native.gs2'
+    config = folder / 'railgunner-iigs.gs2'
     game_build=args.binary and 'game_provenance' in build_metadata
     window_kind='native game' if game_build else 'native renderer'
     config.write_text('gs2_version = 1\nid = "' + str(uuid.uuid4()) + '"\n'
                       'name = "Railgunner ' + (window_kind if args.play else 'diagnostic') + '"\nplatform = "' + ('apple2gs_rom3' if args.rom == '3' else 'apple2gs') + '"\n'
                       'clock = "ntsc"\nspeed = "' + args.speed + '"\nscanner = "apple2gs"\nbuiltin = false\n'
                       '[[cards]]\nslot = 7\ncard = "bazfast3"\n'
-                      '[[storage]]\nslot = 7\ndrive = 1\nimage = "native.2mg"\n')
+                      '[[storage]]\nslot = 7\ndrive = 1\nimage = "railgunner-iigs.2mg"\n')
     command = [str(args.emulator), str(config), '--no-quit-confirm']
     if not args.play: command += ['--debug', str(socket), '-s']
     with (folder / 'emulator.log').open('w') as log:

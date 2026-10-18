@@ -1,9 +1,9 @@
 > **IIgs: start with [beam-renderer handoff](iigs-beam-renderer-handoff.md).**
-> The current native game flashes; cleanup is done, beam-following repair is not.
+> Beam-following repair is implemented; see measured scan-time/cadence limits before claiming acceptance.
 
 # RailGunner agent handoff
 
-The original game is feature-complete. The IIgs port still needs renderer repair;
+The original game is feature-complete. The IIgs renderer now follows the beam;
 see the handoff above.
 
 - `src/c64/` is the Commodore 64 game in 6502, developed against **c64m**

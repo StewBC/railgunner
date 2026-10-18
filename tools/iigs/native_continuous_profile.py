@@ -97,11 +97,18 @@ def main():
   for _ in range(100):
    raw=read(base,sy['native_end'])
    def get(name,n=2):return int.from_bytes(raw[sy[name]:sy[name]+n],'little')
-   if get('clock_publish_seq')&1:continue
+   if get('clock_publish_seq')&1 or ('beam_trace_seq' in sy and get('beam_trace_seq')&1):continue
+   if 'beam_trace' in sy:
+    (folder/'beam-trace.bin').write_bytes(raw[sy['beam_trace']:sy['beam_trace']+2048])
+    if 'beam_bad' in sy:(folder/'beam-bad.bin').write_bytes(raw[sy['beam_bad']:sy['beam_bad']+128])
+    (folder/'beam-trace-meta.json').write_text(json.dumps(dict(cursor=get('beam_trace_cursor'),transactions=get('beam_transactions'),sequence=get('beam_trace_seq'))))
    result={name:get(name,width) for name,width in [('clock_last',4),('clock_delivered',4),('clock_dropped',4),('clock_fault',2),('clock_backwards',2),('clock_max_gap',2),('platform_ticks',4),('platform_fault',2),('input_fault',2),('rwp_fault',2),('rwp_commits',2),('rwp_repeats',2),('rwp_nochanges',2),('rwp_max_blackout',2),('rwp_last_words',2),('rwp_last_spans',2),('rd_words',2),('rd_count',2)]}
+   if 'beam_gap_hist' in sy:result['beam_gap_hist']=list(struct.unpack_from('<16H',raw,sy['beam_gap_hist']))
    result['specialized_commits']=get('sw_commits') if 'sw_commits' in sy else 0
    result['specialized_enabled']=get('sw_enabled')
-   for name in ['rwp_draw_last','rwp_draw_max']:
+   for name in ['beam_transactions','beam_exposures','beam_max_exposure','beam_draw_wraps']:
+    if name in sy:result[name]=get(name)
+   for name in ['rwp_draw_last','rwp_draw_max','beam_commit_max']:
     if name in sy:result[name]=get(name,4)
    for name,width in [('sw_rejected',2),('sw_reject_count',4),('sw_discard_count',4),('rc_generation',2),('rc_display_generation',2),('rc_pending',2)]:
     if name in sy:result[name]=get(name,width)
@@ -155,7 +162,7 @@ def main():
   c.pause();c.wait_stopped(timeout=5)
   reach(arm('main_loop'))
   proof['warmup']=dict(ordinary_commits=word('rwp_commits'),completed_five_updates=True)
-  for name,count in [('ng_game_max',4),('ng_stage_max',20),('clock_max_gap',2)]:c.write_mem(0,base+sy[name],bytes(count))
+  for name,count in [('ng_game_max',4),('ng_stage_max',20),('clock_max_gap',2)]+([(n,2) for n in ['beam_transactions','beam_exposures','beam_max_exposure','beam_draw_wraps','beam_commit_valid']]+[('beam_commit_max',4)]+([('beam_gap_hist',32)] if 'beam_gap_hist' in sy else []) if 'beam_transactions' in sy else []):c.write_mem(0,base+sy[name],bytes(count))
   for name,size in [('game_obs_max_allocated',2),('game_obs_max_render',2),('game_obs_max_onscreen',2),('game_obs_kind_max',14),('game_obs_samples',4)]:c.write_mem(0,game+gs[name],bytes(size))
   before=native_state();before.pop('_render_snapshot',None);samples=[];visible_peak=0;drawable_peak=0;render_peak_record=None;c.continue_();end=time.monotonic()+max(180,a.seconds*4)
   while True:
@@ -213,7 +220,15 @@ def main():
   proof['framebuffer_pass']=True
   proof['captured_redraw_slots']=[i for i,v in enumerate(struct.unpack('<24H',read(base+sy['sw_selected'],48))) if v]
   proof['beam_trace_pass']=None
-  proof['beam_scope']='Occasional tearing accepted; completed framebuffer correctness checked separately'
+  proof['beam_scope']='No scan-time instrumentation in this image'
+  if 'beam_transactions' in after:
+   count=(after['beam_transactions']-before['beam_transactions'])&65535
+   exposed=(after['beam_exposures']-before['beam_exposures'])&65535
+   proof['beam_trace_pass']=count>0 and exposed==0
+   proof['beam_scope']='Conservative physical-time brackets around every region restore/redraw; safe means complete before its first row is scanned again. No pauses in timing window.'
+   proof['all_changed_gaps_within_two_refreshes']=after['beam_commit_max']<=524
+   proof['beam_timing']=dict(transactions=count,exposed_transactions=exposed,max_exposure_lines=after['beam_max_exposure'],draw_wraps=after['beam_draw_wraps'],worst_completed_gap_lines=after['beam_commit_max'],gap_histogram_refreshes=after.get('beam_gap_hist'),cadence_scope='Adjacent changed PLAY completions; unchanged candidates and full-screen transitions reset the chain')
+
   reach(arm('rwp_complete'),timeout=30)
   assert read(base+sy['rc_displayed'],2388)==displayed,'Published snapshot differs from completed update'
   breakdown=[]
@@ -227,10 +242,11 @@ def main():
   for prev,cur in zip(breakdown,breakdown[1:]):cur['elapsed_ms']=(cur['master_ticks']-prev['master_ticks'])*1000/14318180
   proof['diagnostic_stage_breakdown']=breakdown
   proof['diagnostic_stage_scope']='One later candidate with breakpoint pauses; outside retained timing. These elapsed guest cycles do not establish worst-case stage cost.'
+  proof['acceptance_scope']='pass combines scan exposure and throughput checks; it does not certify locked 30 Hz, eight-to-ten-object natural play, or real hardware acceptance. Inspect exact gap histogram and observed object counts.'
   proof['functional_pass']=bool(proof.get('framebuffer_pass') and proof['active_play']['specialized_presentations']>=5 and proof['active_play']['no_presentation_stall'])
-  proof['pass']=proof['active_play']['dropped_ticks']==0 and 58<=proof['active_play']['logic_hz']<=61 and proof['active_play']['specialized_presentations']>=5 and proof['active_play']['presentation_hz']>=29 and proof['active_play']['no_presentation_stall']
+  proof['pass']=proof['beam_trace_pass'] is True and proof['active_play']['dropped_ticks']==0 and 58<=proof['active_play']['logic_hz']<=61 and proof['active_play']['specialized_presentations']>=5 and proof['active_play']['presentation_hz']>=29 and proof['active_play']['no_presentation_stall']
   if not proof['pass']:
-   failure='Retained PLAY logic/presentation throughput gate failed'
+   failure='Retained PLAY scan-time or logic/presentation throughput gate failed'
    proof['failure']=failure
  except Exception as exc:
   failure=repr(exc);proof['failure']=failure;proof['pass']=False

@@ -6,7 +6,7 @@ A **C core** (`src/core/`) was written from those 6502 sources. Both the **SDL**
 
 This project was made by AI. **Grok** wrote essentially all of the game code. The **sprite multiplexer** was written by **Codex**. **Claude** reviewed the work and made the improvements to **c64m** that came out of building and debugging this game.
 
-**Codex** made the **Archimedes port**. An **Apple IIgs** port is in progress, using native ORCA/M 65816 code adapted from the C64 assembly rather than the C core. It is playable and silent, but sprite flashing remains unresolved; beam-following rendering is the next task.
+**Codex** made the **Archimedes port**. An **Apple IIgs** port is in progress, using native ORCA/M 65816 code adapted from the C64 assembly rather than the C core. It is playable and silent on accelerated machines, with beam-following rendering and a two-row high-score colour animation. Target 7.159 MHz or faster; stock 2.8 MHz is not playable.
 
 YouTube Video: https://youtu.be/UlGNZt61dxk
 
@@ -182,19 +182,27 @@ stack-based sprites, and GS/OS keyboard/lifecycle handling. The old IIgs C runti
 experiment has been removed. The shared C core remains intact for SDL/Archimedes
 and host-side IIgs reference tests; it is not linked into the IIgs game.
 
-**Known issue:** erase/redraw is not yet synchronized with the scan beam, causing
-visible sprite flashing. Correct completed pixels and average frame rate do not
-establish a stable display. The next task is Time Pilot-style beam-following
-scheduling. Audio and physical-hardware acceptance remain pending.
+The renderer now restores/redraws disjoint regions behind the scan beam and
+completes each immutable candidate even when late. Accelerated test workloads
+passed the scan-exposure checks; this is not a locked 30 Hz claim. Target
+**7.159 MHz or faster**; stock 2.8 MHz remains unplayable. The high-score table
+uses light grey with one moving yellow row, updating only two rows per step.
+Audio and physical-hardware acceptance remain pending. See the
+[measured results and limits](agents/iigs-beam-renderer-results.md).
 
-Builds default to NTSC, ROM3 and7.159 MHz. Use `IIGS_GAME_SPEED=2.8mhz`, `7.159mhz`
-or `14.3mhz`; `IIGS_ROM=1` selects the secondary firmware profile. This does not
+Builds default to NTSC, ROM3 and 7.159 MHz. Use `IIGS_GAME_SPEED=2.8mhz`, `7.159mhz`
+or `14.3mhz`; this selects emulator configuration and manifest metadata only.
+The packaged executable is identical at every speed setting.
+`IIGS_ROM=1` selects the secondary firmware profile. This does not
 establish a minimum RAM configuration or ROM1 hardware acceptance.
 
 Launching and packaging require your own GS/OS template. `IIGS_TEMPLATE` defaults
 to `../force/assets/iigs/disc/templat.2mg` and `IIGS_VOLUME` to `FORCE`. Both paths
 use private copies; the original template is unchanged. Outputs are in
-`build/iigs/native-game-play/` and `build/iigs/native-game-package/`.
+`build/iigs/native-game-play/` and `build/iigs/native-game-package/`. Packages
+include `railgunner-iigs.2mg` (bootable), `railgunner-iigs-transfer.2mg`, and
+`railgunner-iigs-800K.po` (non-bootable 800K ProDOS-order floppy). Use an existing
+GS/OS system to run or copy RAILGUNNER from the transfer/floppy images.
 See [IIgs instructions](src/iigs/README.md) and the
 [current renderer handoff](agents/iigs-beam-renderer-handoff.md).
 
@@ -222,7 +230,7 @@ make archie-package iigs-game-package
 | `src/core/` | Portable C11 simulation of those rules. No SDL. Headless driver is `src/core/main.c` |
 | `src/sdl/` | SDL2 window: 2× blit, three-voice samples, keyboard mapping. No gameplay rules |
 | `src/archie/` | Native ARM2 frontend: banked Mode 9 graphics, three-voice synthesis, keyboard input and OS restoration |
-| `src/iigs/` | Native 65816 game/lifecycle/renderer inputs; beam-following repair pending |
+| `src/iigs/` | Native 65816 game/lifecycle/renderer inputs; beam-following renderer, accelerated-machine target |
 | `assets/c64/` | Original art and converted blobs, shared by all frontends |
 | `tools/c64/` | C64 build/play scripts and c64m symlinks |
 | `tools/archie/` | Isolated SDK build, asset embedding, private emulator deployment and release packaging |
