@@ -1,12 +1,20 @@
+> **IIgs: start with [beam-renderer handoff](iigs-beam-renderer-handoff.md).**
+> The current native game flashes; cleanup is done, beam-following repair is not.
+
 # RailGunner agent handoff
 
-The game is feature-complete. There is no feature backlog.
+The original game is feature-complete. The IIgs port still needs renderer repair;
+see the handoff above.
 
 - `src/c64/` is the Commodore 64 game in 6502, developed against **c64m**
   (emulator, debugger, assembler, remote API) at `../c64m/`.
 - `src/core/` is the C simulation written from those 6502 sources.
 - `src/sdl/` is the first platform frontend on that core. Further ports would
-  be new frontends on `src/core/`, siblings of `sdl/`.
+  be new frontends on `src/core/`, siblings of `sdl/`. The user-approved IIgs
+  exception uses native ORCA/M65816 gameplay/rendering; see `iigs-beam-renderer-handoff.md`
+  and `src/iigs/README.md`. Keep the shared C core for other ports and oracles.
+
+For the IIgs next task, read [`iigs-beam-renderer-handoff.md`](iigs-beam-renderer-handoff.md).
 
 This directory is the concise, implementation-oriented handoff for agents.
 
@@ -79,7 +87,8 @@ code reviews (historical + disposition tables). They are not a work queue.
 | `src/core/` | Portable C11 simulation of the C64 rules. No SDL. Headless driver is `src/core/main.c` |
 | `src/sdl/` | First platform frontend on the core: window, blit, samples, keys. See [`c64-to-sdl.md`](c64-to-sdl.md) |
 | `src/archie/` | Archimedes frontend, native sound and packaged application; emulator and A3010 hardware evaluation passed. See [`archie-port.md`](archie-port.md) and `src/archie/README.md` |
-| `src/c64/main.asm` | Sole assemble root; includes everything else |
+| `src/iigs/` | Native IIgs port in progress; see [beam-renderer handoff](iigs-beam-renderer-handoff.md) |
+| `src/c64/main.asm` | Sole C64 assemble root; includes everything else |
 | `src/c64/boot/` | Cold init / bring-up |
 | `src/c64/sys/` | ZP, constants, IRQ, input, memory map |
 | `src/c64/frontend/` | Title, high scores, score entry, game over, victory |

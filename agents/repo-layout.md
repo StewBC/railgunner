@@ -4,8 +4,10 @@
 Commodore 64 game: the shipped level-centric loop, pool/mux, frontend, title
 music, and one-shot SFX. `src/core/` is the C simulation of those rules,
 written from the 6502 sources. `src/sdl/` is the first platform frontend on
-that core (blit and samples). A later port is another frontend on the core,
-a sibling of `sdl/`. This file is the directory rules.
+that core (blit and samples), and `src/archie/` is the completed native ARM2
+frontend on it. The IIgs exception adapts C64 assembly into native65816 code in
+`src/iigs/`; the C core remains a host reference, not its runtime. See the
+[current IIgs handoff](iigs-beam-renderer-handoff.md). This file is the directory rules.
 [`roadmap.md`](roadmap.md) is the build record, not a feature queue.  
 **Companion docs:** [`level-rework.md`](level-rework.md) (shipped loop), [`railgunner.md`](railgunner.md) (original brief), [`roadmap.md`](roadmap.md) (build record), [`build-debug.md`](build-debug.md) (run/debug), [`assembler-syntax.md`](assembler-syntax.md) (syntax), [`c64-to-sdl.md`](c64-to-sdl.md) (finished port).
 
@@ -18,7 +20,7 @@ a sibling of `sdl/`. This file is the directory rules.
 | Entry file | `src/c64/main.asm` — only file that sets origin / BASIC stub and `.include`s the rest |
 | Binary / generated assets | `assets/c64/` (inputs for `.incbin` or generators) |
 | Host tools | `tools/c64/` (c64m symlinks, launch script, generators) |
-| Assemble output | `build/` (not source; may be gitignored later) |
+| Assemble output | `build/` (generated output, gitignored) |
 | Agent docs | `agents/` (already present) |
 
 **Why not a flat root or a single `game.asm`?**  
@@ -356,3 +358,16 @@ Controls, installation and hardware procedure: [`src/archie/README.md`](../src/a
 Execution record and performance limits: [`archie-port.md`](archie-port.md).
 The default C64 build and existing launch targets retain their behavior;
 `make sdl-build` builds SDL without opening its window.
+
+## Apple IIgs native port
+
+`src/iigs/` contains the native gameplay adapter manifests and renderer,
+input and lifecycle assembly. `tools/iigs/` generates native GAME from selected
+C64 routines, compiles sprites, builds/packages the executable and runs checks.
+`tst/iigs/native_oracle.c` is a host-only behavioral reference; it is not an IIgs
+C runtime. Shared `src/core`, SDL, Archie and C64 sources remain separate.
+
+Public targets are `iigs-game`, `iigs-game-play`, `iigs-game-package`; outputs live
+under `build/iigs/`. The old IIgs C/runtime and standalone demo paths are removed.
+The current game still flashes: beam-following erase/redraw is the next task, as
+specified in [the authoritative handoff](iigs-beam-renderer-handoff.md).

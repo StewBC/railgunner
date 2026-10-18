@@ -1,0 +1,224 @@
+{
+  "modules": {
+    "src/c64/render/screen.asm": [
+      "ascii_to_screen",
+      "hud_color_static",
+      "screen_addr_xy",
+      "screen_clear",
+      "screen_color_row",
+      "screen_color_xy",
+      "screen_get_xy",
+      "screen_print",
+      "screen_put_xy"
+    ],
+    "src/c64/render/bullets.asm": [
+      "bullets::advance_all",
+      "bullets::destroy",
+      "bullets::draw_slot",
+      "bullets::erase_slot",
+      "bullets::find_at",
+      "bullets::half_from_glyph",
+      "bullets::init",
+      "bullets::player_launch_lane",
+      "bullets::player_launch_row",
+      "bullets::try_fire",
+      "bullets::update"
+    ],
+    "src/c64/game/cargo.asm": [
+      "cargo::clear_stacks",
+      "cargo::despawn_sprite",
+      "cargo::detonate",
+      "cargo::paint_ghij",
+      "cargo::paint_one"
+    ],
+    "src/c64/game/drones.asm": [
+      "drones::clear_field",
+      "drones::rng8",
+      "drones::rng_mod",
+      "drones::roll_cooldown"
+    ],
+    "src/c64/game/hud.asm": [
+      "hud::paint_full_line",
+      "hud::paint_level",
+      "hud::paint_lives",
+      "hud::paint_progress"
+    ],
+    "src/c64/game/message.asm": [
+      "message::clear_banner_zone",
+      "message::restore_hud_line"
+    ],
+    "src/c64/game/objects.asm": [
+      "objects::alloc",
+      "objects::discard_new",
+      "objects::hide_all",
+      "objects::mark_dirty",
+      "objects::reap",
+      "objects::retire",
+      "objects::retire_and_try_free"
+    ],
+    "src/c64/game/parcels.asm": [
+      "parcels::level_reset"
+    ],
+    "src/c64/game/player.asm": [
+      "player::apply_c_blast_full",
+      "player::at_intersection",
+      "player::begin_death",
+      "player::begin_death_fatal",
+      "player::begin_death_respawn",
+      "player::begin_deploy",
+      "player::check_clear_centre",
+      "player::death_go_flash_tick",
+      "player::death_tick",
+      "player::deploy_tick",
+      "player::do_mount_h",
+      "player::do_mount_v",
+      "player::eval_center_h",
+      "player::eval_center_v",
+      "player::finish_death",
+      "player::in_centre_gap",
+      "player::in_centre_gap_x",
+      "player::in_centre_gap_y",
+      "player::init",
+      "player::install_frame_for_rest",
+      "player::load_x_to_tmp",
+      "player::load_y_to_a",
+      "player::move_on_h",
+      "player::move_on_v",
+      "player::paint_death_banner",
+      "player::paint_death_banner_color",
+      "player::px_to_col",
+      "player::remap_to_h",
+      "player::remap_to_v",
+      "player::show_explode_frame",
+      "player::side_of_mid_h",
+      "player::side_of_mid_v",
+      "player::start_swing_mid_a",
+      "player::step_h",
+      "player::step_v",
+      "player::update",
+      "player::update_barrel",
+      "player::update_move"
+    ],
+    "src/c64/game/rail.asm": [
+      "rail::apply_ab_hit",
+      "rail::apply_heal_marks",
+      "rail::begin_repair",
+      "rail::clear_heal_marks",
+      "rail::col_is_junction",
+      "rail::core_glyph_idx",
+      "rail::damage_b_v_one",
+      "rail::damage_col",
+      "rail::damage_e_h_one",
+      "rail::damage_row",
+      "rail::dmg_from_bot",
+      "rail::dmg_from_left",
+      "rail::dmg_from_right",
+      "rail::dmg_from_top",
+      "rail::draw_d",
+      "rail::draw_e",
+      "rail::draw_f",
+      "rail::draw_va",
+      "rail::draw_vb",
+      "rail::draw_vc",
+      "rail::mark_player_tiles",
+      "rail::outer_glyph_idx",
+      "rail::paint_mark_h",
+      "rail::paint_mark_v",
+      "rail::redraw_from_state",
+      "rail::repair_tick",
+      "rail::reset",
+      "rail::row_is_hrail",
+      "rail::strike_frame_reset"
+    ],
+    "src/c64/game/score.asm": [
+      "score::cmp_place",
+      "score::paint_if_dirty",
+      "score::sub_place"
+    ],
+    "src/c64/game/tallies.asm": [
+      "tallies::note_shot"
+    ],
+    "src/c64/game/waves.asm": [
+      "waves::apply_spawn_params",
+      "waves::load"
+    ]
+  },
+  "data": {
+    "src/c64/render/bullets.asm": [
+      "bullets::bullet_active",
+      "bullets::bullet_col",
+      "bullets::bullet_dir",
+      "bullets::bullet_half",
+      "bullets::bullet_hold",
+      "bullets::bullet_phase",
+      "bullets::bullet_row",
+      "bullets::fire_lock"
+    ],
+    "src/c64/game/cargo.asm": [
+      "cargo::hub_glyph",
+      "cargo::hub_mine_glyph"
+    ],
+    "src/c64/data/strings.asm": [
+      "level_kill_quota_tbl",
+      "str_game_over_banner",
+      "str_hud",
+      "str_rip_pilot_banner"
+    ],
+    "src/c64/game/player.asm": [
+      "player::explode_ptr_tbl",
+      "player::explode_seq"
+    ],
+    "src/c64/game/rail.asm": [
+      "rail::a_glyph",
+      "rail::b_glyph",
+      "rail::c_glyph",
+      "rail::d_glyph",
+      "rail::e_glyph",
+      "rail::f_glyph",
+      "rail_data::dmg_amt",
+      "rail_data::dmg_d",
+      "rail_data::dmg_e",
+      "rail_data::dmg_f",
+      "rail_data::dmg_va",
+      "rail_data::dmg_vb",
+      "rail_data::dmg_vc",
+      "rail_data::ghij_stack",
+      "rail_data::heal_mark_d",
+      "rail_data::heal_mark_e",
+      "rail_data::heal_mark_f",
+      "rail_data::heal_mark_va",
+      "rail_data::heal_mark_vb",
+      "rail_data::heal_mark_vc",
+      "rail_data::hit_left",
+      "rail_data::hit_slot"
+    ],
+    "src/c64/game/score.asm": [
+      "score::score_place_hi",
+      "score::score_place_lo",
+      "score::score_place_mid"
+    ]
+  },
+  "native_replacements": {
+    "player::install_frame_a": "Record native_player_frame instead of copying into fixed C64 PLAYER_BUF_0; same selected original source art, no physical address or asset pointer needed. A/X/Y clobbered by original service; callers do not depend on returned values.",
+    "sfx::play": "Audio deferred: state-neutral RTS, preserves A/X/Y/P and all non-audio state."
+  },
+  "calls": [
+    "rail::reset",
+    "rail::strike_frame_reset",
+    "rail::clear_heal_marks",
+    "rail::begin_repair",
+    "rail::repair_tick",
+    "rail::apply_ab_hit",
+    "bullets::init",
+    "bullets::update",
+    "bullets::find_at",
+    "bullets::destroy",
+    "bullets::half_from_glyph",
+    "player::begin_deploy",
+    "player::at_intersection",
+    "player::begin_death_fatal",
+    "player::begin_death_respawn",
+    "player::update"
+  ],
+  "stage": "N1 group2: rail/bullets/player with explicitly selected original dependency helpers"
+}

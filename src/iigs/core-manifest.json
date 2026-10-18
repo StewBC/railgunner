@@ -1,0 +1,140 @@
+{
+  "stage": "N1 group1: constants/private state/object pool/cells only",
+  "abi": "Native E=0, M=X=8, DBR=PBR=GAME bank, D=separately owned bank-zero page; JSR/RTS within checked half-bank",
+  "storage_overrides": {
+    "SCREEN_RAM": "native glyph cells, 1024 reserved / 1000 visible",
+    "COLOR_RAM": "native color cells, 1024 reserved / 1000 visible"
+  },
+  "constant_overrides": {
+    "COLLISION_MODE": 2
+  },
+  "blocked_hardware": [
+    "VIC_BORDER",
+    "VIC_BG0",
+    "VIC_CTRL1",
+    "VIC_CTRL2",
+    "VIC_MEM",
+    "VIC_SPR_X_MSB",
+    "VIC_SPR_ENABLE",
+    "VIC_SPR_Y_EXPAND",
+    "VIC_IRQ_STATUS",
+    "VIC_IRQ_ENABLE",
+    "VIC_SPR_BG_PRIORITY",
+    "VIC_SPR_MULTICOLOR",
+    "VIC_SPR_X_EXPAND",
+    "VIC_SPR_SPR_COLL",
+    "VIC_SPR_BG_COLL",
+    "VIC_RASTER",
+    "VIC_SPR_MC0",
+    "VIC_SPR_MC1",
+    "VIC_SPR_COLOR0",
+    "CIA1_PRA",
+    "CIA1_PRB",
+    "CIA1_DDRA",
+    "CIA1_DDRB",
+    "CIA1_ICR",
+    "CIA2_PRA",
+    "CIA2_ICR",
+    "IRQ_VECTOR_LO",
+    "IRQ_VECTOR_HI",
+    "KERNAL_IRQ_EXIT",
+    "SID_V1_FL",
+    "SID_V1_FH",
+    "SID_V1_PWL",
+    "SID_V1_PWH",
+    "SID_V1_CTRL",
+    "SID_V1_AD",
+    "SID_V1_SR",
+    "SID_V2_FL",
+    "SID_V2_FH",
+    "SID_V2_PWL",
+    "SID_V2_PWH",
+    "SID_V2_CTRL",
+    "SID_V2_AD",
+    "SID_V2_SR",
+    "SID_V3_FL",
+    "SID_V3_FH",
+    "SID_V3_PWL",
+    "SID_V3_PWH",
+    "SID_V3_CTRL",
+    "SID_V3_AD",
+    "SID_V3_SR",
+    "SID_FC_LO",
+    "SID_FC_HI",
+    "SID_RES_FILT",
+    "SID_MODE_VOL"
+  ],
+  "native_replacements": {
+    "objects::init": "Clear native logical pool only, fixed player and original free-stack order; no VIC owner/event/mux storage",
+    "objects::clear_slot": "Clear original twenty gameplay fields only; no IRQ event banks",
+    "objects::slot_referenced": "Always carry clear: immutable rendering snapshots own copied fields, never live-slot references",
+    "objects::drain_irq_events": "State-neutral RTS; no VIC event producer exists",
+    "screen_blank": "Deferred native scene transition, no physical display write during gameplay",
+    "screen_unblank": "Deferred native scene transition, no physical display write during gameplay",
+    "vic_select_bank0": "Native RAM cell presentation; no CIA access",
+    "vic_select_bank3": "Native title presentation; no CIA access",
+    "vic_text_mode": "Set native text presentation and call original cell clear"
+  },
+  "modules": {
+    "src/c64/game/objects.asm": [
+      "objects::alloc",
+      "objects::discard_new",
+      "objects::retire",
+      "objects::retire_and_try_free",
+      "objects::mark_dirty",
+      "objects::hide_all",
+      "objects::reap"
+    ],
+    "src/c64/render/screen.asm": [
+      "screen_clear",
+      "screen_addr_xy",
+      "screen_put_xy",
+      "screen_get_xy",
+      "screen_color_xy",
+      "ascii_to_screen",
+      "screen_print",
+      "screen_color_row",
+      "hud_color_static"
+    ]
+  },
+  "calls": [
+    "objects::init",
+    "objects::alloc",
+    "objects::discard_new",
+    "objects::retire",
+    "objects::reap",
+    "objects::hide_all",
+    "screen_clear",
+    "screen_put_xy",
+    "screen_get_xy",
+    "screen_color_xy",
+    "screen_addr_xy",
+    "ascii_to_screen",
+    "screen_color_row",
+    "screen_print",
+    "objects::clear_slot",
+    "objects::mark_dirty"
+  ],
+  "instruction_hooks": {
+    "screen_color_xy": [
+      {
+        "match": "sta tmp0",
+        "before": [
+          "and #15"
+        ],
+        "count": 1,
+        "reason": "C64 color RAM stores only the low nibble. These routines document A clobbered; X and their final flags remain unchanged."
+      }
+    ],
+    "screen_color_row": [
+      {
+        "match": "sta tmp0",
+        "before": [
+          "and #15"
+        ],
+        "count": 1,
+        "reason": "C64 color RAM stores only the low nibble. These routines document A clobbered; X and their final flags remain unchanged."
+      }
+    ]
+  }
+}

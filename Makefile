@@ -7,7 +7,7 @@
 #   make screens    title (and future) screen bins only
 #   make charset    atlas PNG → railgunner_charset.bin
 #   make sprites    sprite bins (placeholder until converters exist)
-#   make clean      remove build/ outputs (not assets/c64/ PNGs or generated bins)
+#   make clean      remove selected C64/core/SDL outputs, not the entire build tree
 #
 # Generators live under tools/c64/; this file only wires timestamps and targets.
 # Agent path stays tools/c64/agent_session.py (live assemble; no Makefile required).
@@ -51,7 +51,7 @@ ASSET_BINS := $(SCREEN_BINS) $(CHARSET_BINS) $(SPRITE_BINS)
 # Assembly inputs → PRG
 # ---------------------------------------------------------------------------
 
-ASM_SRC := $(shell find $(ROOT)/src -type f \( -name '*.asm' -o -name '*.inc' \) | sort)
+ASM_SRC := $(shell find $(ROOT)/src/c64 -type f \( -name '*.asm' -o -name '*.inc' \) | sort)
 PRG := $(ROOT)/build/railgunner.prg
 RAW := $(ROOT)/build/railgunner.raw
 SYM := $(ROOT)/build/symbols.txt
@@ -71,9 +71,12 @@ help:
 	@echo "  make screens      railgunner.png → title_hires*.bin"
 	@echo "  make charset      railgunner_charset.png → .bin (2K font)"
 	@echo "  make sprites      assets/c64/sprites/*.png → *.bin (64-byte MC)"
-	@echo "  make clean        wipe build/ (keeps assets/c64/ PNGs; bins via make assets)"
+	@echo "  make clean        remove selected C64/core/SDL outputs; retain port builds"
 	@echo "  make core        headless C simulation and tst/core traces"
 	@echo "  make sdl         build and open the SDL window; not part of make/play"
+	@echo "  make sdl-build   build SDL without launching"
+	@echo "  make archie / archie-run / archie-package   native Archimedes build/play/package"
+	@echo "  make iigs-game / iigs-game-play / iigs-game-package   native IIgs build/play/package"
 
 # Drop a mis-tagged PRG (raw c64masm image written to .prg without $0801 load
 # header). Make would otherwise treat it as up-to-date and play/--autorun fails.
@@ -166,3 +169,6 @@ clean:
 
 # Optional native frontend; existing default and launch targets are unchanged.
 include tools/archie/build.mk
+
+# Native IIgs game and diagnostics; beam-following renderer repair pending.
+include tools/iigs/build.mk
